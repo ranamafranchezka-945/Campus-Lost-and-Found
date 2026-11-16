@@ -75,19 +75,84 @@ function installDashboardBackGuard() {
   });
 }
 
+// The theme follows the device's light / dark setting. The toggle button is a manual
+// override: it is remembered together with the device setting at that moment and
+// dropped as soon as the device setting changes (or when it matches the device).
+const THEME_DEVICE_KEY = 'cspc_theme_device';
+const deviceDarkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+function deviceTheme() {
+  return deviceDarkQuery.matches ? 'dark' : 'light';
+}
+
+function clearThemeOverride() {
+  localStorage.removeItem(THEME_STORAGE_KEY);
+  localStorage.removeItem(THEME_DEVICE_KEY);
+}
+
+// The theme to show now: a still-valid manual choice, otherwise the device's.
+function resolveTheme() {
+  const device = deviceTheme();
+  let saved = null;
+  let savedDevice = null;
+  try {
+    saved = localStorage.getItem(THEME_STORAGE_KEY);
+    savedDevice = localStorage.getItem(THEME_DEVICE_KEY);
+    if ((saved === 'light' || saved === 'dark') && saved !== device && savedDevice === device) return saved;
+    clearThemeOverride();
+  } catch { /* storage blocked: just follow the device */ }
+  return device;
+}
+
 function loadTheme() {
-  const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-  const theme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'dark';
-  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-theme', resolveTheme());
   updateThemeIcon();
 }
 
+// The device switched between light and dark: follow it, with the same cross-fade.
+deviceDarkQuery.addEventListener('change', () => {
+  try { clearThemeOverride(); } catch { /* ignore */ }
+  applyTheme(deviceTheme());
+});
+
 function toggleTheme() {
   const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-  const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', nextTheme);
-  localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
-  updateThemeIcon();
+  switchTheme(currentTheme === 'light' ? 'dark' : 'light');
+}
+
+// Changes the theme with a smooth cross-fade of the whole page (css/styles.css sets
+// the timing). Browsers without view transitions fade the colours with CSS instead;
+// with "reduce motion" on, the theme simply switches.
+function switchTheme(nextTheme) {
+  try {
+    if (nextTheme === deviceTheme()) {
+      clearThemeOverride(); // same as the device: back to automatic
+    } else {
+      localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
+      localStorage.setItem(THEME_DEVICE_KEY, deviceTheme());
+    }
+  } catch { /* storage blocked: the choice lasts for this page only */ }
+  applyTheme(nextTheme);
+}
+
+function applyTheme(nextTheme) {
+  const root = document.documentElement;
+  if (root.getAttribute('data-theme') === nextTheme) return;
+  const apply = () => {
+    root.setAttribute('data-theme', nextTheme);
+    updateThemeIcon();
+  };
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    apply();
+  } else if (typeof document.startViewTransition === 'function') {
+    document.startViewTransition(apply);
+  } else {
+    root.classList.add('theme-switching');
+    apply();
+    clearTimeout(switchTheme.timer);
+    switchTheme.timer = setTimeout(() => root.classList.remove('theme-switching'), 450);
+  }
 }
 
 // Sun is shown in light mode, moon in dark mode. Same markup and styling as the other .ui-icon SVGs.

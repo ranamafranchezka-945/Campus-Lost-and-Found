@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const multer = require('multer');
 const { validateItemReport, sanitizeString } = require('../middleware/validate');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { isRateLimited, recordAttempt } = require('../middleware/rateLimit');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
 const {
   sendPossibleMatchEmail,
@@ -90,6 +91,40 @@ async function saveUploadedImage(file) {
     throw new Error('Supabase Storage is not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY.');
   }
   return saveUploadedImageLocally(file);
+}
+
+// Limits on what can be posted without an admin in the loop. Guests are counted per
+// network address (a whole campus Wi-Fi can share one, so that limit is generous);
+// signed-in students per account. Finder alerts are also capped per item, because each
+// one emails the owner.
+const HOUR_MS = 60 * 60 * 1000;
+const GUEST_REPORT_LIMIT = { max: 20, windowMs: HOUR_MS };
+const ACCOUNT_REPORT_LIMIT = { max: 30, windowMs: HOUR_MS };
+const FINDER_ALERT_SENDER_LIMIT = { max: 30, windowMs: HOUR_MS };
+const FINDER_ALERT_ITEM_LIMIT = { max: 6, windowMs: HOUR_MS };
+const reportAttempts = new Map();
+const finderAlertSenders = new Map();
+const finderAlertItems = new Map();
+
+// Reference codes end in random characters, so a code is never handed out twice, even
+// after the item that had it is deleted (an old QR sticker must not reach a new owner).
+// Letters and digits that are easy to confuse (0/O, 1/I/L) are left out.
+const REF_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+function newRefCode(items, prefix, length) {
+  const taken = new Set(items.map(item => String(item.refCode || '').toUpperCase()));
+  for (;;) {
+    let suffix = '';
+    for (let index = 0; index < length; index += 1) {
+      suffix += REF_CODE_ALPHABET[crypto.randomInt(REF_CODE_ALPHABET.length)];
+    }
+    const refCode = `${prefix}-${suffix}`;
+    if (!taken.has(refCode)) return refCode;
+  }
+}
+
+// The year shown in a report's code follows Philippine time, not the server's.
+function currentYear() {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', year: 'numeric' }).format(new Date());
 }
 
 function publicItemView(item, potentialMatch = null, canResolve = false, canRequestClaim = false) {
@@ -393,6 +428,8 @@ router.post('/broadcast', requireRole('admin'), async (req, res) => {
   }
   const recipients = readJsonArray(USERS_FILE).filter(user => user.role === 'student' && user.email);
   let sent = 0;
+  // Nothing to save; unlock the database so the site keeps working while the emails go out.
+  await postgresStore.commitRequest();
   for (const user of recipients) {
     try { await sendBroadcastEmail(user, subject, message); sent += 1; }
     catch (error) { console.error('Broadcast email could not be sent:', error.message); }
@@ -476,6 +513,7 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
   addItemActivity(item, req, status === 'approved' ? 'Claim approved' : 'Claim rejected', status === 'approved' ? pickupInstructions : rejectionReason);
   saveItems(items);
   saveClaims(claims);
+  await postgresStore.commitRequest();
 
   if (claim.claimantEmail) {
     try {
@@ -603,6 +641,7 @@ router.post('/claims/:claimId/meetup/request', requireAuth, async (req, res) => 
 
   claim.meetup[String(me.id)] = { status: 'pending', createdAt: new Date().toISOString() };
   saveClaims(claims);
+  await postgresStore.commitRequest();
   try {
     await sendMeetupRequestEmail(other, me.fullName || 'The other person', item.title);
   } catch (error) {
@@ -820,9 +859,12 @@ router.post('/anonymous-notify', async (req, res) => {
     if (String(message).length > 1000 || String(locationFound || '').length > 150 || String(finderContact || '').length > 150) {
       return res.status(400).json({ success: false, message: 'Finder message fields exceed the allowed length.' });
     }
+    if (isRateLimited(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT)) {
+      return res.status(429).json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
+    }
 
     const items = getItems();
-    const searchRef = refCode.toUpperCase().trim();
+    const searchRef = String(refCode).toUpperCase().trim();
     const submissionFingerprint = finderSubmissionFingerprint(
       searchRef, message, locationFound || '', finderContact || ''
     );
@@ -849,6 +891,9 @@ router.post('/anonymous-notify', async (req, res) => {
     if (item.type !== 'registered') {
       return res.status(404).json({ success: false, message: 'Registered belonging not found.' });
     }
+    if (isRateLimited(finderAlertItems, String(item.id), FINDER_ALERT_ITEM_LIMIT)) {
+      return res.status(429).json({ success: false, message: 'The owner has already received several alerts about this item. Please try again later.' });
+    }
     if (!item.notifications) item.notifications = [];
 
     const newNotification = {
@@ -866,6 +911,9 @@ router.post('/anonymous-notify', async (req, res) => {
     item.notifications.unshift(newNotification);
     item.notifications = item.notifications.slice(0, 100);
     saveItems(items);
+    recordAttempt(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT);
+    recordAttempt(finderAlertItems, String(item.id), FINDER_ALERT_ITEM_LIMIT);
+    await postgresStore.commitRequest();
 
     let emailSent = false;
     try {
@@ -907,6 +955,9 @@ router.post('/match-reference-notify', async (req, res) => {
     if (String(message).length > 1000 || String(locationFound || '').length > 150 || String(finderContact || '').length > 150) {
       return res.status(400).json({ success: false, message: 'Finder message fields exceed the allowed length.' });
     }
+    if (isRateLimited(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT)) {
+      return res.status(429).json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
+    }
 
     const reference = parseMatchReferenceToken(token);
     if (!reference || reference.expiresAt < Date.now()) {
@@ -943,6 +994,9 @@ router.post('/match-reference-notify', async (req, res) => {
     if (!owner) {
       return res.status(404).json({ success: false, message: 'The lost-item owner account could not be found.' });
     }
+    if (isRateLimited(finderAlertItems, String(lost.id), FINDER_ALERT_ITEM_LIMIT)) {
+      return res.status(429).json({ success: false, message: 'The owner has already received several alerts about this item. Please try again later.' });
+    }
 
     const notification = {
       id: `notif-${crypto.randomUUID()}`,
@@ -962,6 +1016,9 @@ router.post('/match-reference-notify', async (req, res) => {
 
     lost.notifications = [notification, ...(Array.isArray(lost.notifications) ? lost.notifications : [])].slice(0, 100);
     saveItems(items);
+    recordAttempt(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT);
+    recordAttempt(finderAlertItems, String(lost.id), FINDER_ALERT_ITEM_LIMIT);
+    await postgresStore.commitRequest();
 
     let emailSent = false;
     try {
@@ -1163,6 +1220,14 @@ router.get('/:id/photo', async (req, res) => {
   const filename = path.basename(item.photo);
   if (!filename || filename === '.' || filename === '..') return res.sendStatus(404);
 
+  // The item is all this needs from the database; unlock it before fetching the image
+  // so a page full of photos does not queue every other request behind the downloads.
+  try {
+    await postgresStore.commitRequest();
+  } catch (error) {
+    return res.sendStatus(500);
+  }
+
   if (supabaseStorage.objectKey(item.photo)) {
     try {
       const image = await supabaseStorage.downloadImage(item.photo);
@@ -1343,6 +1408,7 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
   };
   claims.unshift(claim);
   saveClaims(claims);
+  await postgresStore.commitRequest();
 
   const users = readJsonArray(USERS_FILE);
   const recipients = users.filter(user =>
@@ -1413,8 +1479,13 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
       }
     }
 
-    const nextSeq = items.length + 1;
-    const refCode = `CSPC-LF-2026-${String(nextSeq).padStart(3, '0')}`;
+    const reporterKey = req.session?.user ? `account:${reporterId}` : `network:${req.ip}`;
+    const reportLimit = req.session?.user ? ACCOUNT_REPORT_LIMIT : GUEST_REPORT_LIMIT;
+    if (isRateLimited(reportAttempts, reporterKey, reportLimit)) {
+      return res.status(429).json({ success: false, message: 'Too many reports were submitted in the last hour. Please try again later.' });
+    }
+
+    const refCode = newRefCode(items, `CSPC-LF-${currentYear()}`, 5);
     const photo = req.file ? await saveUploadedImage(req.file) : '';
 
     const newItem = {
@@ -1459,6 +1530,8 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
     }
 
     saveItems(items);
+    recordAttempt(reportAttempts, reporterKey, reportLimit);
+    await postgresStore.commitRequest();
 
     for (const { student, lostItem, foundItem } of emailNotifications) {
       try {
@@ -1595,6 +1668,7 @@ router.patch('/:id/claim', requireAuth, async (req, res) => {
   addItemActivity(item, req, 'Marked as claimed', item.claimantProof);
 
   saveItems(items);
+  await postgresStore.commitRequest();
   if (item.reporterEmail) {
     try {
       await sendClaimStatusEmail({ fullName: item.reporterName, email: item.reporterEmail }, item, { claimantName: item.reporterName, claimantEmail: item.reporterEmail }, 'approved');
@@ -1667,8 +1741,7 @@ router.post('/register-belonging', requireAuth, (req, res) => {
       return res.status(400).json({ success: false, message: 'Title and category are required.' });
     }
 
-    const nextSeq = items.length + 1;
-    const refCode = `CSPC-REG-QR-${String(nextSeq).padStart(4, '0')}`;
+    const refCode = newRefCode(items, 'CSPC-REG-QR', 6);
     const user = req.session.user;
 
     const newBelonging = {

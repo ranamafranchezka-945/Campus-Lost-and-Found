@@ -127,6 +127,14 @@ function createApp() {
     }
   }));
 
+  // A session whose account was deleted starts over as a signed-out visitor.
+  app.use((req, res, next) => {
+    if (req.session?.user && authRoutes.isAccountRemoved(req.session.user.id)) {
+      return req.session.regenerate(() => next());
+    }
+    next();
+  });
+
   const databaseRequest = postgresStore.requestMiddleware();
   app.use('/api', (req, res, next) => {
     if (req.method === 'POST' && ['/items', '/items/'].includes(req.path)) return next();

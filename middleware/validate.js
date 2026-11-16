@@ -16,6 +16,9 @@ const ALLOWED_CATEGORIES = [
 // Exact CSPC addresses: no subdomains, spaces, or extra @ signs.
 const STUDENT_EMAIL = /^[a-z0-9._%+-]+@my\.cspc\.edu\.ph$/;
 const STAFF_EMAIL = /^[a-z0-9._%+-]+@cspc\.edu\.ph$/;
+// Students always use the student domain. An administrator may be on either one:
+// the school's admin can be a student officer with only an @my.cspc.edu.ph inbox.
+const isAdminEmail = email => STAFF_EMAIL.test(email) || STUDENT_EMAIL.test(email);
 
 function sanitizeString(str) {
   if (typeof str !== 'string') return '';
@@ -155,5 +158,6 @@ module.exports = {
   sanitizeString,
   passwordStrengthErrors,
   STUDENT_EMAIL,
-  STAFF_EMAIL
+  STAFF_EMAIL,
+  isAdminEmail
 };

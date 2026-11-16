@@ -13,12 +13,8 @@ function togglePasswordVisibility(inputId, btn) {
 
     // Theme toggle
     function toggleTheme() {
-      const html = document.documentElement;
-      const current = html.getAttribute('data-theme') || 'dark';
-      const next = current === 'light' ? 'dark' : 'light';
-      html.setAttribute('data-theme', next);
-      localStorage.setItem('cspc_theme', next);
-      updateThemeIcon();
+      const current = document.documentElement.getAttribute('data-theme') || 'dark';
+      switchTheme(current === 'light' ? 'dark' : 'light'); // js/main.js: smooth cross-fade
     }
 
     function updateThemeIcon() {
@@ -31,8 +27,7 @@ function togglePasswordVisibility(inputId, btn) {
     }
 
     function loadTheme() {
-      const saved = localStorage.getItem('cspc_theme') || 'dark';
-      document.documentElement.setAttribute('data-theme', saved);
+      document.documentElement.setAttribute('data-theme', resolveTheme()); // js/main.js: device setting or manual choice
       updateThemeIcon();
     }
 

@@ -764,3 +764,51 @@
   :root .type-switcher .type-option { font-size: 0.9375rem !important; }
   :root .mobile-header-signin { font-size: 0.875rem !important; }
 }
+
+/* ── Fit and readability fixes ──────────────────────────────────────────── */
+/* Search keeps a usable width; when the chips (with "My Belongings" for signed-in
+   students) no longer fit beside it, they move to their own row instead of
+   squeezing the box down to a few letters. */
+@media (min-width: 640px) {
+  :root .filter-row { flex-wrap: wrap; }
+  :root .filter-row .search-box {
+    flex: 1 1 15rem;
+    min-width: min(100%, 15rem);
+  }
+}
+
+/* The end of a reference code is the part that tells two items apart, so the
+   code is never cut off: on a narrow card it moves below the status badge. */
+:root .listing-topline { flex-wrap: wrap; }
+:root .listing-card .listing-ref {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+/* Admin: the search box matches the height and inner spacing of the filters beside it. */
+@media (min-width: 561px) {
+  :root .admin-search-row #adminSearch {
+    height: 2.5rem;
+    padding-inline: 0.85rem;
+  }
+}
+
+/* Admin: status badges stay on one line, and the amber / red ones are dark enough
+   to read on the light theme's white rows. */
+:root #adminItemsTable .status-cell .badge.admin-status-pending { white-space: nowrap; }
+[data-theme='light'] .admin-status-pending {
+  color: #92400e !important;
+  border-color: rgba(217, 119, 6, 0.5) !important;
+  background: rgba(245, 158, 11, 0.16) !important;
+}
+[data-theme='light'] .admin-status-rejected {
+  color: #b91c1c !important;
+  border-color: rgba(220, 38, 38, 0.45) !important;
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Admin, light theme: the outlined action buttons use darker greens and reds; the
+   dark theme's bright shades are too faint on white. */
+[data-theme='light'] .action-btn-claim { color: #15803d; border-color: rgba(21, 128, 61, 0.5); }
+[data-theme='light'] .action-btn-delete { color: #b91c1c; border-color: rgba(185, 28, 28, 0.45); }
+[data-theme='light'] .action-btn-outline { color: #334155; border-color: rgba(51, 65, 85, 0.45); }

@@ -12,37 +12,333 @@
   <link rel="stylesheet" href="/css/responsive.css" />
   <link rel="stylesheet" href="/css/glass.css" />
   <link rel="stylesheet" href="/css/polish.css" />
+  <link rel="stylesheet" href="/css/admin-shell.css" />
   <script src="/js/main.js"></script>
   <script src="/js/ui.js"></script>
 </head>
-<body>
-  <nav class="navbar admin-navbar" aria-label="Admin navigation">
-    <div class="navbar-container">
-      <a href="admin.html" class="nav-logo">
-        <img src="cspc-logo.png" alt="CSPC Logo" />
-        <span class="nav-logo-full">Back2You</span>
-        <span class="nav-logo-short">Back2You</span>
-      </a>
-      <div class="nav-links" id="navLinks">
-        <a href="admin.html" class="nav-active" aria-current="page">Dashboard</a>
-        <a href="#tabItems" data-admin-filter="">Browse</a>
-        <a href="#tabItems" data-admin-filter="lost">Reported Lost</a>
-        <a href="#tabItems" data-admin-filter="found">Reported Found</a>
-      </div>
-      <div class="nav-actions">
-        <button type="button" class="theme-toggle" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
-          <span class="theme-toggle-icon">Theme</span>
-        </button>
-        <div class="user-pill admin-profile" aria-label="Signed in as CSPC Admin">
-          <span class="user-name">CSPC Admin</span>
-          <button type="button" class="user-pill-logout" data-action="openAdminLogoutModal" title="Sign out of administrator account">Logout</button>
+<body class="admin-body">
+  <!-- Icons used by the sidebar, top bar and dashboard -->
+  <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <symbol id="i-dashboard" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-found" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 4.5 3.2 8.2 8 9 4.8-.8 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.3c2.2.6 3.5 2.4 3.5 5.7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7.5 2 7.5H4S6 15 6 9Z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="m16 8 4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </svg>
+
+  <a class="skip-link" href="#adminMain">Skip to content</a>
+
+  <div class="admin-app" id="adminApp">
+    <!-- ── Sidebar ── -->
+    <aside class="admin-sidebar" id="adminSidebar" aria-label="Admin navigation">
+      <div class="side-brand">
+        <img src="cspc-logo.png" alt="" width="40" height="40" />
+        <div class="side-brand-text">
+          <strong>Back2You</strong>
+          <span>Lost &amp; Found Admin</span>
         </div>
-        <button type="button" class="menu-toggle" id="menuToggle" aria-label="Toggle admin navigation menu">
-          <span></span><span></span><span></span>
-        </button>
+        <button type="button" class="side-close" id="sidebarClose" aria-label="Close navigation menu"><svg class="ico"><use href="#i-close"/></svg></button>
       </div>
+
+      <nav class="side-nav">
+        <p class="side-group">Main</p>
+        <button type="button" class="side-link active" data-view="dashboard"><svg class="ico"><use href="#i-dashboard"/></svg><span>Dashboard</span></button>
+
+        <p class="side-group">Items</p>
+        <button type="button" class="side-link" data-view="items" data-admin-filter="lost"><svg class="ico"><use href="#i-search"/></svg><span>Lost items</span><span class="side-count" id="countLost" hidden></span></button>
+        <button type="button" class="side-link" data-view="items" data-admin-filter="found"><svg class="ico"><use href="#i-found"/></svg><span>Found items</span><span class="side-count" id="countFound" hidden></span></button>
+        <button type="button" class="side-link" data-view="items" data-admin-filter=""><svg class="ico"><use href="#i-list"/></svg><span>All items</span></button>
+        <button type="button" class="side-link" data-view="claims"><svg class="ico"><use href="#i-shield"/></svg><span>Claim verification</span><span class="side-count side-count--alert" id="countClaims" hidden></span></button>
+        <button type="button" class="side-link" data-view="broadcast"><svg class="ico"><use href="#i-megaphone"/></svg><span>Broadcast message</span></button>
+
+        <p class="side-group">Administrator</p>
+        <button type="button" class="side-link" data-view="users"><svg class="ico"><use href="#i-users"/></svg><span>User management</span></button>
+        <button type="button" class="side-link" data-view="belongings"><svg class="ico"><use href="#i-lock"/></svg><span>Students' belongings</span></button>
+      </nav>
+
+      <div class="side-foot">
+        <div class="side-profile">
+          <span class="avatar" id="sideAvatar" aria-hidden="true">A</span>
+          <span class="side-profile-text"><strong id="sideName">Administrator</strong><small>Administrator</small></span>
+        </div>
+        <button type="button" class="side-logout" data-action="openAdminLogoutModal" title="Sign out of administrator account" aria-label="Sign out"><svg class="ico"><use href="#i-logout"/></svg></button>
+      </div>
+    </aside>
+    <div class="side-backdrop" id="sideBackdrop"></div>
+
+    <div class="admin-main">
+      <!-- ── Top bar ── -->
+      <header class="admin-topbar">
+        <button type="button" class="topbar-btn topbar-menu" id="sidebarToggle" aria-label="Open navigation menu" aria-controls="adminSidebar" aria-expanded="false"><svg class="ico"><use href="#i-menu"/></svg></button>
+        <label class="topbar-search">
+          <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="search" id="adminSearch" placeholder="Search reports…" aria-label="Search reports by item, reporter, category or location" autocomplete="off" />
+        </label>
+        <div class="topbar-actions">
+          <button type="button" class="theme-toggle topbar-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
+            <span class="theme-toggle-icon">Theme</span>
+          </button>
+          <button type="button" class="topbar-btn topbar-bell" id="adminBell" data-action="showAdminView" data-args='["claims"]' aria-label="Claims waiting for review" title="Claims waiting for review">
+            <svg class="ico"><use href="#i-bell"/></svg>
+            <span class="bell-count" id="bellCount" hidden>0</span>
+          </button>
+          <div class="topbar-user">
+            <span class="avatar" id="topAvatar" aria-hidden="true">A</span>
+            <span class="topbar-user-text"><strong id="topName">Administrator</strong><small>Administrator</small></span>
+          </div>
+        </div>
+      </header>
+
+      <main class="admin-content" id="adminMain">
+
+        <!-- ── Dashboard ── -->
+        <section class="admin-view" id="tabDashboard" aria-labelledby="dashTitle">
+          <div class="view-head">
+            <div>
+              <h1 id="dashTitle">Dashboard</h1>
+              <p id="dashWelcome">Welcome back. Here is what is happening with lost and found reports.</p>
+            </div>
+            <button type="button" class="btn btn-outline view-head-btn" data-action="exportCSV"><svg class="ico"><use href="#i-download"/></svg>Export CSV</button>
+          </div>
+
+          <div class="kpi-row" id="kpiRow"><p class="viz-empty">Loading…</p></div>
+
+          <div class="dash-row dash-row--wide">
+            <article class="dash-card" aria-labelledby="trendTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="trendTitle">Reports per month</h2>
+                  <p>New lost and found reports over the last six months</p>
+                </div>
+                <div class="card-tools">
+                  <ul class="viz-legend" aria-label="Chart legend">
+                    <li><i class="sw sw--lost" aria-hidden="true"></i>Lost</li>
+                    <li><i class="sw sw--found" aria-hidden="true"></i>Found</li>
+                  </ul>
+                  <button type="button" class="viz-toggle" id="trendTableToggle" data-action="toggleTrendTable" data-args='["$el"]' aria-pressed="false">View as table</button>
+                </div>
+              </div>
+              <div class="trend-wrap" id="trendWrap">
+                <div id="trendPlot"></div>
+                <div class="viz-tip" id="trendTip" role="tooltip" hidden></div>
+                <div class="trend-table-wrap" id="trendTable" hidden></div>
+              </div>
+            </article>
+
+            <article class="dash-card" aria-labelledby="rateTitle">
+              <div class="card-head">
+                <div>
+                  <h2 id="rateTitle">Resolution rate</h2>
+                  <p>Reports that ended with the item returned</p>
+                </div>
+              </div>
+              <div id="claimMeter"><p class="viz-empty">Loading…</p></div>
+            </article>
+          </div>
+
+          <div class="dash-row dash-row--even">
+            <article class="dash-card" aria-labelledby="catTitle">
+              <div class="card-head"><div><h2 id="catTitle">Top categories</h2><p>Most reported kinds of items</p></div></div>
+              <div class="rank-list" id="topCategories"><p class="viz-empty">Loading…</p></div>
+            </article>
+            <article class="dash-card" aria-labelledby="locTitle">
+              <div class="card-head"><div><h2 id="locTitle">Top locations</h2><p>Offices and areas with the most reports</p></div></div>
+              <div class="rank-list" id="topLocations"><p class="viz-empty">Loading…</p></div>
+            </article>
+          </div>
+
+          <div class="dash-row dash-row--even">
+            <article class="dash-card" aria-labelledby="waitTitle">
+              <div class="card-head">
+                <div><h2 id="waitTitle">Claims waiting for review</h2><p>Oldest first, so nobody waits too long</p></div>
+                <button type="button" class="link-btn" data-action="showAdminView" data-args='["claims"]'>View all</button>
+              </div>
+              <div id="dashClaims"><p class="viz-empty">Loading…</p></div>
+            </article>
+            <article class="dash-card" aria-labelledby="latestTitle">
+              <div class="card-head">
+                <div><h2 id="latestTitle">Latest reports</h2><p>The five most recent lost and found reports</p></div>
+                <button type="button" class="link-btn" data-action="showAdminItems" data-args='[""]'>View all</button>
+              </div>
+              <div id="dashRecent"><p class="viz-empty">Loading…</p></div>
+            </article>
+          </div>
+        </section>
+
+        <!-- ── Items (all / lost / found) ── -->
+        <section class="admin-view" id="tabItems" aria-labelledby="itemsHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="itemsHeading">All items</h1>
+              <p id="itemsSubheading">Every lost and found report. Update statuses, review claims or remove reports.</p>
+            </div>
+            <button type="button" class="btn btn-outline view-head-btn" data-action="exportCSV"><svg class="ico"><use href="#i-download"/></svg>Export all</button>
+          </div>
+          <div class="admin-search-row">
+            <select class="form-control" id="adminFilterStatus" aria-label="Filter by status">
+              <option value="">All statuses</option>
+              <option value="active">Active</option>
+              <option value="claimed">Claimed</option>
+              <option value="archived">Archived</option>
+            </select>
+            <select class="form-control" id="adminFilterDate" aria-label="Filter by date">
+              <option value="">Any date</option>
+              <option value="today">Today</option>
+              <option value="week">This week</option>
+              <option value="month">This month</option>
+            </select>
+          </div>
+          <div class="bulk-toolbar" id="bulkToolbar" aria-live="polite">
+            <label><input class="admin-checkbox" type="checkbox" id="selectAllItems" /> Select all visible</label>
+            <span id="selectedItemsCount">0 selected</span>
+            <button class="action-btn action-btn-claim" id="bulkClaimBtn" disabled>Mark Claimed</button>
+            <button class="action-btn action-btn-outline" id="bulkArchiveBtn" disabled>Archive Selected</button>
+            <button class="action-btn action-btn-delete" id="bulkDeleteBtn" disabled>Delete Selected</button>
+            <button class="action-btn action-btn-outline" id="exportSelectedBtn" disabled>Export Selected</button>
+          </div>
+          <div class="admin-table-card">
+            <div class="admin-table-wrap admin-items-table-wrap admin-table-scroll">
+            <table id="adminItemsTable">
+              <colgroup>
+                <col style="width:5%" />
+                <col style="width:11%" />
+                <col style="width:9%" />
+                <col style="width:11%" />
+                <col style="width:17%" />
+                <col style="width:16%" />
+                <col style="width:9%" />
+                <col style="width:11%" />
+                <col style="width:11%" />
+              </colgroup>
+              <thead>
+                <tr>
+                  <th title="Row number"><span class="table-select-cell"># / ID</span></th>
+                  <th>Item</th>
+                  <th>Type</th>
+                  <th><button class="sort-button" data-sort="category">Category</button></th>
+                  <th>Location</th>
+                  <th>Reporter</th>
+                  <th><button class="sort-button" data-sort="date">Date</button></th>
+                  <th><button class="sort-button" data-sort="status">Status</button></th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminTableBody"></tbody>
+            </table>
+            </div>
+            <div class="admin-pagination" id="adminPagination" aria-label="Items table pagination">
+              <span class="pagination-summary" id="paginationSummary" aria-live="polite"></span>
+              <div class="pagination-controls" id="paginationControls"></div>
+            </div>
+          </div>
+          <div id="adminEmptyState" style="display:none;" class="empty-state">
+            <h3>No items found</h3>
+          </div>
+        </section>
+
+        <!-- ── Claim verification ── -->
+        <section class="admin-view" id="tabClaimQueue" aria-labelledby="claimsHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="claimsHeading">Claim verification</h1>
+              <p>Check each claimant's proof against the finder's report before an item is handed over.</p>
+            </div>
+            <div class="seg" role="group" aria-label="Which claims to show">
+              <button type="button" class="seg-btn active" data-claims-filter="pending" aria-pressed="true">Waiting <span id="segPending"></span></button>
+              <button type="button" class="seg-btn" data-claims-filter="all" aria-pressed="false">All claims</button>
+            </div>
+          </div>
+          <div class="admin-table-card">
+            <div class="admin-table-wrap admin-table-scroll">
+              <table id="adminClaimsTable">
+                <thead><tr><th>Item</th><th>Claimant</th><th>Submitted</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody id="adminClaimsBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="adminClaimsEmptyState" class="empty-state" hidden><h3>No claims waiting</h3><p>New ownership claims will show up here.</p></div>
+        </section>
+
+        <!-- ── Broadcast ── -->
+        <section class="admin-view" id="tabBroadcast" aria-labelledby="broadcastHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="broadcastHeading">Broadcast message</h1>
+              <p>Send an announcement to registered students by email.</p>
+            </div>
+          </div>
+          <div class="broadcast-card">
+            <label for="broadcastSubject">Subject</label>
+            <input class="form-control" id="broadcastSubject" maxlength="120" placeholder="Announcement subject" />
+            <label for="broadcastMessage">Message</label>
+            <textarea class="claim-review-input" id="broadcastMessage" maxlength="2000" rows="5" placeholder="Write the announcement..."></textarea>
+            <div class="broadcast-actions"><button class="btn btn-primary" id="sendBroadcastBtn">Send Broadcast</button></div>
+          </div>
+        </section>
+
+        <!-- ── Users ── -->
+        <section class="admin-view" id="tabUsers" aria-labelledby="usersHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="usersHeading">User management</h1>
+              <p>Create and remove student or administrator accounts.</p>
+            </div>
+            <button class="btn btn-primary view-head-btn" id="openCreateUserBtn" type="button"><svg class="ico"><use href="#i-plus"/></svg>Add User</button>
+          </div>
+          <div id="userFormPanel" class="user-form-panel" hidden>
+            <h3>Add User</h3>
+            <form id="createUserForm" class="user-form-grid">
+              <label>Full name<input class="form-control" name="fullName" required maxlength="100" /></label>
+              <label>Email<input class="form-control" name="email" type="email" required /></label>
+              <label>Password<input class="form-control" name="password" type="password" required minlength="8" autocomplete="new-password" /></label>
+              <label>Role<select class="form-control" name="role"><option value="student">Student</option><option value="admin">Administrator</option></select></label>
+              <label>Student ID<input class="form-control" name="studentId" maxlength="30" value="N/A" /></label>
+              <label>Department<select class="form-control" name="department" required>
+                <option value="">Select department</option>
+                <option>College of Computer Studies (CCS)</option><option>College of Engineering and Architecture (CEA)</option>
+                <option>College of Health Sciences (CHS)</option><option>College of Tourism, Hospitality and Business Management (CTHBM)</option>
+                <option>College of Technological and Developmental Education (CTDE)</option><option>College of Arts and Sciences (CAS)</option>
+                <option>Administration</option>
+              </select></label>
+              <div class="user-form-actions"><button class="btn btn-outline" id="cancelCreateUserBtn" type="button">Cancel</button><button class="btn btn-primary" type="submit">Create User</button></div>
+            </form>
+          </div>
+          <div class="admin-table-card"><div class="admin-table-wrap admin-table-scroll"><table id="adminUsersTable"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Created</th><th>Actions</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div></div>
+          <div id="adminUsersEmptyState" class="empty-state" hidden><h3>No users found</h3></div>
+        </section>
+
+        <!-- ── Students' belongings ── -->
+        <section class="admin-view" id="tabBelongings" aria-labelledby="belongingsHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="belongingsHeading">Students' belongings</h1>
+              <p>View belongings registered by students for QR-based recovery.</p>
+            </div>
+          </div>
+          <div class="admin-table-card">
+            <div class="admin-table-wrap admin-table-scroll">
+              <table id="adminBelongingsTable">
+                <thead><tr><th>Belonging</th><th>Student</th><th>Category</th><th>Location</th><th>QR Reference</th><th>Registered</th><th>Actions</th></tr></thead>
+                <tbody id="adminBelongingsBody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="adminBelongingsEmptyState" class="empty-state" hidden><h3>No registered belongings found</h3></div>
+        </section>
+
+      </main>
     </div>
-  </nav>
+  </div>
 
   <div class="slip-overlay" id="adminLogoutModal" data-close="closeAdminLogoutModal">
     <div style="background:#18181b;border:1px solid var(--border);border-radius:16px;padding:1.75rem;max-width:400px;width:90%;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.85);">
@@ -53,155 +349,6 @@
         <button type="button" class="btn btn-outline" data-action="closeAdminLogoutModal" style="padding:.5rem 1.25rem;">Cancel</button>
         <button type="button" class="btn btn-primary" id="confirmAdminLogoutBtn" data-action="confirmAdminLogout" style="padding:.5rem 1.25rem;">Sign Out</button>
       </div>
-    </div>
-  </div>
-
-  <div id="adminPanel">
-    <div class="page-header" style="padding-bottom: 0.5rem;">
-      <h1 style="margin-bottom: 0.45rem;">Admin Panel</h1>
-      <p>Manage all lost &amp; found reports, update statuses, and review claims.</p>
-    </div>
-
-    <div class="page-section" style="padding-top:0;">
-
-      <!-- Stats -->
-      <div class="admin-stats" id="adminStats" style="margin-top: 1rem;"></div>
-      <div class="admin-insights" id="adminInsights"></div>
-
-      <!-- Tabs -->
-      <div class="admin-tabs">
-        <button class="admin-tab active" data-tab="items">All Items</button>
-        <button class="admin-tab" data-tab="belongings">Students' Belongings</button>
-        <button class="admin-tab" data-tab="claims">Broadcast Message</button>
-        <button class="admin-tab" data-tab="users">Users</button>
-      </div>
-
-      <!-- ITEMS TAB -->
-      <div id="tabItems">
-        <div class="admin-search-row">
-          <div class="admin-search-wrap">
-            <input type="text" class="form-control" id="adminSearch" placeholder="Search items…" />
-          </div>
-          <select class="form-control" id="adminFilterStatus">
-            <option value="">All Statuses</option>
-            <option value="lost">Lost</option>
-            <option value="found">Found</option>
-            <option value="claimed">Claimed</option>
-            <option value="archived">Archived</option>
-          </select>
-          <select class="form-control" id="adminFilterDate" aria-label="Filter by date">
-            <option value="">Any Date</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-          </select>
-        </div>
-        <div class="bulk-toolbar" id="bulkToolbar" aria-live="polite">
-          <label><input class="admin-checkbox" type="checkbox" id="selectAllItems" /> Select all visible</label>
-          <span id="selectedItemsCount">0 selected</span>
-          <button class="action-btn action-btn-claim" id="bulkClaimBtn" disabled>Mark Claimed</button>
-          <button class="action-btn action-btn-outline" id="bulkArchiveBtn" disabled>Archive Selected</button>
-          <button class="action-btn action-btn-delete" id="bulkDeleteBtn" disabled>Delete Selected</button>
-          <button class="action-btn action-btn-outline" id="exportSelectedBtn" disabled>Export Selected</button>
-        </div>
-        <div class="admin-table-card">
-          <div class="admin-table-wrap admin-items-table-wrap admin-table-scroll">
-          <table id="adminItemsTable">
-            <colgroup>
-              <col style="width:5%" />
-              <col style="width:11%" />
-              <col style="width:7%" />
-              <col style="width:12%" />
-              <col style="width:21%" />
-              <col style="width:18%" />
-              <col style="width:9%" />
-              <col style="width:8%" />
-              <col style="width:9%" />
-            </colgroup>
-            <thead>
-              <tr>
-                <th title="Row number"><span class="table-select-cell"># / ID</span></th>
-                <th>Item</th>
-                <th>Type</th>
-                <th><button class="sort-button" data-sort="category">Category</button></th>
-                <th>Location</th>
-                <th>Reporter</th>
-                <th><button class="sort-button" data-sort="date">Date</button></th>
-                <th><button class="sort-button" data-sort="status">Status</button></th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="adminTableBody"></tbody>
-          </table>
-          </div>
-          <div class="admin-pagination" id="adminPagination" aria-label="Items table pagination">
-            <span class="pagination-summary" id="paginationSummary" aria-live="polite"></span>
-            <div class="pagination-controls" id="paginationControls"></div>
-          </div>
-        </div>
-        <div id="adminEmptyState" style="display:none;" class="empty-state">
-          <h3>No items found</h3>
-        </div>
-      </div>
-
-      <!-- STUDENTS' BELONGINGS TAB -->
-      <div id="tabBelongings" style="display:none;">
-        <div class="claims-tab-intro">
-          <div><h2>Students' Belongings</h2><p>View belongings registered by students for QR-based recovery.</p></div>
-        </div>
-        <div class="admin-table-card">
-          <div class="admin-table-wrap admin-table-scroll">
-            <table id="adminBelongingsTable">
-              <thead><tr><th>Belonging</th><th>Student</th><th>Category</th><th>Location</th><th>QR Reference</th><th>Registered</th><th>Actions</th></tr></thead>
-              <tbody id="adminBelongingsBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="adminBelongingsEmptyState" class="empty-state" hidden><h3>No registered belongings found</h3></div>
-      </div>
-
-      <!-- PENDING CLAIMS TAB -->
-      <div id="tabClaims" style="display:none;">
-        <div class="claims-tab-intro">
-          <div><h2>Broadcast Message</h2><p>Send an announcement to registered students by email.</p></div>
-        </div>
-        <div class="broadcast-card">
-          <label for="broadcastSubject">Subject</label>
-          <input class="form-control" id="broadcastSubject" maxlength="120" placeholder="Announcement subject" />
-          <label for="broadcastMessage">Message</label>
-          <textarea class="claim-review-input" id="broadcastMessage" maxlength="2000" rows="5" placeholder="Write the announcement..."></textarea>
-          <div class="broadcast-actions"><button class="btn btn-primary" id="sendBroadcastBtn">Send Broadcast</button></div>
-        </div>
-      </div>
-
-      <!-- USERS TAB -->
-      <div id="tabUsers" style="display:none;">
-        <div class="claims-tab-intro">
-          <div><h2>User Management</h2><p>Create and remove student or administrator accounts.</p></div>
-          <button class="btn btn-primary" id="openCreateUserBtn" type="button">Add User</button>
-        </div>
-        <div id="userFormPanel" class="user-form-panel" hidden>
-          <h3>Add User</h3>
-          <form id="createUserForm" class="user-form-grid">
-            <label>Full name<input class="form-control" name="fullName" required maxlength="100" /></label>
-            <label>Email<input class="form-control" name="email" type="email" required /></label>
-            <label>Password<input class="form-control" name="password" type="password" required minlength="8" autocomplete="new-password" /></label>
-            <label>Role<select class="form-control" name="role"><option value="student">Student</option><option value="admin">Administrator</option></select></label>
-            <label>Student ID<input class="form-control" name="studentId" maxlength="30" value="N/A" /></label>
-            <label>Department<select class="form-control" name="department" required>
-              <option value="">Select department</option>
-              <option>College of Computer Studies (CCS)</option><option>College of Engineering and Architecture (CEA)</option>
-              <option>College of Health Sciences (CHS)</option><option>College of Tourism, Hospitality and Business Management (CTHBM)</option>
-              <option>College of Technological and Developmental Education (CTDE)</option><option>College of Arts and Sciences (CAS)</option>
-              <option>Administration</option>
-            </select></label>
-            <div class="user-form-actions"><button class="btn btn-outline" id="cancelCreateUserBtn" type="button">Cancel</button><button class="btn btn-primary" type="submit">Create User</button></div>
-          </form>
-        </div>
-        <div class="admin-table-card"><div class="admin-table-wrap admin-table-scroll"><table id="adminUsersTable"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Department</th><th>Created</th><th>Actions</th></tr></thead><tbody id="adminUsersBody"></tbody></table></div></div>
-        <div id="adminUsersEmptyState" class="empty-state" hidden><h3>No users found</h3></div>
-      </div>
-
     </div>
   </div>
 
@@ -259,20 +406,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Footer -->
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <img src="cspc-logo.png" alt="" width="36" height="36" />
-        <div>
-          <p class="footer-name">Back2You</p>
-          <p class="footer-tagline">Lost &amp; found for the CSPC community</p>
-        </div>
-      </div>
-      <p class="footer-location">Camarines Sur Polytechnic Colleges<br />Nabua, Camarines Sur</p>
-    </div>
-  </footer>
 
   <script src="/js/app.js"></script>
   <script src="/js/admin.js"></script>

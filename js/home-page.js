@@ -104,6 +104,8 @@ function openChangePasswordModal() {
   if (!currentUser) return;
   document.getElementById('changePasswordEmail').textContent = currentUser.email || '';
   document.getElementById('changePasswordError').style.display = 'none';
+  // Only students can delete their own account; admins are managed on the admin page.
+  document.getElementById('deleteAccountSection').hidden = currentUser.role !== 'student';
   document.getElementById('changePasswordModal').classList.add('open');
   document.getElementById('currentPassword').focus();
 }
@@ -146,6 +148,71 @@ async function handleChangePassword(event) {
     showChangeError('Network error. Please try again.');
   } finally {
     button.disabled = false;
+  }
+}
+
+// ── Delete account (students) ─────────────────────────────────────────────
+function openDeleteAccountModal() {
+  if (!currentUser || currentUser.role !== 'student') return;
+  closeChangePasswordModal();
+  document.getElementById('deleteAccountForm').reset();
+  document.getElementById('deleteAccountEmail').textContent = currentUser.email || '';
+  document.getElementById('deleteAccountError').style.display = 'none';
+  updateDeleteAccountButton();
+  document.getElementById('deleteAccountModal').classList.add('open');
+  document.getElementById('deleteAccountPassword').focus();
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById('deleteAccountModal').classList.remove('open');
+  document.getElementById('deleteAccountForm').reset();
+}
+
+// The red button unlocks only once the password is entered and DELETE is typed.
+function updateDeleteAccountButton() {
+  const ready = document.getElementById('deleteAccountPassword').value.length > 0
+    && document.getElementById('deleteAccountConfirm').value.trim() === 'DELETE';
+  document.getElementById('deleteAccountSubmit').disabled = !ready;
+}
+
+async function handleDeleteAccount(event) {
+  event.preventDefault();
+  const errorBox = document.getElementById('deleteAccountError');
+  const button = document.getElementById('deleteAccountSubmit');
+  errorBox.style.display = 'none';
+  button.disabled = true;
+  button.textContent = 'Deleting…';
+  try {
+    const res = await fetch('/api/auth/delete-account', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        password: document.getElementById('deleteAccountPassword').value,
+        confirm: document.getElementById('deleteAccountConfirm').value.trim()
+      })
+    });
+    const data = await res.json();
+    if (data.success) {
+      clearInterval(window.notificationBadgeTimer);
+      clearStoredAuth();
+      renderGuestHeader();
+      closeDeleteAccountModal();
+      document.getElementById('itemContact').value = '';
+      if (currentFilter === 'registered') setFilter('all');
+      fetchStats();
+      fetchAndRenderItems();
+      showToast(data.message);
+    } else {
+      errorBox.textContent = data.message || 'Could not delete the account.';
+      errorBox.style.display = 'block';
+    }
+  } catch (err) {
+    errorBox.textContent = 'Network error. Please try again.';
+    errorBox.style.display = 'block';
+  } finally {
+    button.textContent = 'Delete account';
+    updateDeleteAccountButton();
   }
 }
 
@@ -1996,12 +2063,8 @@ function toggleMobileNav(e) {
 
 // Theme toggle
 function toggleTheme() {
-  const html = document.documentElement;
-  const current = html.getAttribute('data-theme') || 'dark';
-  const next = current === 'light' ? 'dark' : 'light';
-  html.setAttribute('data-theme', next);
-  localStorage.setItem('cspc_theme', next);
-  updateThemeIcon();
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  switchTheme(current === 'light' ? 'dark' : 'light'); // js/main.js: smooth cross-fade
 }
 
 function updateThemeIcon() {
@@ -2014,8 +2077,7 @@ function updateThemeIcon() {
 }
 
 function loadTheme() {
-  const saved = localStorage.getItem('cspc_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
+  document.documentElement.setAttribute('data-theme', resolveTheme()); // js/main.js: device setting or manual choice
   updateThemeIcon();
 }
 
@@ -2024,6 +2086,9 @@ document.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   setupPhotoDropZone();
   setupReportMoreDetails();
+  ['deleteAccountPassword', 'deleteAccountConfirm'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', updateDeleteAccountButton);
+  });
   setupReportPanelSticky();
   setupPhotoLightbox();
   const matchParams = new URLSearchParams(window.location.search);

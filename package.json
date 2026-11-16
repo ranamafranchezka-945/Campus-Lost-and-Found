@@ -7,7 +7,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "node --test",
-    "db:import": "node scripts/import-json-to-mysql.js"
+    "db:import": "node scripts/import-json-to-mysql.js",
+    "admin:set": "node scripts/manage-admin.js"
   },
   "keywords": [
     "cspc",

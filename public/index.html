@@ -292,13 +292,13 @@
         <div class="form-row">
           <div class="input-field" style="grid-column: 1 / -1;">
             <label for="itemContact">Contact Information (Name &amp; Phone/Email) *</label>
-            <input type="text" id="itemContact" placeholder="e.g., Juan Dela Cruz - juan.delacruz@my.cspc.edu.ph" required />
+            <input type="text" id="itemContact" placeholder="Your name and phone or email" required />
           </div>
         </div>
 
         <div class="input-field" style="margin-bottom: 1rem;">
           <label for="itemDesc">Description &amp; Identifying Details *</label>
-          <textarea id="itemDesc" placeholder="Describe the item publicly. Keep one unique identifying detail private for ownership checks." required minlength="5"></textarea>
+          <textarea id="itemDesc" placeholder="Describe it publicly, but keep one identifying detail private." required minlength="5"></textarea>
         </div>
 
         <!-- Optional fields stay folded away so the form is short; resetting the form folds them again. -->
@@ -555,6 +555,48 @@
           <button type="submit" class="btn btn-primary" id="changePasswordSubmit">Save Password</button>
         </div>
       </form>
+
+      <!-- Students only (hidden for admins by js/home-page.js) -->
+      <div class="account-danger" id="deleteAccountSection">
+        <div>
+          <p class="account-danger-title">Delete account</p>
+          <p class="account-danger-text">Permanently remove your account and personal data.</p>
+        </div>
+        <button type="button" class="btn btn-outline btn-compact account-danger-btn" data-action="openDeleteAccountModal">Delete account</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+  <div class="slip-overlay" id="deleteAccountModal" data-close="closeDeleteAccountModal">
+    <div class="modal-card modal-card--sm modal-card--danger">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title modal-heading modal-heading--flush modal-confirm-title--danger">Delete your account?</h2>
+          <p class="modal-subtitle" id="deleteAccountEmail"></p>
+        </div>
+        <button type="button" class="modal-close" data-action="closeDeleteAccountModal" aria-label="Close">&times;</button>
+      </div>
+      <form id="deleteAccountForm" data-submit="handleDeleteAccount">
+        <p class="modal-body-text">This cannot be undone. Deleting your account will:</p>
+        <ul class="account-delete-list">
+          <li><strong>Delete</strong> your registered belongings and their QR stickers, your lost-item reports, your pending claims and your notifications.</li>
+          <li><strong>Keep, without your name or contact details,</strong> found items you reported (so their owners can still claim them) and claims that were already decided.</li>
+        </ul>
+        <div class="input-field modal-field">
+          <label for="deleteAccountPassword">Your password</label>
+          <input type="password" id="deleteAccountPassword" autocomplete="current-password" required />
+        </div>
+        <div class="input-field modal-field">
+          <label for="deleteAccountConfirm">Type DELETE to confirm</label>
+          <input type="text" id="deleteAccountConfirm" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DELETE" required />
+        </div>
+        <p id="deleteAccountError" class="modal-error" role="alert" style="display: none;"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" data-action="closeDeleteAccountModal">Keep my account</button>
+          <button type="submit" class="btn btn-danger" id="deleteAccountSubmit" disabled>Delete account</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -728,7 +770,7 @@
 
         <div class="input-field modal-field">
           <label for="finderMessageInput">Message for the Owner <span class="required">*</span></label>
-          <textarea id="finderMessageInput" rows="2" required placeholder="e.g. Hi! Found your item near table 5. Handed it over to campus security desk."></textarea>
+          <textarea id="finderMessageInput" rows="3" required placeholder="e.g. Hi! Found your item near table 5. Handed it over to campus security desk."></textarea>
         </div>
 
         <div class="input-field modal-field modal-field--last">

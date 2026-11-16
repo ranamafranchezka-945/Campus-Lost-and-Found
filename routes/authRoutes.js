@@ -1,17 +1,22 @@
 // routes/authRoutes.js - User Authentication, Registration, and Session Management
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
-const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL } = require('../middleware/validate');
+const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL, isAdminEmail } = require('../middleware/validate');
 const { sendVerificationCodeEmail, sendPasswordResetEmail } = require('../services/email');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
 const postgresStore = require('../services/postgresStore');
+const supabaseStorage = require('../services/supabaseStorage');
 const { requireAuth, requireRole } = require('../middleware/auth');
+const { isRateLimited, recordAttempt } = require('../middleware/rateLimit');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const ITEMS_FILE = path.join(DATA_DIR, 'items.json');
+const CLAIMS_FILE = path.join(DATA_DIR, 'claims.json');
 const STUDENT_DEPARTMENTS = new Set([
   'College of Computer Studies (CCS)',
   'College of Engineering and Architecture (CEA)',
@@ -35,27 +40,6 @@ const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equalizer-not-a-real-passwor
 const loginFailures = new Map();
 const registrationAttempts = new Map();
 const resetRequests = new Map();
-
-// In-memory fixed-window counters; enough for a single app instance.
-function isRateLimited(store, key, limit) {
-  const entry = store.get(key);
-  if (!entry) return false;
-  if (Date.now() - entry.start > limit.windowMs) {
-    store.delete(key);
-    return false;
-  }
-  return entry.count >= limit.max;
-}
-
-function recordAttempt(store, key, limit) {
-  const entry = store.get(key);
-  if (!entry || Date.now() - entry.start > limit.windowMs) {
-    if (store.size > 10000) store.clear();
-    store.set(key, { start: Date.now(), count: 1 });
-  } else {
-    entry.count += 1;
-  }
-}
 
 function hashToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -85,6 +69,8 @@ function minimumPasswordLength(user) {
 }
 
 async function deliverAccountEmail(send, user, token, devPath) {
+  // Save and unlock the database first so a slow mail server does not hold up other requests.
+  await postgresStore.commitRequest();
   try {
     await send(user, token);
     return true;
@@ -121,6 +107,8 @@ function accountFingerprint(user) {
 }
 
 async function deliverOtpEmail(user, code, purpose) {
+  // Save and unlock the database first so a slow mail server does not hold up other requests.
+  await postgresStore.commitRequest();
   try {
     await sendVerificationCodeEmail(user, code, purpose, OTP_TTL_MS / 60000);
     return true;
@@ -200,14 +188,14 @@ function ensureDefaultAdminAccount() {
   const ensureAccount = () => {
     const users = getUsers();
     const adminEmail = (process.env.ADMIN_EMAIL || 'admin@cspc.edu.ph').trim().toLowerCase();
-    if (!STAFF_EMAIL.test(adminEmail)) {
-      throw new Error('ADMIN_EMAIL must be a valid @cspc.edu.ph address.');
+    if (!isAdminEmail(adminEmail)) {
+      throw new Error('ADMIN_EMAIL must be a valid @cspc.edu.ph or @my.cspc.edu.ph address.');
     }
 
     const existingAdmin = users.find(user => user.email.toLowerCase() === adminEmail);
     if (existingAdmin) {
       if (existingAdmin.role !== 'admin') {
-        throw new Error(`${adminEmail} is reserved for the administrator account.`);
+        throw new Error(`${adminEmail} already belongs to a student account. Run "npm run admin:set" to make it the administrator.`);
       }
       if (process.env.NODE_ENV === 'production' && process.env.ADMIN_PASSWORD_RESET === 'true') {
         const password = process.env.ADMIN_PASSWORD;
@@ -343,8 +331,8 @@ router.post('/login', validateUserAuth, async (req, res) => {
     const users = getUsers();
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-    // Students may only use @my.cspc.edu.ph; @cspc.edu.ph is reserved for admin accounts.
-    const domainAllowed = Boolean(user) && (user.role === 'admin' ? STAFF_EMAIL.test(email) : STUDENT_EMAIL.test(email));
+    // Students may only use @my.cspc.edu.ph; an admin account may be on either CSPC domain.
+    const domainAllowed = Boolean(user) && (user.role === 'admin' ? isAdminEmail(email) : STUDENT_EMAIL.test(email));
     // Always run bcrypt so response time does not reveal whether the account exists.
     const isMatch = await bcrypt.compare(password, domainAllowed ? user.passwordHash : DUMMY_PASSWORD_HASH);
     if (!domainAllowed || !isMatch) {
@@ -577,6 +565,128 @@ router.post('/change-password', requireAuth, async (req, res) => {
   }
 });
 
+// Accounts deleted since the server started. Their sessions are refused (server.js),
+// including one the session store re-saves from a request that was still finishing.
+const removedAccountIds = new Set();
+function isAccountRemoved(userId) {
+  return removedAccountIds.has(String(userId));
+}
+
+// Removes a student's data when they delete their account.
+//   Deleted:    their registered belongings, their lost reports, their pending claims,
+//               their inbox notifications, shared meetup locations, and those items' photos.
+//   Anonymised: found reports they posted (the owner must still be able to claim the
+//               item) and claims that were already decided (the school's record).
+// Returns the photos to remove from storage.
+function eraseStudentData(user) {
+  const userId = String(user.id);
+  const items = readJsonArray(ITEMS_FILE);
+  const removedItemIds = new Set();
+  const photos = [];
+  const keptItems = items.filter(item => {
+    const isTheirs = String(item.reportedBy) === userId;
+    if (isTheirs && (item.type === 'registered' || item.type === 'lost')) {
+      removedItemIds.add(String(item.id));
+      if (item.photo) photos.push(item.photo);
+      return false;
+    }
+    return true;
+  });
+  keptItems.forEach(item => {
+    if (String(item.reportedBy) !== userId) return;
+    item.reportedBy = 'guest';
+    item.contact = 'Reporter account deleted. Please contact the Back2You admin.';
+    delete item.reporterName;
+    delete item.reporterEmail;
+    delete item.ownerName;
+    delete item.ownerEmail;
+    delete item.notifications;
+  });
+  writeJsonArray(ITEMS_FILE, keptItems);
+
+  const anonymisedItemIds = new Set(keptItems.filter(item => item.reportedBy === 'guest').map(item => String(item.id)));
+  const claims = readJsonArray(CLAIMS_FILE).filter(claim => {
+    const isClaimant = String(claim.claimantId) === userId;
+    // Undecided claims by them, and claims tied to a lost report that no longer exists.
+    if (isClaimant && claim.status === 'pending') return false;
+    if (claim.status === 'pending' && removedItemIds.has(String(claim.lostItemId))) return false;
+    return true;
+  });
+  claims.forEach(claim => {
+    const isClaimant = String(claim.claimantId) === userId;
+    if (isClaimant) {
+      claim.claimantId = 'deleted-account';
+      claim.claimantName = 'Deleted account';
+      claim.claimantEmail = '';
+      claim.claimantContact = '';
+      claim.claimantStudentId = '';
+      claim.claimantCourseYear = '';
+      claim.claimantDepartment = '';
+      claim.proof = 'Removed with the account.';
+      delete claim.notification;
+    }
+    // No more handover meetup with a person who has left.
+    if (isClaimant || anonymisedItemIds.has(String(claim.itemId))) delete claim.meetup;
+  });
+  writeJsonArray(CLAIMS_FILE, claims);
+  return photos;
+}
+
+async function removeStoredPhotos(photos) {
+  for (const photo of photos) {
+    try {
+      if (typeof photo === 'string' && photo.startsWith('/uploads/')) {
+        fs.rmSync(path.join(DATA_DIR, 'uploads', path.basename(photo)), { force: true });
+      }
+      if (supabaseStorage.objectKey(photo)) await supabaseStorage.deleteImage(photo);
+    } catch (error) {
+      console.error('A photo could not be removed with the deleted account:', error.message);
+    }
+  }
+}
+
+// POST /api/auth/delete-account - A student permanently deletes their own account.
+router.post('/delete-account', requireAuth, async (req, res) => {
+  const attemptKey = `${req.ip}|${req.session.user.email}`;
+  if (isRateLimited(loginFailures, attemptKey, LOGIN_LIMIT)) {
+    return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please wait 15 minutes and try again.' });
+  }
+
+  try {
+    const users = getUsers();
+    const index = users.findIndex(u => String(u.id) === String(req.session.user.id));
+    if (index === -1) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
+    const user = users[index];
+    if (user.role !== 'student') {
+      return res.status(403).json({ success: false, message: 'Admin accounts are removed by another administrator from the admin page.' });
+    }
+    if (req.body.confirm !== 'DELETE') {
+      return res.status(400).json({ success: false, message: 'Type DELETE to confirm that you want to delete your account.' });
+    }
+    const passwordMatches = typeof req.body.password === 'string'
+      && await bcrypt.compare(req.body.password, user.passwordHash);
+    if (!passwordMatches) {
+      recordAttempt(loginFailures, attemptKey, LOGIN_LIMIT);
+      return res.status(400).json({ success: false, message: 'Your password is incorrect.' });
+    }
+
+    const photos = eraseStudentData(user);
+    users.splice(index, 1);
+    saveUsers(users);
+    removedAccountIds.add(String(user.id));
+    loginFailures.delete(attemptKey);
+    await postgresStore.commitRequest();
+    await removeStoredPhotos(photos);
+
+    req.session.destroy(() => {
+      res.clearCookie('cspc.sid');
+      res.json({ success: true, message: 'Your account and personal data have been deleted.' });
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Could not delete the account. Please try again.' });
+  }
+});
+
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
   req.session.destroy(err => {
@@ -623,8 +733,8 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     const errors = [];
 
     if (!fullName || fullName.length < 2 || fullName.length > 100) errors.push('Full name must be between 2 and 100 characters.');
-    if ((role === 'student' && !STUDENT_EMAIL.test(email)) || (role === 'admin' && !STAFF_EMAIL.test(email))) {
-      errors.push(role === 'student' ? 'Student accounts must use an @my.cspc.edu.ph email.' : 'Admin accounts must use an @cspc.edu.ph email.');
+    if ((role === 'student' && !STUDENT_EMAIL.test(email)) || (role === 'admin' && !isAdminEmail(email))) {
+      errors.push(role === 'student' ? 'Student accounts must use an @my.cspc.edu.ph email.' : 'Admin accounts must use an @cspc.edu.ph or @my.cspc.edu.ph email.');
     }
     if (passwordStrengthErrors(password, role === 'admin' ? 12 : 8).length) {
       errors.push(`Password must be at least ${role === 'admin' ? 12 : 8} characters and include uppercase, lowercase, number, and special character.`);
@@ -669,10 +779,12 @@ router.delete('/users/:id', requireRole('admin'), (req, res) => {
 
   users.splice(index, 1);
   saveUsers(users);
+  removedAccountIds.add(String(target.id));
   res.json({ success: true, message: 'User deleted successfully.' });
 });
 
 router.ensureDefaultAdminAccount = ensureDefaultAdminAccount;
 router.setOtpCodeGeneratorForTests = setOtpCodeGeneratorForTests;
+router.isAccountRemoved = isAccountRemoved;
 
 module.exports = router;

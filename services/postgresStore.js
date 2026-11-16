@@ -50,6 +50,9 @@ function writeCollection(filePath, value) {
   if (!Array.isArray(value)) throw new TypeError(`Expected an array for ${filePath}.`);
   const context = contextStorage.getStore();
   if (!context) throw new Error('PostgreSQL data can only be changed within a database transaction.');
+  // After commitRequest() (or once the response has ended) nothing more can be saved;
+  // failing loudly beats silently dropping the change.
+  if (context.done) throw new Error('This request\'s database transaction has already been committed.');
   const name = getCollectionName(filePath);
   context.data[name] = value;
   context.dirty.add(name);
@@ -163,9 +166,16 @@ async function acquireContext() {
   }
 }
 
-async function finishContext(context, commit) {
-  if (context.finished) return;
-  context.finished = true;
+// Commits or rolls back once; later calls get the outcome of the first.
+function finishContext(context, commit) {
+  if (!context.done) {
+    context.finished = true;
+    context.done = settleContext(context, commit);
+  }
+  return context.done;
+}
+
+async function settleContext(context, commit) {
   try {
     if (commit) {
       for (const name of context.dirty) await saveCollection(context.connection, name, context.data[name]);
@@ -193,6 +203,15 @@ async function withTransaction(callback) {
     });
     throw error;
   }
+}
+
+// Saves this request's changes and releases the database lock before the response is
+// sent. Call it ahead of slow work that needs no more saving (sending email, talking to
+// file storage) so other requests are not kept waiting. Data read earlier stays usable;
+// saving after this throws. Does nothing when PostgreSQL is not in use.
+async function commitRequest() {
+  const context = contextStorage.getStore();
+  if (context) await finishContext(context, true);
 }
 
 function requestMiddleware() {
@@ -223,8 +242,11 @@ function requestMiddleware() {
       }
     };
     res.once('close', rollbackOnClose);
+    let ending = false;
     res.end = function (...args) {
-      if (context.finished) return this;
+      if (ending) return this;
+      ending = true;
+      // Already settled when the handler called commitRequest(); then this only waits for it.
       finishContext(context, res.statusCode < 500).then(() => {
         res.removeListener('close', rollbackOnClose);
         originalEnd.apply(res, args);
@@ -308,6 +330,7 @@ async function close() {
 
 module.exports = {
   close,
+  commitRequest,
   importJsonFiles,
   initialize,
   isConfigured,

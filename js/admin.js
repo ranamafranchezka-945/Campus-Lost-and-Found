@@ -1,6 +1,7 @@
 let deleteTargetId = null;
 let restoreTarget = null;
-    let activeTab = 'items';
+    let activeTab = 'dashboard';
+    let adminClaimsFilter = 'pending';
     let adminItems = [];
     let claimRequests = [];
     let adminClaimsSignature = null;
@@ -35,6 +36,7 @@ let restoreTarget = null;
         const data = await response.json();
         if (response.ok && data.authenticated && data.user?.role === 'admin') {
           window.currentAdminUserId = data.user.id;
+          renderAdminIdentity(data.user);
           installDashboardBackGuard();
           return true;
         }
@@ -58,26 +60,28 @@ let restoreTarget = null;
         refreshAdminClaims();
       }, 5000);
 
-      document.querySelectorAll('[data-admin-filter]').forEach(link => {
-        link.addEventListener('click', event => {
-          event.preventDefault();
-          showAdminItems(link.dataset.adminFilter);
+      // Sidebar navigation (the items links carry the lost / found filter)
+      document.querySelectorAll('.side-link[data-view]').forEach(link => {
+        link.addEventListener('click', () => {
+          if (link.dataset.view === 'items') showAdminItems(link.dataset.adminFilter || '');
+          else showAdminView(link.dataset.view);
+          closeSidebar();
         });
       });
-
-    // Tabs
-      document.querySelectorAll('.admin-tab').forEach(tab => {
-        tab.addEventListener('click', () => {
-          activeTab = tab.dataset.tab;
-          document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-          tab.classList.add('active');
-          document.getElementById('tabItems').style.display = activeTab === 'items' ? 'block' : 'none';
-          document.getElementById('tabBelongings').style.display = activeTab === 'belongings' ? 'block' : 'none';
-          document.getElementById('tabClaims').style.display = activeTab === 'claims' ? 'block' : 'none';
-          document.getElementById('tabUsers').style.display = activeTab === 'users' ? 'block' : 'none';
-          if (activeTab === 'users') renderAdminUsers();
-        });
+      document.getElementById('sidebarToggle').addEventListener('click', openSidebar);
+      document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
+      document.getElementById('sideBackdrop').addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSidebar(); });
+      document.querySelectorAll('[data-claims-filter]').forEach(button => {
+        button.addEventListener('click', () => setClaimsFilter(button.dataset.claimsFilter));
       });
+      // The top-bar search always searches items, so typing there leaves the dashboard.
+      document.getElementById('adminSearch').addEventListener('input', () => {
+        if (activeTab !== 'items') showAdminItems(adminTypeFilter);
+      });
+      bindTrendTooltip();
+      window.addEventListener('hashchange', applyAdminHash);
+      applyAdminHash();
 
       // Delete modal controls
       document.getElementById('cancelDelete').addEventListener('click',  closeDeleteModal);
@@ -307,42 +311,372 @@ let restoreTarget = null;
       }
     }
 
+    // ── Views, sidebar and identity ──────────────────────────────────────────
+    const ADMIN_VIEWS = {
+      dashboard: 'tabDashboard',
+      items: 'tabItems',
+      claims: 'tabClaimQueue',
+      broadcast: 'tabBroadcast',
+      belongings: 'tabBelongings',
+      users: 'tabUsers'
+    };
+    const ITEM_HEADINGS = {
+      '': ['All items', 'Every lost and found report. Update statuses, review claims or remove reports.'],
+      lost: ['Lost items', 'Reports from people who have lost something.'],
+      found: ['Found items', 'Reports of items that someone found and handed in.']
+    };
+
+    function showAdminView(name) {
+      if (!ADMIN_VIEWS[name]) name = 'dashboard';
+      activeTab = name;
+      Object.entries(ADMIN_VIEWS).forEach(([key, id]) => { document.getElementById(id).hidden = key !== name; });
+      syncSidebar();
+      if (name === 'users') renderAdminUsers();
+      // The address follows the view so a refresh or a shared link opens the same place.
+      // history.state is kept: the dashboard back guard stores its marker there.
+      const hash = name === 'items' ? (adminTypeFilter || 'items') : name === 'dashboard' ? '' : name;
+      try { window.history.replaceState(window.history.state, '', window.location.pathname + window.location.search + (hash ? `#${hash}` : '')); } catch (error) { /* ignore */ }
+      window.scrollTo({ top: 0 });
+    }
+
+    function showAdminItems(type = '', status = '') {
+      adminTypeFilter = type || '';
+      document.getElementById('adminFilterStatus').value = status || '';
+      adminCurrentPage = 1;
+      const [title, text] = ITEM_HEADINGS[adminTypeFilter] || ITEM_HEADINGS[''];
+      document.getElementById('itemsHeading').textContent = title;
+      document.getElementById('itemsSubheading').textContent = text;
+      showAdminView('items');
+      renderItemsTable();
+    }
+
+    function applyAdminHash() {
+      const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));
+      if (hash === 'lost' || hash === 'found') showAdminItems(hash);
+      else if (hash === 'items') showAdminItems('');
+      else showAdminView(hash);
+    }
+
+    function syncSidebar() {
+      document.querySelectorAll('.side-link[data-view]').forEach(link => {
+        const active = link.dataset.view === activeTab
+          && (link.dataset.view !== 'items' || (link.dataset.adminFilter || '') === adminTypeFilter);
+        link.classList.toggle('active', active);
+        if (active) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
+      });
+    }
+
+    function openSidebar() {
+      document.getElementById('adminSidebar').classList.add('open');
+      document.getElementById('sideBackdrop').classList.add('open');
+      document.getElementById('sidebarToggle').setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSidebar() {
+      document.getElementById('adminSidebar').classList.remove('open');
+      document.getElementById('sideBackdrop').classList.remove('open');
+      document.getElementById('sidebarToggle').setAttribute('aria-expanded', 'false');
+    }
+
+    function renderAdminIdentity(user) {
+      const name = String(user.fullName || user.email || 'Administrator').trim();
+      const initials = name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'A';
+      ['topName', 'sideName'].forEach(id => { document.getElementById(id).textContent = name; });
+      ['topAvatar', 'sideAvatar'].forEach(id => { document.getElementById(id).textContent = initials; });
+      document.getElementById('dashWelcome').textContent =
+        `Welcome back, ${name.split(/\s+/)[0]}. Here is what is happening with lost and found reports.`;
+    }
+
+    // ── Dashboard ────────────────────────────────────────────────────────────
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    function itemTime(item) {
+      const time = Date.parse(item.createdAt || item.date);
+      return Number.isFinite(time) ? time : 0;
+    }
+
+    function isResolved(item) { return Boolean(item.claimed) || item.status === 'claimed'; }
+    function isOpenItem(item) { return !isResolved(item) && item.status !== 'archived'; }
+
+    // Locations are stored as "<office> (<details>)"; ranking by office keeps one office on one bar.
+    function officeOf(item) {
+      const location = String(item.location || '').trim();
+      const details = String(item.locationDetails || '').trim();
+      if (details && location.endsWith(`(${details})`)) return location.slice(0, -(details.length + 2)).trim() || location;
+      return location || 'Unknown';
+    }
+
+    function relativeTime(value) {
+      const time = Date.parse(value);
+      if (!Number.isFinite(time)) return '';
+      const minutes = Math.round((Date.now() - time) / 60000);
+      if (minutes < 1) return 'just now';
+      if (minutes < 60) return `${minutes} min ago`;
+      const hours = Math.round(minutes / 60);
+      if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
+      const days = Math.round(hours / 24);
+      if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+      return formatDate(value);
+    }
+
+    // Round axis: at most four steps of 1, 2, 5, 10 ... so ticks are clean whole numbers.
+    function niceScale(peak) {
+      const target = Math.max(peak, 4);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(target / 4)));
+      const step = [1, 2, 5, 10].map(factor => factor * magnitude).find(size => target / size <= 4) || 10 * magnitude;
+      return { step, max: Math.ceil(target / step) * step };
+    }
+
+    function buildMonthlyTrend(items, months = 6) {
+      const now = new Date();
+      const buckets = [];
+      for (let back = months - 1; back >= 0; back -= 1) {
+        const month = new Date(now.getFullYear(), now.getMonth() - back, 1);
+        buckets.push({
+          key: `${month.getFullYear()}-${month.getMonth()}`,
+          label: month.toLocaleDateString('en-US', { month: 'short' }),
+          title: month.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          lost: 0,
+          found: 0
+        });
+      }
+      const byKey = new Map(buckets.map(bucket => [bucket.key, bucket]));
+      items.forEach(item => {
+        const time = itemTime(item);
+        if (!time || (item.type !== 'lost' && item.type !== 'found')) return;
+        const date = new Date(time);
+        const bucket = byKey.get(`${date.getFullYear()}-${date.getMonth()}`);
+        if (bucket) bucket[item.type] += 1;
+      });
+      return buckets;
+    }
+
+    function setCount(id, value) {
+      const element = document.getElementById(id);
+      element.textContent = value > 99 ? '99+' : String(value);
+      element.hidden = !value;
+    }
+
     function renderAdminPanel(items = adminItems) {
       adminItems = items;
-      const lost    = items.filter(i => i.type==='lost').length;
-      const found   = items.filter(i => i.type==='found').length;
-      const claimed = items.filter(i => i.status==='claimed').length;
-      document.getElementById('adminStats').innerHTML = `
-        <div class="stat-card stat-card--total"><div class="stat-number">${items.length}</div><div class="stat-label">Total Items</div></div>
-        <div class="stat-card stat-card--lost"><div class="stat-number">${lost}</div><div class="stat-label">Lost</div></div>
-        <div class="stat-card stat-card--found"><div class="stat-number">${found}</div><div class="stat-label">Found</div></div>
-        <div class="stat-card stat-card--claimed"><div class="stat-number">${claimed}</div><div class="stat-label">Claimed</div></div>
-      `;
-
-      renderAdminInsights(items);
-
+      renderDashboard(items);
+      renderClaimQueue();
       renderItemsTable();
     }
 
-    function renderAdminInsights(items) {
-      const categories = countValues(items, 'category').slice(0, 5);
-      const locations = countValues(items, 'location').slice(0, 5);
-      const chart = (title, values) => `<div class="insight-card"><h3>${title}</h3>${values.length ? values.map(([label, count]) => `<div class="bar-row"><span>${escHtml(label || 'Unknown')}</span><div class="bar-track"><i style="width:${Math.max(8, count / Math.max(...values.map(v => v[1])) * 100)}%"></i></div><b>${count}</b></div>`).join('') : '<p>No data yet.</p>'}</div>`;
-      document.getElementById('adminInsights').innerHTML = chart('Top Categories', categories) + chart('Top Locations', locations);
+    function renderDashboard(items) {
+      const now = Date.now();
+      const pending = claimRequests.filter(claim => claim.status === 'pending');
+      const lost = items.filter(item => item.type === 'lost');
+      const found = items.filter(item => item.type === 'found');
+      const openLost = lost.filter(isOpenItem).length;
+      const openFound = found.filter(isOpenItem).length;
+      const lastMonth = list => list.filter(item => now - itemTime(item) <= 30 * DAY_MS).length;
+      const resolved = items.filter(isResolved).length;
+      const counted = items.filter(item => item.status !== 'archived').length;
+      const rate = counted ? Math.round(resolved / counted * 100) : 0;
+      const oldest = pending.reduce((first, claim) => (!first || Date.parse(claim.createdAt) < Date.parse(first.createdAt) ? claim : first), null);
+
+      const tile = (kind, icon, label, value, sub, action, args) => `
+        <button type="button" class="kpi kpi--${kind}" data-action="${action}" data-args='${args}'>
+          <span class="kpi-text"><span class="kpi-label">${label}</span><span class="kpi-value">${value}</span><span class="kpi-sub">${sub}</span></span>
+          <span class="kpi-chip" aria-hidden="true"><svg class="ico"><use href="#i-${icon}"/></svg></span>
+        </button>`;
+      document.getElementById('kpiRow').innerHTML =
+        tile('lost', 'search', 'Open lost reports', openLost, `${lastMonth(lost)} in the last 30 days`, 'showAdminItems', '["lost"]') +
+        tile('found', 'found', 'Open found reports', openFound, `${lastMonth(found)} in the last 30 days`, 'showAdminItems', '["found"]') +
+        tile('claims', 'shield', 'Claims to review', pending.length, oldest ? `Oldest: ${escHtml(relativeTime(oldest.createdAt))}` : 'Nothing waiting', 'showAdminView', '["claims"]') +
+        tile('returned', 'box', 'Resolved reports', resolved, `${rate}% of all reports`, 'showAdminItems', '["", "claimed"]');
+
+      renderTrendChart(items);
+
+      document.getElementById('claimMeter').innerHTML = `
+        <div class="meter-head"><span class="meter-value">${rate}%</span><span class="meter-caption">of reports resolved</span></div>
+        <div class="meter-track" role="progressbar" aria-label="Resolved reports" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${rate}"><i style="width:${rate}%"></i></div>
+        <dl class="meter-facts">
+          <div><dt>Active</dt><dd>${items.filter(isOpenItem).length}</dd></div>
+          <div><dt>Resolved</dt><dd>${resolved}</dd></div>
+          <div><dt>Archived</dt><dd>${items.length - counted}</dd></div>
+        </dl>`;
+
+      renderRankList('topCategories', countValues(items, 'category').slice(0, 5));
+      renderRankList('topLocations', countValues(items, officeOf).slice(0, 5));
+
+      const waiting = [...pending].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(0, 5);
+      document.getElementById('dashClaims').innerHTML = waiting.length
+        ? `<ul class="feed">${waiting.map(claim => `
+          <li class="feed-row">
+            <div class="feed-main"><strong title="${escHtml(claim.itemTitle || 'Item')}">${escHtml(claim.itemTitle || 'Item')}</strong><small>${escHtml(claim.claimantName || 'Unknown claimant')} · ${escHtml(relativeTime(claim.createdAt))}</small></div>
+            <button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review</button>
+          </li>`).join('')}</ul>`
+        : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>All caught up. No claims are waiting.</p>';
+
+      const latest = [...items].sort((a, b) => itemTime(b) - itemTime(a)).slice(0, 5);
+      document.getElementById('dashRecent').innerHTML = latest.length
+        ? `<ul class="feed">${latest.map(item => `
+          <li class="feed-row">
+            <span class="badge ${item.type === 'lost' ? 'badge-lost' : 'badge-found'}">${escHtml(item.type)}</span>
+            <div class="feed-main"><strong title="${escHtml(item.title)}">${escHtml(item.title)}</strong><small>${escHtml(officeOf(item))} · ${escHtml(relativeTime(item.createdAt || item.date))}</small></div>
+          </li>`).join('')}</ul>`
+        : '<p class="feed-empty">No reports yet.</p>';
+
+      setCount('countLost', openLost);
+      setCount('countFound', openFound);
+      setCount('countClaims', pending.length);
+      setCount('bellCount', pending.length);
+      document.getElementById('adminBell').setAttribute('aria-label', pending.length ? `${pending.length} claim${pending.length === 1 ? '' : 's'} waiting for review` : 'No claims waiting for review');
+      document.getElementById('segPending').textContent = pending.length ? `(${pending.length})` : '';
     }
 
+    function renderRankList(id, entries) {
+      const container = document.getElementById(id);
+      if (!entries.length) {
+        container.innerHTML = '<p class="viz-empty">No data yet.</p>';
+        return;
+      }
+      const peak = entries[0][1];
+      container.innerHTML = entries.map(([label, count]) => `
+        <div class="rank-row">
+          <span class="rank-label" title="${escHtml(label)}">${escHtml(label)}</span>
+          <span class="rank-track"><i style="--w:${(count / peak).toFixed(3)}"></i><b>${count}</b></span>
+        </div>`).join('');
+    }
+
+    function renderTrendChart(items) {
+      const buckets = buildMonthlyTrend(items);
+      const plot = document.getElementById('trendPlot');
+      document.getElementById('trendTip').hidden = true;
+      // The same numbers as a table, for screen readers and anyone who prefers one.
+      document.getElementById('trendTable').innerHTML = `
+        <table class="trend-table">
+          <thead><tr><th>Month</th><th>Lost</th><th>Found</th><th>Total</th></tr></thead>
+          <tbody>${buckets.map(bucket => `<tr><td>${escHtml(bucket.title)}</td><td>${bucket.lost}</td><td>${bucket.found}</td><td>${bucket.lost + bucket.found}</td></tr>`).join('')}</tbody>
+        </table>`;
+
+      const peak = Math.max(0, ...buckets.map(bucket => Math.max(bucket.lost, bucket.found)));
+      if (!peak) {
+        plot.innerHTML = '<p class="viz-empty">No reports in the last six months.</p>';
+        return;
+      }
+      const { step, max } = niceScale(peak);
+      const ticks = [];
+      for (let value = 0; value <= max; value += step) ticks.push(value);
+      // Only the newest month prints its numbers; the tooltip and table carry the rest.
+      const column = (type, value, newest) => `<span class="trend-col trend-col--${type}" style="--h:${(value / max * 100).toFixed(2)}${value ? ';min-height:3px' : ''}">${newest && value ? `<b>${value}</b>` : ''}</span>`;
+      const months = buckets.map((bucket, index) => `
+        <div class="trend-month" tabindex="0" role="img" aria-label="${escHtml(bucket.title)}: ${bucket.lost} lost, ${bucket.found} found" data-title="${escHtml(bucket.title)}" data-lost="${bucket.lost}" data-found="${bucket.found}">
+          ${column('lost', bucket.lost, index === buckets.length - 1)}${column('found', bucket.found, index === buckets.length - 1)}
+        </div>`).join('');
+      plot.innerHTML = `
+        <div class="trend-chart" style="--n:${buckets.length}">
+          <div class="trend-area">
+            ${ticks.map(value => `<div class="trend-tick${value === 0 ? ' trend-tick--base' : ''}" style="--p:${(value / max * 100).toFixed(2)}"><span>${value}</span></div>`).join('')}
+            <div class="trend-groups">${months}</div>
+          </div>
+          <div class="trend-labels">${buckets.map(bucket => `<span>${escHtml(bucket.label)}</span>`).join('')}</div>
+        </div>`;
+    }
+
+    // One tooltip for the whole chart; each month is a hover and keyboard target.
+    function bindTrendTooltip() {
+      const wrap = document.getElementById('trendWrap');
+      const tip = document.getElementById('trendTip');
+      let active = null;
+      const hide = () => {
+        tip.hidden = true;
+        if (active) active.classList.remove('is-active');
+        active = null;
+      };
+      const show = month => {
+        if (month === active) return;
+        if (active) active.classList.remove('is-active');
+        active = month;
+        month.classList.add('is-active');
+        tip.innerHTML = `<strong>${escHtml(month.dataset.title)}</strong>`
+          + `<div><i class="sw sw--lost" aria-hidden="true"></i>Lost<b>${escHtml(month.dataset.lost)}</b></div>`
+          + `<div><i class="sw sw--found" aria-hidden="true"></i>Found<b>${escHtml(month.dataset.found)}</b></div>`;
+        tip.hidden = false;
+        const wrapBox = wrap.getBoundingClientRect();
+        const box = month.getBoundingClientRect();
+        const area = wrap.querySelector('.trend-area');
+        // Beside the month, so it never sits on top of the columns being read.
+        let left = box.right - wrapBox.left + 8;
+        if (left + tip.offsetWidth > wrapBox.width) left = box.left - wrapBox.left - tip.offsetWidth - 8;
+        tip.style.left = `${Math.max(0, left)}px`;
+        tip.style.top = `${(area ? area.getBoundingClientRect().top - wrapBox.top : 0) + 8}px`;
+      };
+      wrap.addEventListener('mouseover', event => {
+        const month = event.target.closest('.trend-month');
+        if (month) show(month); else hide();
+      });
+      wrap.addEventListener('mouseleave', hide);
+      wrap.addEventListener('focusin', event => {
+        const month = event.target.closest('.trend-month');
+        if (month) show(month);
+      });
+      wrap.addEventListener('focusout', hide);
+      document.addEventListener('click', event => { if (!event.target.closest('.trend-month')) hide(); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') hide(); });
+    }
+
+    function toggleTrendTable(button) {
+      const showTable = button.getAttribute('aria-pressed') !== 'true';
+      button.setAttribute('aria-pressed', String(showTable));
+      button.textContent = showTable ? 'View as chart' : 'View as table';
+      document.getElementById('trendPlot').hidden = showTable;
+      document.getElementById('trendTable').hidden = !showTable;
+      document.getElementById('trendTip').hidden = true;
+    }
+
+    // ── Claim verification queue ─────────────────────────────────────────────
+    function setClaimsFilter(filter) {
+      adminClaimsFilter = filter === 'all' ? 'all' : 'pending';
+      document.querySelectorAll('[data-claims-filter]').forEach(button => {
+        const on = button.dataset.claimsFilter === adminClaimsFilter;
+        button.classList.toggle('active', on);
+        button.setAttribute('aria-pressed', String(on));
+      });
+      renderClaimQueue();
+    }
+
+    function renderClaimQueue() {
+      const body = document.getElementById('adminClaimsBody');
+      const empty = document.getElementById('adminClaimsEmptyState');
+      if (!body || !empty) return;
+      const claims = adminClaimsFilter === 'pending'
+        ? claimRequests.filter(claim => claim.status === 'pending').sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
+        : claimRequests.slice();
+      empty.hidden = claims.length > 0;
+      empty.querySelector('h3').textContent = adminClaimsFilter === 'pending' ? 'No claims waiting' : 'No claims yet';
+      body.innerHTML = claims.map(claim => {
+        const status = claim.status === 'pending'
+          ? '<span class="badge admin-status-pending">Pending</span>'
+          : claim.status === 'approved'
+            ? '<span class="badge badge-claimed">Approved</span>'
+            : '<span class="badge admin-status-rejected">Rejected</span>';
+        const action = claim.status === 'pending'
+          ? `<button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review claim</button>`
+          : `<small>${claim.reviewedAt ? `Reviewed ${escHtml(formatDate(claim.reviewedAt))}` : ''}</small>`;
+        return `
+        <tr>
+          <td class="td-title">${escHtml(claim.itemTitle || 'Item')}<small>${escHtml(claim.itemRefCode || '')}</small></td>
+          <td>${escHtml(claim.claimantName || 'Unknown')}<small>${escHtml(claim.claimantEmail || '')}</small></td>
+          <td>${escHtml(formatDate(claim.createdAt))}</td>
+          <td>${status}</td>
+          <td>${action}</td>
+        </tr>`;
+      }).join('');
+    }
+
+    // key is a property name, or a function that reads the label from an item.
     function countValues(items, key) {
+      const read = typeof key === 'function' ? key : item => item[key];
       const counts = new Map();
-      items.forEach(item => counts.set(item[key] || 'Unknown', (counts.get(item[key] || 'Unknown') || 0) + 1));
+      items.forEach(item => {
+        const label = read(item) || 'Unknown';
+        counts.set(label, (counts.get(label) || 0) + 1);
+      });
       return [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    }
-
-    function showAdminItems(type) {
-      if (activeTab !== 'items') document.querySelector('.admin-tab[data-tab="items"]').click();
-      adminTypeFilter = type || '';
-      adminCurrentPage = 1;
-      renderItemsTable();
-      document.getElementById('tabItems').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function openAdminLogoutModal() {
@@ -408,7 +742,7 @@ let restoreTarget = null;
           : item.claimed || item.status === 'claimed'
           ? '<span class="badge badge-claimed">Claimed</span>'
           : pendingClaim
-            ? '<span class="badge admin-status-pending">Pending Verification</span>'
+            ? '<span class="badge admin-status-pending">Pending</span>'
             : latestClaim?.status === 'rejected'
               ? '<span class="badge admin-status-rejected">Rejected · Available</span>'
               : statusBadge(item.status);
@@ -427,7 +761,7 @@ let restoreTarget = null;
             ? reporterValues.map((value, index) => `<span class="admin-cell-wrap${index ? ' reporter-contact' : ''}">${escHtml(value)}</span>`).join('')
             : '—'}</td>
           <td title="${escHtml(date)}">${date}</td>
-          <td class="status-cell" title="${pendingClaim ? 'Pending Verification' : latestClaim?.status === 'rejected' && !item.claimed ? 'Rejected · Available' : escHtml(item.status)}">${itemStatus}</td>
+          <td class="status-cell" title="${pendingClaim ? 'Pending verification: a claim is waiting for review' : latestClaim?.status === 'rejected' && !item.claimed ? 'Rejected · Available' : escHtml(item.status)}">${itemStatus}</td>
           <td class="actions-cell">
             <div class="action-buttons">
               ${pendingClaim ? `<button class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(pendingClaim.id)}">Review Claim</button>` : ''}
