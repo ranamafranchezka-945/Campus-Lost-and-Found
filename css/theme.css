@@ -1,33 +1,61 @@
 /* Shared flat theme layer: solid surfaces, clear borders and no decorative shadows. */
 :root {
-  --clay-surface: #0b1a3b;
+  --clay-surface: #242529;
   --clay-shadow-light: transparent;
   --clay-shadow-dark: transparent;
-  --clay-edge: rgba(153, 180, 255, 0.22);
+  --clay-edge: #303746;
   --clay-raised: none;
   --clay-inset: none;
   --scene:
-    radial-gradient(ellipse 68% 88% at 88% 4%, rgba(31, 177, 247, 0.92) 0%, rgba(12, 117, 231, 0.72) 30%, rgba(0, 70, 200, 0.5) 55%, transparent 80%),
-    radial-gradient(ellipse 54% 76% at 70% 42%, rgba(0, 71, 255, 0.82) 0%, rgba(0, 57, 202, 0.5) 52%, transparent 84%),
-    linear-gradient(118deg, #020307 0%, #030916 36%, #04184d 62%, #02040a 100%);
+    radial-gradient(ellipse 54% 82% at 3% 45%, rgba(39, 82, 157, 0.2) 0%, transparent 74%),
+    radial-gradient(ellipse 48% 76% at 98% 86%, rgba(39, 82, 157, 0.16) 0%, transparent 76%),
+    linear-gradient(112deg, #191a1d 0%, #202125 52%, #1b1c20 100%);
   --panel-bg: var(--clay-surface);
   --panel-border: var(--clay-edge);
   --panel-shadow: var(--clay-raised);
   --card-glass: var(--clay-surface);
-  --card-glass-hover: #102654;
+  --card-glass-hover: #2a2c31;
   --card-border: var(--clay-edge);
   --card-shadow: var(--clay-raised);
-  --well-bg: #07152f;
-  --well-border: transparent;
+  --well-bg: #202125;
+  --well-border: #343944;
   --control-bg: var(--clay-surface);
   --control-border: var(--clay-edge);
-  --field-bg: #07152f;
-  --field-border: transparent;
-  --bar-bg: #060d20;
+  --field-bg: #202125;
+  --field-border: #343944;
+  --bar-bg: #17181b;
   --bar-border: var(--clay-edge);
-  --float-bg: #0b1a3b;
+  --float-bg: #242529;
   --float-border: var(--clay-edge);
-  --float-shadow: 12px 12px 28px var(--clay-shadow-dark), -8px -8px 22px var(--clay-shadow-light);
+  --float-shadow: none;
+  --text-main: #e5e7eb;
+  --text-muted: #9ca3af;
+  --wordmark-primary: #f8fafc;
+  --wordmark-accent: #8cb4ff;
+  --blue-main: #60a5fa;
+  --blue-light: #93c5fd;
+  --blue-dark: #60a5fa;
+  --blue-text: #93c5fd;
+  --border: rgba(255, 255, 255, 0.09);
+  --label-color: #93c5fd;
+  --option-hover: rgba(59, 130, 246, 0.13);
+  --pill-active-bg: #1d4ed8;
+  --pill-active-fg: #ffffff;
+  --pill-active-shadow: none;
+  --stat-active-bg: rgba(59, 130, 246, 0.14);
+  --stat-active-ring: rgba(96, 165, 250, 0.45);
+  --badge-lost-bg: rgba(239, 68, 68, 0.14);
+  --badge-lost-fg: #f87171;
+  --badge-lost-border: rgba(239, 68, 68, 0.34);
+  --badge-found-bg: rgba(34, 197, 94, 0.14);
+  --badge-found-fg: #4ade80;
+  --badge-found-border: rgba(34, 197, 94, 0.34);
+  --badge-claimed-bg: rgba(59, 130, 246, 0.14);
+  --badge-claimed-fg: #60a5fa;
+  --badge-claimed-border: rgba(59, 130, 246, 0.34);
+  --badge-vault-bg: rgba(59, 130, 246, 0.14);
+  --badge-vault-fg: #60a5fa;
+  --badge-vault-border: rgba(59, 130, 246, 0.34);
   --blur-bar: 0px;
   --blur-float: 0px;
   --dash-card: var(--clay-surface);
@@ -37,38 +65,62 @@
 }
 
 :root[data-theme='light'] {
-  --clay-surface: #f6f8fc;
+  --clay-surface: #ffffff;
   --clay-shadow-light: transparent;
   --clay-shadow-dark: transparent;
-  --clay-edge: rgba(39, 70, 130, 0.18);
+  --clay-edge: #e2e8f0;
   --clay-raised: none;
   --clay-inset: none;
-  --scene: linear-gradient(145deg, #e9edf5 0%, #dfe5ef 100%);
+  --scene: #f8fafc;
   --panel-bg: var(--clay-surface);
   --panel-border: var(--clay-edge);
   --panel-shadow: var(--clay-raised);
   --card-glass: var(--clay-surface);
-  --card-glass-hover: #edf2fb;
+  --card-glass-hover: #f8fafc;
   --card-border: var(--clay-edge);
   --card-shadow: var(--clay-raised);
-  --well-bg: #e9eff8;
-  --well-border: transparent;
+  --well-bg: #f1f5f9;
+  --well-border: #e2e8f0;
   --control-bg: var(--clay-surface);
   --control-border: var(--clay-edge);
   --field-bg: #ffffff;
-  --field-border: transparent;
-  --bar-bg: #f6f8fc;
+  --field-border: #e2e8f0;
+  --bar-bg: #ffffff;
   --bar-border: var(--clay-edge);
-  --float-bg: #f6f8fc;
+  --float-bg: #ffffff;
   --float-border: var(--clay-edge);
-  --float-shadow: 12px 12px 28px rgba(163, 174, 193, 0.55), -8px -8px 22px rgba(255, 255, 255, 0.92);
-  --blue-main: #4169e1;
-  --blue-light: #2d48b0;
-  --blue-dark: #2d48b0;
+  --float-shadow: none;
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --wordmark-primary: #0f172a;
+  --wordmark-accent: #1d4ed8;
+  --blue-main: #1d4ed8;
+  --blue-light: #1e40af;
+  --blue-dark: #1e40af;
+  --blue-text: #1e3a8a;
+  --accent-secondary: #d97706;
+  --pill-active-bg: #1d4ed8;
+  --pill-active-fg: #ffffff;
+  --pill-active-shadow: none;
+  --stat-active-bg: rgba(29, 78, 216, 0.1);
+  --stat-active-ring: rgba(29, 78, 216, 0.4);
   --dash-card: var(--clay-surface);
   --dash-border: var(--clay-edge);
   --dash-shadow: var(--clay-raised);
   --dash-solid: var(--clay-surface);
+}
+
+:root:not([data-theme='light']) .btn-primary,
+:root:not([data-theme='light']) button.btn-primary,
+:root:not([data-theme='light']) .admin-app .seg-btn.active {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+:root:not([data-theme='light']) .btn-primary:hover,
+:root:not([data-theme='light']) button.btn-primary:hover,
+:root:not([data-theme='light']) .admin-app .seg-btn.active:hover {
+  background: #1e40af;
 }
 
 :root body {
@@ -273,4 +325,71 @@
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
+}
+
+:root[data-theme='light'] .btn-primary,
+:root[data-theme='light'] button.btn-primary,
+:root[data-theme='light'] .admin-app .seg-btn.active {
+  background: #1d4ed8;
+  color: #ffffff;
+  box-shadow: none;
+}
+
+:root[data-theme='light'] .btn-primary:hover,
+:root[data-theme='light'] button.btn-primary:hover,
+:root[data-theme='light'] .admin-app .seg-btn.active:hover {
+  background: #1e40af;
+}
+
+:root[data-theme='light'] .hero-name {
+  background-image: linear-gradient(90deg, #0f172a 40%, #1d4ed8 100%);
+}
+
+:root[data-theme='light'] .admin-app {
+  --viz-accent: #1d4ed8;
+  --viz-lost: #1d4ed8;
+}
+
+:root[data-theme='light'] .admin-status-pending {
+  color: #92400e !important;
+  border-color: #fcd34d !important;
+  background: #fffbeb !important;
+}
+
+:root[data-theme='light'] .claim-status-pending,
+:root[data-theme='light'] .pending-claim-proof {
+  color: #92400e;
+  border-color: #fcd34d;
+}
+
+:root[data-theme='light'] .pending-claim-proof {
+  background: #fffbeb;
+}
+
+:root .nav-logo-full,
+:root .nav-logo-short,
+:root .hero-name,
+:root .footer-name,
+:root .side-brand-text strong {
+  font-family: var(--font-brand);
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  color: var(--wordmark-accent);
+  background-image: linear-gradient(90deg, var(--wordmark-primary) 0 62%, var(--wordmark-accent) 62% 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:root[data-theme='light'] .hero-name {
+  background-image: linear-gradient(90deg, var(--wordmark-primary) 0 62%, var(--wordmark-accent) 62% 100%);
+}
+
+:root .nav-logo-full,
+:root .nav-logo-short {
+  color: var(--blue-main);
+  background-image: none;
+  -webkit-background-clip: initial;
+  background-clip: initial;
+  -webkit-text-fill-color: var(--blue-main);
 }
