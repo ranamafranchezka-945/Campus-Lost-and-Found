@@ -43,7 +43,7 @@ function setAdmin(email, passwordHash) {
       id: `usr-admin-${Date.now()}`,
       email,
       passwordHash,
-      fullName: sanitizeString(process.env.ADMIN_NAME || 'CSPC Administrator'),
+      fullName: sanitizeString(process.env.ADMIN_NAME || 'System Admin'),
       studentId: 'N/A',
       role: 'admin',
       department: 'Administration',

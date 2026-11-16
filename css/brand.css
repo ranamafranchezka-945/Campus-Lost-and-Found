@@ -1,0 +1,102 @@
+/* ── Brand layer: royal blue + DM Sans ──────────────────────────────────────
+   Loaded last on the public pages (home, sign in / register, about) so they share one look
+   with the admin dashboard. It only swaps colour tokens, the solid blue fills and the
+   typeface; layout and components stay as they are.
+
+   Royal blue is #4169E1. Dark mode uses a slightly brighter #5B82F0 so blue text and
+   fills keep their contrast on the dark surface. */
+
+:root {
+  --font-brand: 'DM Sans', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --blue-light: #9fb4f7;
+  --blue-main: #5b82f0;
+  --blue-dark: #4169e1;
+  --blue-text: #2d48b0;
+  --border: rgba(91, 130, 240, 0.2);
+  --label-color: #9fb4f7;
+  --glow-rgb: 65, 105, 225;
+  --well-border: rgba(91, 130, 240, 0.32);
+  --option-hover: rgba(91, 130, 240, 0.18);
+  --pill-active-bg: linear-gradient(180deg, #5b82f0 0%, #3556cc 100%);
+  --pill-active-shadow: 0 8px 18px -8px rgba(65, 105, 225, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --stat-active-bg: linear-gradient(160deg, rgba(91, 130, 240, 0.26), rgba(91, 130, 240, 0.1));
+  --stat-active-ring: rgba(130, 160, 250, 0.65);
+}
+:root[data-theme='light'] {
+  --blue-light: #2f4fc4;
+  --blue-main: #4169e1;
+  --blue-dark: #2d48b0;
+  --blue-text: #1f3a8a;
+  --border: rgba(65, 105, 225, 0.2);
+  --label-color: #1f3a8a;
+  --glow-rgb: 65, 105, 225;
+  --well-border: rgba(65, 105, 225, 0.22);
+  --control-border: rgba(65, 105, 225, 0.2);
+  --field-border: rgba(65, 105, 225, 0.32);
+  --option-hover: rgba(65, 105, 225, 0.1);
+  --pill-active-bg: linear-gradient(180deg, #5476ea 0%, #3556cc 100%);
+  --stat-active-bg: linear-gradient(160deg, rgba(65, 105, 225, 0.2), rgba(65, 105, 225, 0.08));
+  --stat-active-ring: rgba(65, 105, 225, 0.55);
+}
+
+/* ── Solid blue fills ───────────────────────────────────────────────────── */
+:root .btn-primary,
+:root button.btn-primary {
+  background: linear-gradient(180deg, #5b82f0 0%, #3556cc 100%);
+  box-shadow: 0 10px 24px -10px rgba(65, 105, 225, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+:root .btn-primary:hover { background: linear-gradient(180deg, #7394f3 0%, #2d48b0 100%); }
+:root .btn-outline { border-color: color-mix(in srgb, var(--blue-main) 55%, transparent); }
+:root .btn-outline:hover { background: color-mix(in srgb, var(--blue-main) 12%, transparent); }
+
+/* The big title's blue end follows the brand blue. */
+:root .hero-name { background-image: linear-gradient(90deg, #ffffff 40%, #5b82f0 100%); }
+:root[data-theme='light'] .hero-name { background-image: linear-gradient(90deg, #0f172a 40%, #4169e1 100%); }
+
+/* Header links, tabs and the seal ring. */
+:root .nav-links a.nav-active,
+:root .nav-links a[aria-current] { color: var(--blue-main); }
+:root .hero-seal { border-color: rgba(91, 130, 240, 0.4); }
+:root[data-theme='light'] .hero-seal { border-color: rgba(65, 105, 225, 0.3); }
+:root .nav-logo-full,
+:root .nav-logo-short { color: var(--blue-main); }
+
+:root input[type='checkbox'],
+:root input[type='radio'] { accent-color: #4169e1; }
+:root :focus-visible { outline-color: var(--blue-main); }
+
+/* Text links and small blue labels use the brand blue. */
+:root .section-eyebrow,
+:root .hero-name + * a,
+:root .forgot-link,
+:root a.link { color: var(--blue-main); }
+
+/* ── Typeface: DM Sans, one step lighter ────────────────────────────────────
+   Extra bold (800/900) becomes semibold/bold and bold (700) becomes semibold, so headings and
+   buttons read finer. The reference codes keep their monospace face. */
+:root body,
+:root body *:not(.ref-code):not(.listing-ref):not(code):not(pre):not(kbd) { font-family: var(--font-brand); }
+:root body { letter-spacing: -0.003em; -webkit-font-smoothing: antialiased; }
+
+:root h1,
+:root .hero-name { font-weight: 700; letter-spacing: -0.03em; }
+:root h2,
+:root .section-title,
+:root .auth-title { font-weight: 600; letter-spacing: -0.02em; }
+:root h3,
+:root .listing-title,
+:root .modal-title { font-weight: 600; }
+:root .section-eyebrow,
+:root .hero-greeting { font-weight: 600; }
+:root .btn,
+:root button.btn,
+:root .chip,
+:root .nav-links a,
+:root .nav-signin-btn { font-weight: 600; }
+:root .stat-num,
+:root .stat-number { font-weight: 700; }
+:root label,
+:root .input-field label { font-weight: 600; }
+:root .item-badge,
+:root .badge { font-weight: 600; }

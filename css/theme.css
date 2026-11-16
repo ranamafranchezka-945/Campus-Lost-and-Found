@@ -1,0 +1,276 @@
+/* Shared flat theme layer: solid surfaces, clear borders and no decorative shadows. */
+:root {
+  --clay-surface: #0b1a3b;
+  --clay-shadow-light: transparent;
+  --clay-shadow-dark: transparent;
+  --clay-edge: rgba(153, 180, 255, 0.22);
+  --clay-raised: none;
+  --clay-inset: none;
+  --scene:
+    radial-gradient(ellipse 68% 88% at 88% 4%, rgba(31, 177, 247, 0.92) 0%, rgba(12, 117, 231, 0.72) 30%, rgba(0, 70, 200, 0.5) 55%, transparent 80%),
+    radial-gradient(ellipse 54% 76% at 70% 42%, rgba(0, 71, 255, 0.82) 0%, rgba(0, 57, 202, 0.5) 52%, transparent 84%),
+    linear-gradient(118deg, #020307 0%, #030916 36%, #04184d 62%, #02040a 100%);
+  --panel-bg: var(--clay-surface);
+  --panel-border: var(--clay-edge);
+  --panel-shadow: var(--clay-raised);
+  --card-glass: var(--clay-surface);
+  --card-glass-hover: #102654;
+  --card-border: var(--clay-edge);
+  --card-shadow: var(--clay-raised);
+  --well-bg: #07152f;
+  --well-border: transparent;
+  --control-bg: var(--clay-surface);
+  --control-border: var(--clay-edge);
+  --field-bg: #07152f;
+  --field-border: transparent;
+  --bar-bg: #060d20;
+  --bar-border: var(--clay-edge);
+  --float-bg: #0b1a3b;
+  --float-border: var(--clay-edge);
+  --float-shadow: 12px 12px 28px var(--clay-shadow-dark), -8px -8px 22px var(--clay-shadow-light);
+  --blur-bar: 0px;
+  --blur-float: 0px;
+  --dash-card: var(--clay-surface);
+  --dash-border: var(--clay-edge);
+  --dash-shadow: var(--clay-raised);
+  --dash-solid: var(--clay-surface);
+}
+
+:root[data-theme='light'] {
+  --clay-surface: #f6f8fc;
+  --clay-shadow-light: transparent;
+  --clay-shadow-dark: transparent;
+  --clay-edge: rgba(39, 70, 130, 0.18);
+  --clay-raised: none;
+  --clay-inset: none;
+  --scene: linear-gradient(145deg, #e9edf5 0%, #dfe5ef 100%);
+  --panel-bg: var(--clay-surface);
+  --panel-border: var(--clay-edge);
+  --panel-shadow: var(--clay-raised);
+  --card-glass: var(--clay-surface);
+  --card-glass-hover: #edf2fb;
+  --card-border: var(--clay-edge);
+  --card-shadow: var(--clay-raised);
+  --well-bg: #e9eff8;
+  --well-border: transparent;
+  --control-bg: var(--clay-surface);
+  --control-border: var(--clay-edge);
+  --field-bg: #ffffff;
+  --field-border: transparent;
+  --bar-bg: #f6f8fc;
+  --bar-border: var(--clay-edge);
+  --float-bg: #f6f8fc;
+  --float-border: var(--clay-edge);
+  --float-shadow: 12px 12px 28px rgba(163, 174, 193, 0.55), -8px -8px 22px rgba(255, 255, 255, 0.92);
+  --blue-main: #4169e1;
+  --blue-light: #2d48b0;
+  --blue-dark: #2d48b0;
+  --dash-card: var(--clay-surface);
+  --dash-border: var(--clay-edge);
+  --dash-shadow: var(--clay-raised);
+  --dash-solid: var(--clay-surface);
+}
+
+:root body {
+  background: var(--scene);
+}
+
+:root .navbar,
+:root .site-footer {
+  background: var(--bar-bg);
+  border-color: var(--bar-border);
+  box-shadow: var(--clay-raised);
+}
+
+:root .hero-section,
+:root .projects-section,
+:root .tools-section,
+:root .about-hero,
+:root .about-section,
+:root #adminPanel .page-section,
+:root .auth-card,
+:root .project-card,
+:root .stat-box,
+:root .simple-card,
+:root .about-card,
+:root .insight-card,
+:root .admin-table-card,
+:root .broadcast-card,
+:root .user-form-panel,
+:root .admin-stats .stat-card,
+:root .dash-card,
+:root .kpi {
+  background: var(--clay-surface);
+  border: 1px solid var(--clay-edge);
+  box-shadow: var(--clay-raised);
+  border-radius: 16px;
+}
+
+:root .project-card:hover,
+:root .stat-box:hover {
+  background: var(--card-glass-hover);
+  box-shadow: none;
+  transform: none;
+}
+
+:root .stat-box.active {
+  background: var(--stat-active-bg);
+  box-shadow: var(--clay-inset), 0 0 0 1px var(--stat-active-ring);
+}
+
+:root .btn,
+:root .topbar-btn,
+:root .theme-toggle,
+:root .notif-bell-btn,
+:root .user-pill,
+:root .admin-tab,
+:root .pagination-btn,
+:root .filter-chips .chip:not(.active),
+:root .auth-tab:not(.active) {
+  border-color: var(--clay-edge);
+  box-shadow: none;
+  border-radius: 8px;
+}
+
+:root .btn-primary,
+:root button.btn-primary,
+:root .admin-tab.active,
+:root .pagination-btn.active,
+:root .filter-chips .chip.active,
+:root .auth-tab.active {
+  border: 0;
+  box-shadow: none;
+}
+
+:root .btn:active,
+:root .topbar-btn:active,
+:root .theme-toggle:active,
+:root .notif-bell-btn:active,
+:root .user-pill:active {
+  box-shadow: none;
+}
+
+:root .input-field input,
+:root .input-field select,
+:root .input-field textarea,
+:root .form-group input,
+:root .form-group select,
+:root .form-group textarea,
+:root .search-box input,
+:root .topbar-search,
+:root .button-select-trigger,
+:root .category-picker,
+:root .inline-status-select,
+:root .claim-review-input {
+  background: var(--field-bg);
+  border-color: var(--field-border);
+  box-shadow: var(--clay-inset);
+}
+
+:root .input-field input:focus,
+:root .input-field select:focus,
+:root .input-field textarea:focus,
+:root .form-group input:focus,
+:root .form-group select:focus,
+:root .form-group textarea:focus,
+:root .search-box input:focus,
+:root .topbar-search:focus-within {
+  border-color: var(--blue-main);
+  box-shadow: var(--clay-inset), 0 0 0 2px color-mix(in srgb, var(--blue-main) 24%, transparent);
+}
+
+:root .item-photo-frame,
+:root .hero-seal {
+  box-shadow: none;
+}
+
+:root .admin-sidebar {
+  background: var(--clay-surface);
+  color: var(--text-main);
+  border-color: var(--clay-edge);
+  box-shadow: none;
+}
+
+:root .side-brand-text span,
+:root .side-group,
+:root .side-link {
+  color: var(--text-muted);
+}
+
+:root .side-link:hover,
+:root .side-link.active {
+  background: color-mix(in srgb, var(--blue-main) 16%, var(--clay-surface));
+  color: var(--blue-main);
+  box-shadow: none;
+}
+
+:root .side-link.active::before {
+  display: none;
+}
+
+:root .side-count {
+  background: var(--control-bg);
+  color: var(--text-main);
+  box-shadow: var(--clay-inset);
+}
+
+:root .admin-topbar {
+  background: var(--bar-bg);
+  border-color: var(--bar-border);
+  box-shadow: none;
+}
+
+:root .admin-tab,
+:root .pagination-btn,
+:root .filter-chips .chip,
+:root .auth-tabs,
+:root .auth-tab,
+:root .search-box input,
+:root .topbar-search {
+  border-radius: 8px;
+}
+
+:root .project-card,
+:root .stat-box,
+:root .simple-card,
+:root .about-card,
+:root .insight-card,
+:root .admin-table-card,
+:root .broadcast-card,
+:root .user-form-panel,
+:root .admin-stats .stat-card,
+:root .dash-card,
+:root .kpi {
+  border-radius: 12px;
+}
+
+:root .slip-overlay .modal-card,
+:root .slip-overlay > .category-picker-modal,
+:root .del-modal,
+:root .button-select-menu,
+:root .toast {
+  background: var(--float-bg);
+  border-color: var(--float-border);
+  box-shadow: var(--float-shadow);
+}
+
+:root .admin-table-wrap {
+  background: transparent;
+}
+
+:root :focus-visible {
+  outline-color: var(--blue-main);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root .navbar,
+  :root .site-footer,
+  :root .slip-overlay .modal-card,
+  :root .slip-overlay > .category-picker-modal,
+  :root .del-modal,
+  :root .button-select-menu,
+  :root .toast {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

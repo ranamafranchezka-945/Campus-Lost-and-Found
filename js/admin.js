@@ -68,7 +68,11 @@ let restoreTarget = null;
           closeSidebar();
         });
       });
-      document.getElementById('sidebarToggle').addEventListener('click', openSidebar);
+      document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+      window.addEventListener('resize', syncMenuButton);
+      setupHeaderMenus();
+      setupThemePill();
+      restoreSidebarState();
       document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
       document.getElementById('sideBackdrop').addEventListener('click', closeSidebar);
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSidebar(); });
@@ -80,6 +84,27 @@ let restoreTarget = null;
         if (activeTab !== 'items') showAdminItems(adminTypeFilter);
       });
       bindTrendTooltip();
+      // "/" or Ctrl/Cmd+K jumps to search; Escape clears it, then leaves it.
+      document.addEventListener('keydown', event => {
+        const search = document.getElementById('adminSearch');
+        if (event.target === search && event.key === 'Escape') {
+          if (search.value) {
+            search.value = '';
+            search.dispatchEvent(new Event('input', { bubbles: true }));
+          } else {
+            search.blur();
+          }
+          return;
+        }
+        const typing = event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
+        const slash = event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
+        const palette = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
+        if (!slash && !palette) return;
+        if (document.querySelector('.slip-overlay.open, .del-modal-backdrop.open, .claim-review-backdrop.open')) return;
+        event.preventDefault();
+        search.focus();
+        search.select();
+      });
       window.addEventListener('hashchange', applyAdminHash);
       applyAdminHash();
 
@@ -233,6 +258,7 @@ let restoreTarget = null;
       if (adminRefreshInProgress) return;
       adminRefreshInProgress = true;
       try {
+        let synced = false;
         try {
           const response = await adminFetch('/api/items', { cache: 'no-store' });
           if (response.ok) {
@@ -241,11 +267,13 @@ let restoreTarget = null;
               cachedServerItems = data.items
                 .filter(item => item.type !== 'registered')
                 .map(normalizeAdminItem);
+              synced = true;
             }
           }
         } catch (error) {
           // Keep the last server snapshot when the API is temporarily unavailable.
         }
+        setLiveStatus(synced);
         const nextItems = [...cachedServerItems];
         const nextSignature = JSON.stringify(nextItems);
         if (nextSignature !== adminItemsSignature) {
@@ -369,22 +397,109 @@ let restoreTarget = null;
     function openSidebar() {
       document.getElementById('adminSidebar').classList.add('open');
       document.getElementById('sideBackdrop').classList.add('open');
-      document.getElementById('sidebarToggle').setAttribute('aria-expanded', 'true');
+      syncMenuButton();
     }
 
     function closeSidebar() {
       document.getElementById('adminSidebar').classList.remove('open');
       document.getElementById('sideBackdrop').classList.remove('open');
-      document.getElementById('sidebarToggle').setAttribute('aria-expanded', 'false');
+      syncMenuButton();
+    }
+
+    const SIDEBAR_KEY = 'admin_sidebar_collapsed';
+    const isDesktop = () => window.matchMedia('(min-width: 1024px)').matches;
+
+    function syncMenuButton() {
+      const expanded = isDesktop()
+        ? !document.getElementById('adminApp').classList.contains('is-collapsed')
+        : document.getElementById('adminSidebar').classList.contains('open');
+      document.getElementById('sidebarToggle').setAttribute('aria-expanded', String(expanded));
+    }
+
+    // Wide screens: the menu shrinks to an icon rail and the choice is remembered.
+    // Narrow screens: the same button opens the slide-out menu.
+    function setSidebarCollapsed(collapsed, remember = true) {
+      document.getElementById('adminApp').classList.toggle('is-collapsed', collapsed);
+      document.querySelectorAll('.side-link').forEach(link => {
+        // In the icon rail the label is gone, so it moves to a tooltip.
+        if (collapsed) link.title = link.querySelector('span').textContent.trim(); else link.removeAttribute('title');
+      });
+      if (remember) {
+        try { localStorage.setItem(SIDEBAR_KEY, collapsed ? '1' : '0'); } catch (error) { /* ignore */ }
+      }
+      syncMenuButton();
+    }
+
+    function toggleSidebar() {
+      if (isDesktop()) setSidebarCollapsed(!document.getElementById('adminApp').classList.contains('is-collapsed'));
+      else openSidebar();
+    }
+
+    function restoreSidebarState() {
+      let saved = null;
+      try { saved = localStorage.getItem(SIDEBAR_KEY); } catch (error) { /* ignore */ }
+      if (saved === '1') setSidebarCollapsed(true, false); else syncMenuButton();
+    }
+
+    // The bell and the profile button each open one small panel; only one is open at a time.
+    function setupHeaderMenus() {
+      const pairs = [['adminBell', 'notifPanel'], ['profileBtn', 'profileMenu']];
+      const closeAll = returnFocus => pairs.forEach(([buttonId, panelId]) => {
+        const panel = document.getElementById(panelId);
+        const button = document.getElementById(buttonId);
+        if (!panel.hidden && returnFocus) button.focus();
+        panel.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+      });
+      pairs.forEach(([buttonId, panelId]) => {
+        const button = document.getElementById(buttonId);
+        const panel = document.getElementById(panelId);
+        button.addEventListener('click', event => {
+          event.stopPropagation();
+          const opening = panel.hidden;
+          closeAll(false);
+          panel.hidden = !opening;
+          button.setAttribute('aria-expanded', String(opening));
+        });
+        // Choosing something inside a panel closes it.
+        panel.addEventListener('click', event => { if (event.target.closest('[data-action]')) closeAll(false); });
+      });
+      document.addEventListener('click', event => { if (!event.target.closest('.pop-wrap')) closeAll(false); });
+      document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAll(true); });
+    }
+
+    // The sun / moon switch follows the page theme, including changes made elsewhere.
+    function setupThemePill() {
+      const pill = document.getElementById('themePill');
+      const sync = () => pill.setAttribute('aria-checked', String((document.documentElement.getAttribute('data-theme') || 'dark') !== 'light'));
+      pill.addEventListener('click', () => toggleTheme());
+      new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      sync();
+    }
+
+    function renderNotifications(pending) {
+      const waiting = [...pending].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(0, 5);
+      document.getElementById('notifCount').textContent = pending.length ? `${pending.length} waiting` : 'All clear';
+      document.getElementById('notifBody').innerHTML = waiting.length
+        ? `<ul class="feed">${waiting.map(claim => `
+          <li class="feed-row">
+            <div class="feed-main"><strong title="${escHtml(claim.itemTitle || 'Item')}">Claim for ${escHtml(claim.itemTitle || 'an item')}</strong><small>${escHtml(claim.claimantName || 'Unknown claimant')} · ${escHtml(relativeTime(claim.createdAt))}</small></div>
+            <button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review</button>
+          </li>`).join('')}</ul>`
+        : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>You are all caught up.</p>';
     }
 
     function renderAdminIdentity(user) {
       const name = String(user.fullName || user.email || 'Administrator').trim();
       const initials = name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'A';
-      ['topName', 'sideName'].forEach(id => { document.getElementById(id).textContent = name; });
-      ['topAvatar', 'sideAvatar'].forEach(id => { document.getElementById(id).textContent = initials; });
-      document.getElementById('dashWelcome').textContent =
-        `Welcome back, ${name.split(/\s+/)[0]}. Here is what is happening with lost and found reports.`;
+      document.getElementById('topName').textContent = name;
+      document.getElementById('topAvatar').textContent = initials;
+      document.getElementById('menuName').textContent = name;
+      document.getElementById('menuEmail').textContent = user.email || '';
+      const now = new Date();
+      const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 18 ? 'Good afternoon' : 'Good evening';
+      const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+      document.getElementById('dashWelcome').textContent = `${greeting}, ${name.split(/\s+/)[0]}. Today is ${today}.`;
     }
 
     // ── Dashboard ────────────────────────────────────────────────────────────
@@ -451,6 +566,74 @@ let restoreTarget = null;
       return buckets;
     }
 
+    // Counts per week for the last eight weeks, oldest first, for the tile sparklines.
+    function weeklyCounts(times, weeks = 8) {
+      const now = Date.now();
+      const counts = new Array(weeks).fill(0);
+      times.forEach(time => {
+        const age = now - time;
+        if (!time || age < 0 || age >= weeks * 7 * DAY_MS) return;
+        counts[weeks - 1 - Math.floor(age / (7 * DAY_MS))] += 1;
+      });
+      return counts;
+    }
+
+    // A quiet line in a neutral colour; only the newest week wears the tile's colour.
+    function sparkline(values) {
+      const width = 88;
+      const height = 28;
+      const pad = 4;
+      const peak = Math.max(1, ...values);
+      const points = values.map((value, index) => [
+        pad + index * (width - pad * 2) / (values.length - 1),
+        height - pad - value / peak * (height - pad * 2)
+      ].map(number => number.toFixed(1)));
+      const last = points[points.length - 1];
+      return `<svg class="spark" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false"><polyline points="${points.map(point => point.join(',')).join(' ')}"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5"/></svg>`;
+    }
+
+    // New items in the last 30 days compared with the 30 days before that.
+    function periodChange(times) {
+      const now = Date.now();
+      const current = times.filter(time => time && now - time <= 30 * DAY_MS).length;
+      const previous = times.filter(time => time && now - time > 30 * DAY_MS && now - time <= 60 * DAY_MS).length;
+      const diff = current - previous;
+      return { current, text: diff === 0 ? 'Same as prior 30 days' : `${diff > 0 ? '+' : '−'}${Math.abs(diff)} vs prior 30 days` };
+    }
+
+    function setLiveStatus(online) {
+      const box = document.getElementById('liveStatus');
+      if (!box) return;
+      box.classList.toggle('is-offline', !online);
+      document.getElementById('liveText').textContent = online
+        ? `Live · updated ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+        : 'Offline · showing the last data';
+    }
+
+    // The first time the dashboard fills in, tiles rise in, bars grow and numbers count up.
+    // Later refreshes (every few seconds) update silently. Skipped for reduced motion.
+    let dashboardIntroDone = false;
+    function playDashboardIntro() {
+      if (dashboardIntroDone) return;
+      dashboardIntroDone = true;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const root = document.getElementById('tabDashboard');
+      root.classList.add('intro');
+      window.setTimeout(() => root.classList.remove('intro'), 1800);
+      document.querySelectorAll('#kpiRow [data-count]').forEach(element => {
+        const target = Number(element.dataset.count);
+        if (!Number.isFinite(target) || target < 1) return;
+        const start = performance.now();
+        const tick = now => {
+          const progress = Math.min(1, (now - start) / 800);
+          element.textContent = String(Math.round(target * (1 - Math.pow(1 - progress, 3))));
+          if (progress < 1) window.requestAnimationFrame(tick);
+        };
+        element.textContent = '0';
+        window.requestAnimationFrame(tick);
+      });
+    }
+
     function setCount(id, value) {
       const element = document.getElementById(id);
       element.textContent = value > 99 ? '99+' : String(value);
@@ -471,22 +654,47 @@ let restoreTarget = null;
       const found = items.filter(item => item.type === 'found');
       const openLost = lost.filter(isOpenItem).length;
       const openFound = found.filter(isOpenItem).length;
-      const lastMonth = list => list.filter(item => now - itemTime(item) <= 30 * DAY_MS).length;
       const resolved = items.filter(isResolved).length;
       const counted = items.filter(item => item.status !== 'archived').length;
       const rate = counted ? Math.round(resolved / counted * 100) : 0;
       const oldest = pending.reduce((first, claim) => (!first || Date.parse(claim.createdAt) < Date.parse(first.createdAt) ? claim : first), null);
 
-      const tile = (kind, icon, label, value, sub, action, args) => `
+      const lostTimes = lost.map(itemTime);
+      const foundTimes = found.map(itemTime);
+      const lostChange = periodChange(lostTimes);
+      const foundChange = periodChange(foundTimes);
+      const resolvedTimes = items.filter(isResolved).map(item => Date.parse(item.claimedAt) || 0);
+      const claimTimes = claimRequests.map(claim => Date.parse(claim.createdAt) || 0);
+
+      const tile = (kind, icon, label, value, sub, action, args, trend) => `
         <button type="button" class="kpi kpi--${kind}" data-action="${action}" data-args='${args}'>
-          <span class="kpi-text"><span class="kpi-label">${label}</span><span class="kpi-value">${value}</span><span class="kpi-sub">${sub}</span></span>
-          <span class="kpi-chip" aria-hidden="true"><svg class="ico"><use href="#i-${icon}"/></svg></span>
+          <span class="kpi-top"><span class="kpi-label">${label}</span><span class="kpi-chip" aria-hidden="true"><svg class="ico"><use href="#i-${icon}"/></svg></span></span>
+          <span class="kpi-mid"><span class="kpi-value" data-count="${value}">${value}</span>${sparkline(trend)}</span>
+          <span class="kpi-sub">${sub}</span>
         </button>`;
-      document.getElementById('kpiRow').innerHTML =
-        tile('lost', 'search', 'Open lost reports', openLost, `${lastMonth(lost)} in the last 30 days`, 'showAdminItems', '["lost"]') +
-        tile('found', 'found', 'Open found reports', openFound, `${lastMonth(found)} in the last 30 days`, 'showAdminItems', '["found"]') +
-        tile('claims', 'shield', 'Claims to review', pending.length, oldest ? `Oldest: ${escHtml(relativeTime(oldest.createdAt))}` : 'Nothing waiting', 'showAdminView', '["claims"]') +
-        tile('returned', 'box', 'Resolved reports', resolved, `${rate}% of all reports`, 'showAdminItems', '["", "claimed"]');
+      const subLines = (first, second) => `<span>${first}</span>${second ? `<span class="kpi-delta">${second}</span>` : ''}`;
+      const kpiRow = document.getElementById('kpiRow');
+      kpiRow.removeAttribute('aria-busy');
+      kpiRow.innerHTML =
+        tile('lost', 'search', 'Open lost reports', openLost, subLines(`${lostChange.current} new in 30 days`, lostChange.text), 'showAdminItems', '["lost"]', weeklyCounts(lostTimes)) +
+        tile('found', 'found', 'Open found reports', openFound, subLines(`${foundChange.current} new in 30 days`, foundChange.text), 'showAdminItems', '["found"]', weeklyCounts(foundTimes)) +
+        tile('claims', 'shield', 'Claims to review', pending.length, subLines(oldest ? `Oldest: ${escHtml(relativeTime(oldest.createdAt))}` : 'Nothing waiting', ''), 'showAdminView', '["claims"]', weeklyCounts(claimTimes)) +
+        tile('returned', 'box', 'Resolved reports', resolved, subLines(`${rate}% of all reports`, ''), 'showAdminItems', '["", "claimed"]', weeklyCounts(resolvedTimes));
+
+      const banner = document.getElementById('attentionBanner');
+      banner.hidden = !pending.length;
+      if (pending.length) {
+        banner.querySelector('strong').textContent = `${pending.length} claim${pending.length === 1 ? ' is' : 's are'} waiting for review`;
+        banner.querySelector('small').textContent = oldest ? `The oldest was submitted ${relativeTime(oldest.createdAt)}.` : '';
+      }
+
+      const resolveDays = items.filter(isResolved)
+        .map(item => (Date.parse(item.claimedAt) - itemTime(item)) / DAY_MS)
+        .filter(days => Number.isFinite(days) && days >= 0);
+      const averageDays = resolveDays.length ? resolveDays.reduce((sum, days) => sum + days, 0) / resolveDays.length : null;
+      const longestOpen = items.filter(isOpenItem).filter(item => itemTime(item)).sort((a, b) => itemTime(a) - itemTime(b))[0];
+      const longestDays = longestOpen ? Math.floor((now - itemTime(longestOpen)) / DAY_MS) : null;
+      const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
       renderTrendChart(items);
 
@@ -497,7 +705,11 @@ let restoreTarget = null;
           <div><dt>Active</dt><dd>${items.filter(isOpenItem).length}</dd></div>
           <div><dt>Resolved</dt><dd>${resolved}</dd></div>
           <div><dt>Archived</dt><dd>${items.length - counted}</dd></div>
-        </dl>`;
+        </dl>
+        <ul class="metric-list">
+          <li><span>Average time to resolve</span><b>${averageDays === null ? 'Not enough data' : plural(Math.round(averageDays * 10) / 10, 'day')}</b></li>
+          <li><span>Longest open report</span><b${longestOpen ? ` title="${escHtml(longestOpen.title)}"` : ''}>${longestDays === null ? 'None open' : plural(longestDays, 'day')}</b></li>
+        </ul>`;
 
       renderRankList('topCategories', countValues(items, 'category').slice(0, 5));
       renderRankList('topLocations', countValues(items, officeOf).slice(0, 5));
@@ -524,8 +736,10 @@ let restoreTarget = null;
       setCount('countFound', openFound);
       setCount('countClaims', pending.length);
       setCount('bellCount', pending.length);
+      renderNotifications(pending);
       document.getElementById('adminBell').setAttribute('aria-label', pending.length ? `${pending.length} claim${pending.length === 1 ? '' : 's'} waiting for review` : 'No claims waiting for review');
       document.getElementById('segPending').textContent = pending.length ? `(${pending.length})` : '';
+      playDashboardIntro();
     }
 
     function renderRankList(id, entries) {
@@ -564,7 +778,7 @@ let restoreTarget = null;
       // Only the newest month prints its numbers; the tooltip and table carry the rest.
       const column = (type, value, newest) => `<span class="trend-col trend-col--${type}" style="--h:${(value / max * 100).toFixed(2)}${value ? ';min-height:3px' : ''}">${newest && value ? `<b>${value}</b>` : ''}</span>`;
       const months = buckets.map((bucket, index) => `
-        <div class="trend-month" tabindex="0" role="img" aria-label="${escHtml(bucket.title)}: ${bucket.lost} lost, ${bucket.found} found" data-title="${escHtml(bucket.title)}" data-lost="${bucket.lost}" data-found="${bucket.found}">
+        <div class="trend-month" style="--i:${index}" tabindex="0" role="img" aria-label="${escHtml(bucket.title)}: ${bucket.lost} lost, ${bucket.found} found" data-title="${escHtml(bucket.title)}" data-lost="${bucket.lost}" data-found="${bucket.found}">
           ${column('lost', bucket.lost, index === buckets.length - 1)}${column('found', bucket.found, index === buckets.length - 1)}
         </div>`).join('');
       plot.innerHTML = `

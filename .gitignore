@@ -5,6 +5,7 @@ node_modules/
 .env
 .env.local
 .env.*.local
+.env.example
 
 # Runtime-generated user accounts stay local and private
 data/users.json
@@ -19,7 +20,7 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
-
+c:\Users\User\OneDrive\Pictures\Screenshots\Screenshot 2026-11-16 140943.png
 # IDE / Editor
 .vscode/
 .idea/

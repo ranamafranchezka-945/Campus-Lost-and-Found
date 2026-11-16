@@ -52,6 +52,14 @@ async function login(email, password) {
   });
   assert.equal(response.status, 200);
   const passwordStep = await response.json();
+  if (passwordStep.user) {
+    // Administrators sign in with the password alone.
+    assert.equal(passwordStep.user.role, 'admin');
+    const adminCookie = response.headers.get('set-cookie').split(';')[0];
+    const adminSession = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: adminCookie } });
+    assert.equal((await adminSession.json()).authenticated, true);
+    return adminCookie;
+  }
   assert.equal(passwordStep.otpRequired, true);
   assert.equal(passwordStep.user, undefined, 'the password alone does not sign in');
   const pendingCookie = response.headers.get('set-cookie').split(';')[0];
@@ -1327,14 +1335,8 @@ test('production requires a secret and persists secure sessions', async () => {
       body: JSON.stringify({ email: 'admin@cspc.edu.ph', password: adminPassword })
     });
     assert.equal(loginResponse.status, 200, await loginResponse.clone().text());
-    const pendingCookie = loginResponse.headers.get('set-cookie').split(';')[0];
-    const verified = await fetch(`${productionUrl}/api/auth/verify-code`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Forwarded-Proto': 'https', Cookie: pendingCookie },
-      body: JSON.stringify({ code: TEST_OTP })
-    });
-    assert.equal(verified.status, 200, await verified.clone().text());
-    const cookieHeader = verified.headers.get('set-cookie');
+    // An administrator is signed in by the password alone, so this response sets the session cookie.
+    const cookieHeader = loginResponse.headers.get('set-cookie');
     assert.match(cookieHeader, /Secure/i);
     assert.match(cookieHeader, /SameSite=Lax/i);
     const sessionCookie = cookieHeader.split(';')[0];
@@ -1542,4 +1544,29 @@ test('the admin script turns a student-domain account into an administrator who 
   assert.equal(session.user.role, 'admin');
   const adminOnly = await fetch(`${baseUrl}/api/auth/users`, { headers: { Cookie: cookie } });
   assert.equal(adminOnly.status, 200);
+});
+
+test('administrators sign in with the password alone while students still need the emailed code', async () => {
+  const signIn = (email, password) => postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email, password }));
+
+  const admin = await signIn('admin@cspc.edu.ph', adminPassword);
+  assert.equal(admin.status, 200);
+  const adminBody = await admin.json();
+  assert.equal(adminBody.otpRequired, undefined, 'no code is asked of an administrator');
+  assert.equal(adminBody.user.role, 'admin');
+  const adminCookie = admin.headers.get('set-cookie').split(';')[0];
+  const directory = await fetch(`${baseUrl}/api/auth/users`, { headers: { Cookie: adminCookie } });
+  assert.equal(directory.status, 200, 'the session is fully signed in');
+
+  // A wrong password still gets nothing.
+  const wrong = await signIn('admin@cspc.edu.ph', 'WrongPass1!');
+  assert.equal(wrong.status, 401);
+  assert.equal((await wrong.json()).user, undefined);
+
+  // Students are unchanged: the password only starts the sign-in.
+  const student = await signIn('student@my.cspc.edu.ph', studentPassword);
+  assert.equal(student.status, 200);
+  const studentBody = await student.json();
+  assert.equal(studentBody.otpRequired, true);
+  assert.equal(studentBody.user, undefined);
 });

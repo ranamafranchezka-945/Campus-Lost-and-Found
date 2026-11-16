@@ -6,13 +6,14 @@
   <title>Admin Dashboard | Back2You</title>
   <link rel="icon" type="image/png" href="/cspc-logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/css/styles.css" />
   <link rel="stylesheet" href="/css/admin.css" />
   <link rel="stylesheet" href="/css/responsive.css" />
   <link rel="stylesheet" href="/css/glass.css" />
   <link rel="stylesheet" href="/css/polish.css" />
   <link rel="stylesheet" href="/css/admin-shell.css" />
+  <link rel="stylesheet" href="/css/theme.css" />
   <script src="/js/main.js"></script>
   <script src="/js/ui.js"></script>
 </head>
@@ -34,6 +35,10 @@
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14z"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></symbol>
   </svg>
 
   <a class="skip-link" href="#adminMain">Skip to content</a>
@@ -65,36 +70,45 @@
         <button type="button" class="side-link" data-view="users"><svg class="ico"><use href="#i-users"/></svg><span>User management</span></button>
         <button type="button" class="side-link" data-view="belongings"><svg class="ico"><use href="#i-lock"/></svg><span>Students' belongings</span></button>
       </nav>
-
-      <div class="side-foot">
-        <div class="side-profile">
-          <span class="avatar" id="sideAvatar" aria-hidden="true">A</span>
-          <span class="side-profile-text"><strong id="sideName">Administrator</strong><small>Administrator</small></span>
-        </div>
-        <button type="button" class="side-logout" data-action="openAdminLogoutModal" title="Sign out of administrator account" aria-label="Sign out"><svg class="ico"><use href="#i-logout"/></svg></button>
-      </div>
     </aside>
     <div class="side-backdrop" id="sideBackdrop"></div>
 
     <div class="admin-main">
       <!-- ── Top bar ── -->
       <header class="admin-topbar">
-        <button type="button" class="topbar-btn topbar-menu" id="sidebarToggle" aria-label="Open navigation menu" aria-controls="adminSidebar" aria-expanded="false"><svg class="ico"><use href="#i-menu"/></svg></button>
+        <button type="button" class="topbar-btn topbar-menu" id="sidebarToggle" aria-label="Toggle navigation menu" title="Toggle menu" aria-controls="adminSidebar" aria-expanded="true"><svg class="ico"><use href="#i-menu"/></svg></button>
         <label class="topbar-search">
           <svg class="ico" aria-hidden="true"><use href="#i-search"/></svg>
           <input type="search" id="adminSearch" placeholder="Search reports…" aria-label="Search reports by item, reporter, category or location" autocomplete="off" />
+          <kbd class="kbd" aria-hidden="true">/</kbd>
         </label>
         <div class="topbar-actions">
-          <button type="button" class="theme-toggle topbar-btn" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
-            <span class="theme-toggle-icon">Theme</span>
+          <button type="button" class="topbar-btn theme-circle" id="themePill" role="switch" aria-checked="true" aria-label="Dark mode" title="Switch between light and dark">
+            <svg class="ico theme-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+            <svg class="ico theme-moon" aria-hidden="true"><use href="#i-moon"/></svg>
           </button>
-          <button type="button" class="topbar-btn topbar-bell" id="adminBell" data-action="showAdminView" data-args='["claims"]' aria-label="Claims waiting for review" title="Claims waiting for review">
-            <svg class="ico"><use href="#i-bell"/></svg>
-            <span class="bell-count" id="bellCount" hidden>0</span>
-          </button>
-          <div class="topbar-user">
-            <span class="avatar" id="topAvatar" aria-hidden="true">A</span>
-            <span class="topbar-user-text"><strong id="topName">Administrator</strong><small>Administrator</small></span>
+          <button type="button" class="topbar-btn topbar-broadcast" data-action="showAdminView" data-args='["broadcast"]' aria-label="Broadcast a message to students" title="Broadcast a message"><svg class="ico"><use href="#i-message"/></svg></button>
+          <div class="pop-wrap">
+            <button type="button" class="topbar-btn topbar-bell" id="adminBell" aria-haspopup="true" aria-expanded="false" aria-controls="notifPanel" aria-label="Notifications" title="Notifications">
+              <svg class="ico"><use href="#i-bell"/></svg>
+              <span class="bell-count" id="bellCount" hidden>0</span>
+            </button>
+            <div class="pop" id="notifPanel" role="region" aria-label="Notifications" hidden>
+              <div class="pop-head"><strong>Notifications</strong><small id="notifCount">All clear</small></div>
+              <div id="notifBody"></div>
+              <button type="button" class="pop-foot" data-action="showAdminView" data-args='["claims"]'>View all claims</button>
+            </div>
+          </div>
+          <div class="pop-wrap">
+            <button type="button" class="profile-btn" id="profileBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="profileMenu">
+              <span class="avatar" id="topAvatar" aria-hidden="true">A</span>
+              <span class="topbar-user-text"><strong id="topName">Administrator</strong></span>
+              <svg class="ico chev" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <div class="pop pop--menu" id="profileMenu" role="menu" aria-label="Account" hidden>
+              <div class="pop-head"><strong id="menuName">Administrator</strong><small id="menuEmail"></small></div>
+              <button type="button" class="pop-item pop-item--danger" role="menuitem" data-action="openAdminLogoutModal"><svg class="ico" aria-hidden="true"><use href="#i-logout"/></svg>Sign out</button>
+            </div>
           </div>
         </div>
       </header>
@@ -108,10 +122,24 @@
               <h1 id="dashTitle">Dashboard</h1>
               <p id="dashWelcome">Welcome back. Here is what is happening with lost and found reports.</p>
             </div>
-            <button type="button" class="btn btn-outline view-head-btn" data-action="exportCSV"><svg class="ico"><use href="#i-download"/></svg>Export CSV</button>
+            <div class="view-head-actions">
+              <span class="live is-offline" id="liveStatus" role="status"><i aria-hidden="true"></i><span id="liveText">Connecting…</span></span>
+              <button type="button" class="btn btn-outline view-head-btn" data-action="exportCSV"><svg class="ico"><use href="#i-download"/></svg>Export CSV</button>
+            </div>
           </div>
 
-          <div class="kpi-row" id="kpiRow"><p class="viz-empty">Loading…</p></div>
+          <div class="attention" id="attentionBanner" role="status" hidden>
+            <span class="attention-icon" aria-hidden="true"><svg class="ico"><use href="#i-shield"/></svg></span>
+            <span class="attention-text"><strong></strong><small></small></span>
+            <button type="button" class="btn btn-primary" data-action="showAdminView" data-args='["claims"]'>Review now</button>
+          </div>
+
+          <div class="kpi-row" id="kpiRow" aria-busy="true">
+            <div class="kpi skel-card"><span class="skel skel--sm"></span><span class="skel skel--lg"></span><span class="skel skel--md"></span></div>
+            <div class="kpi skel-card"><span class="skel skel--sm"></span><span class="skel skel--lg"></span><span class="skel skel--md"></span></div>
+            <div class="kpi skel-card"><span class="skel skel--sm"></span><span class="skel skel--lg"></span><span class="skel skel--md"></span></div>
+            <div class="kpi skel-card"><span class="skel skel--sm"></span><span class="skel skel--lg"></span><span class="skel skel--md"></span></div>
+          </div>
 
           <div class="dash-row dash-row--wide">
             <article class="dash-card" aria-labelledby="trendTitle">
@@ -129,7 +157,7 @@
                 </div>
               </div>
               <div class="trend-wrap" id="trendWrap">
-                <div id="trendPlot"></div>
+                <div id="trendPlot"><div class="skel skel--chart"></div></div>
                 <div class="viz-tip" id="trendTip" role="tooltip" hidden></div>
                 <div class="trend-table-wrap" id="trendTable" hidden></div>
               </div>
@@ -142,18 +170,18 @@
                   <p>Reports that ended with the item returned</p>
                 </div>
               </div>
-              <div id="claimMeter"><p class="viz-empty">Loading…</p></div>
+              <div id="claimMeter"><span class="skel skel--lg"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
           </div>
 
           <div class="dash-row dash-row--even">
             <article class="dash-card" aria-labelledby="catTitle">
               <div class="card-head"><div><h2 id="catTitle">Top categories</h2><p>Most reported kinds of items</p></div></div>
-              <div class="rank-list" id="topCategories"><p class="viz-empty">Loading…</p></div>
+              <div class="rank-list" id="topCategories"><span class="skel skel--line"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
             <article class="dash-card" aria-labelledby="locTitle">
               <div class="card-head"><div><h2 id="locTitle">Top locations</h2><p>Offices and areas with the most reports</p></div></div>
-              <div class="rank-list" id="topLocations"><p class="viz-empty">Loading…</p></div>
+              <div class="rank-list" id="topLocations"><span class="skel skel--line"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
           </div>
 
@@ -163,14 +191,14 @@
                 <div><h2 id="waitTitle">Claims waiting for review</h2><p>Oldest first, so nobody waits too long</p></div>
                 <button type="button" class="link-btn" data-action="showAdminView" data-args='["claims"]'>View all</button>
               </div>
-              <div id="dashClaims"><p class="viz-empty">Loading…</p></div>
+              <div id="dashClaims"><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
             <article class="dash-card" aria-labelledby="latestTitle">
               <div class="card-head">
                 <div><h2 id="latestTitle">Latest reports</h2><p>The five most recent lost and found reports</p></div>
                 <button type="button" class="link-btn" data-action="showAdminItems" data-args='[""]'>View all</button>
               </div>
-              <div id="dashRecent"><p class="viz-empty">Loading…</p></div>
+              <div id="dashRecent"><span class="skel skel--line"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
           </div>
         </section>
@@ -210,8 +238,8 @@
             <div class="admin-table-wrap admin-items-table-wrap admin-table-scroll">
             <table id="adminItemsTable">
               <colgroup>
-                <col style="width:5%" />
-                <col style="width:11%" />
+                <col style="width:6%" />
+                <col style="width:10%" />
                 <col style="width:9%" />
                 <col style="width:11%" />
                 <col style="width:17%" />

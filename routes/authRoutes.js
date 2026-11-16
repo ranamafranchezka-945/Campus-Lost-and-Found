@@ -219,7 +219,7 @@ function ensureDefaultAdminAccount() {
       id: `usr-admin-${Date.now()}`,
       email: adminEmail,
       passwordHash: bcrypt.hashSync(password || 'admin@_123bAck2u', 10),
-      fullName: sanitizeString(process.env.ADMIN_NAME || 'CSPC Administrator'),
+      fullName: sanitizeString(process.env.ADMIN_NAME || 'System Admin'),
       studentId: 'N/A',
       role: 'admin',
       department: 'Administration',
@@ -343,6 +343,14 @@ router.post('/login', validateUserAuth, async (req, res) => {
       });
     }
     loginFailures.delete(attemptKey);
+
+    // Administrators sign in with the password alone, with no emailed code.
+    // (Wrong passwords above still count toward the sign-in lockout.)
+    if (user.role === 'admin') {
+      const sessionUser = sessionUserFor(user);
+      await authenticateSession(req, sessionUser);
+      return res.json({ success: true, message: 'Login successful.', user: sessionUser });
+    }
 
     // Correct password: the emailed code is the second step. An unconfirmed account
     // gets a sign-up code instead, which confirms the email and signs in at once.
