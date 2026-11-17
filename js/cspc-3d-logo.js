@@ -438,8 +438,8 @@
       renderer.setSize(width, height, false);
       const aspect = width / height;
       camera.aspect = aspect;
-      // Frame the full flame/globe artwork while reducing the unused space around it.
-      const distance = Math.max(11.2, 5.4 / (2 * Math.tan(16 * D2R) * aspect));
+      // Leave room around the flame and globe so animation and resizing do not clip them.
+      const distance = Math.max(12.5, 5.4 / (2 * Math.tan(16 * D2R) * aspect));
       camera.position.set(0, 1.8, distance);
       camera.lookAt(0, 1.4, 0);
       camera.updateProjectionMatrix();

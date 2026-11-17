@@ -227,7 +227,7 @@ body.landing-page {
 
 @media (max-width: 560px) {
   .hero-objects {
-    --ring-size: 280px;
+    --ring-size: min(280px, 90vw);
   }
 }
 
@@ -636,7 +636,7 @@ h2.landing-section-title {
   }
 
   .hero-objects {
-    --ring-size: 280px;
+    --ring-size: min(280px, 90vw);
     --ring-depth: 96px;
   }
 

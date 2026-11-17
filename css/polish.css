@@ -505,6 +505,8 @@
 @media (max-width: 768px) {
   .portal-hero-avatar { flex: 0 0 auto; }
   .portal-hero-globe { --portal-globe-size: min(82vw, 340px); }
+  :root .landing-hero,
+  :root #portalHero { overflow: visible; }
 }
 @media (prefers-reduced-motion: reduce) {
   .portal-hero-stage { animation: none; }
