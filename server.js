@@ -91,7 +91,11 @@ function createApp() {
       'Referrer-Policy': 'strict-origin-when-cross-origin',
       // Location only for this site's own pages: the handover meetup asks for one reading
       // when a student agrees to share it. Embedded frames can never ask.
-      'Permissions-Policy': 'geolocation=(self), microphone=()',
+      // The microphone is allowed for this site's own pages only, for dictating a report in
+      // the Quick Report Assistant. Third-party frames still get nothing, and frames of this
+      // site are blocked outright by frame-ancestors/X-Frame-Options, so (self) is the whole
+      // surface. The browser still asks the student before any audio is captured.
+      'Permissions-Policy': 'geolocation=(self), microphone=(self)',
       // Scripts only from this site (no inline code or handlers); inline style
       // attributes are still used by some markup. QR codes and photo previews use data:/blob: images.
       // OpenStreetMap tiles draw the small map of a shared meetup location.

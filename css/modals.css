@@ -258,6 +258,87 @@
   font-size: 0.8125rem;
   color: var(--tone-error);
 }
+
+/* ── Password fields: show/hide toggle, live requirement checklist, match hint ──── */
+
+.password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+.password-wrap input {
+  padding-right: 2.9rem !important;
+}
+.btn-toggle-pw {
+  position: absolute;
+  top: 50%;
+  right: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transform: translateY(-50%);
+  transition: color 0.2s ease;
+}
+.btn-toggle-pw:hover {
+  color: var(--text-main);
+}
+.btn-toggle-pw:focus-visible {
+  outline: 2px solid var(--blue-main);
+  outline-offset: 2px;
+}
+.password-toggle-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.password-requirements {
+  list-style: none;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+}
+.password-requirements li::before {
+  content: '○';
+  display: inline-block;
+  width: 1.2rem;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.password-requirements li.satisfied {
+  color: var(--tone-success);
+}
+.password-requirements li.satisfied::before {
+  content: '✓';
+  color: var(--tone-success);
+}
+
+.password-match-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.password-match-hint.match {
+  color: var(--tone-success);
+}
+.password-match-hint.mismatch {
+  color: var(--tone-error);
+}
 .modal-alert {
   margin-bottom: 1rem;
   padding: 0.65rem 0.75rem;
@@ -560,15 +641,19 @@
 }
 
 /* ── Account settings: delete account (students) ── */
+/* A quiet, contained "danger zone" rather than a loud block of colour: neutral card
+   background, a single coloured accent on the leading edge, and the action aligned to
+   the end of its own row - the same language Stripe/Linear/GitHub settings panels use
+   for a rare, deliberate action, instead of an alert banner. */
 .account-danger {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem 1rem;
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border);
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--well-bg);
 }
 .account-danger[hidden] { display: none; }
 .account-danger-title {
@@ -585,6 +670,7 @@
 }
 /* More specific than the glass theme's outline-button colours. */
 :root .account-danger .btn.account-danger-btn {
+  align-self: flex-end;
   border-color: var(--tone-danger);
   color: var(--tone-danger);
   cursor: pointer;
@@ -593,6 +679,7 @@
   background: color-mix(in srgb, var(--tone-danger) 12%, transparent);
   border-color: var(--tone-danger);
 }
+
 :root[data-theme] .slip-overlay #deleteAccountModal h2.modal-confirm-title--danger,
 :root[data-theme] #deleteAccountModal h2.modal-confirm-title--danger { color: var(--tone-danger) !important; }
 .account-delete-list {

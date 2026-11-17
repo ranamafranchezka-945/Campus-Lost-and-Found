@@ -2,6 +2,7 @@
 
 const ALLOWED_CATEGORIES = [
   'Electronics',
+  'Water Bottles/Tumblers',
   'ID / Cards',
   'Bags & Wallets',
   'Books & Documents',

@@ -1,5 +1,22 @@
 const THEME_STORAGE_KEY = 'cspc_theme';
 
+// Shared by every password field that sits in a .password-wrap (login, registration,
+// password reset, and the change-password modal): toggles type="password"/"text" and
+// swaps the eye icon. Lives here, not in js/login.js, because both login.html and
+// index.html load this file.
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const showPassword = input.type === 'password';
+  input.type = showPassword ? 'text' : 'password';
+  btn.setAttribute('aria-pressed', String(showPassword));
+  btn.setAttribute('aria-label', showPassword ? 'Hide password' : 'Show password');
+  btn.setAttribute('title', showPassword ? 'Hide password' : 'Show password');
+  btn.innerHTML = showPassword
+    ? '<svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8" /><path d="M9.9 5.2A10.8 10.8 0 0 1 12 5c6.4 0 10 7 10 7a15.8 15.8 0 0 1-3.1 3.8M6.2 6.2C3.5 8.1 2 12 2 12s3.6 7 10 7a10.8 10.8 0 0 0 4.1-.8" /></svg>'
+    : '<svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>';
+}
+
 // Intro screen shared by the landing and portal pages: shown once per browser session.
 // This file loads in <head>, so a repeat visit hides it before anything is drawn.
 const SPLASH_SEEN_KEY = 'back2you.splashSeen';

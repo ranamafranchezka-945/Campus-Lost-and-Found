@@ -20,6 +20,7 @@ const {
 } = require('../services/email');
 const postgresStore = require('../services/postgresStore');
 const supabaseStorage = require('../services/supabaseStorage');
+const reportAssistant = require('../services/reportAssistant');
 
 function finderSubmissionFingerprint(target, message, locationFound, finderContact) {
   return crypto.createHash('sha256').update(JSON.stringify({
@@ -102,9 +103,14 @@ const GUEST_REPORT_LIMIT = { max: 20, windowMs: HOUR_MS };
 const ACCOUNT_REPORT_LIMIT = { max: 30, windowMs: HOUR_MS };
 const FINDER_ALERT_SENDER_LIMIT = { max: 30, windowMs: HOUR_MS };
 const FINDER_ALERT_ITEM_LIMIT = { max: 6, windowMs: HOUR_MS };
+// The assistant is capped more tightly than reports: each call can reach a paid AI API, so a
+// loose limit would let one network run up a bill. Typing a report takes a handful of turns.
+const ASSISTANT_GUEST_LIMIT = { max: 40, windowMs: HOUR_MS };
+const ASSISTANT_ACCOUNT_LIMIT = { max: 60, windowMs: HOUR_MS };
 const reportAttempts = new Map();
 const finderAlertSenders = new Map();
 const finderAlertItems = new Map();
+const assistantAttempts = new Map();
 
 // Reference codes end in random characters, so a code is never handed out twice, even
 // after the item that had it is deleted (an old QR sticker must not reach a new owner).
@@ -411,6 +417,72 @@ router.get('/stats', (req, res) => {
       found: open.filter(i => i.type === 'found').length,
       claimed: items.filter(isItemClaimed).length
     }
+  });
+});
+
+// POST /api/items/assistant/parse - Turn a sentence into a draft report plus live matches.
+//
+// Reads only; nothing is saved here. The student reviews and edits the filled-in form and
+// then submits through POST /api/items as usual, so every normal validation rule still runs.
+// Available to guests, because most people reporting a lost item are not signed in yet.
+router.post('/assistant/parse', async (req, res) => {
+  const message = sanitizeString(req.body.message || '');
+  if (message.length < 3) {
+    return res.status(400).json({ success: false, message: 'Describe the item in a few words first.' });
+  }
+  if (message.length > 1000) {
+    return res.status(400).json({ success: false, message: 'That message is too long. Keep it under 1000 characters.' });
+  }
+
+  const limitKey = req.session?.user ? `account:${req.session.user.id}` : `network:${req.ip}`;
+  const limit = req.session?.user ? ASSISTANT_ACCOUNT_LIMIT : ASSISTANT_GUEST_LIMIT;
+  if (isRateLimited(assistantAttempts, limitKey, limit)) {
+    return res.status(429).json({
+      success: false,
+      message: 'The assistant is busy right now. Wait a moment, or fill in the form directly.'
+    });
+  }
+  recordAttempt(assistantAttempts, limitKey, limit);
+
+  let result;
+  try {
+    result = await reportAssistant.parseReportMessage(message);
+  } catch (error) {
+    console.error('Report assistant failed:', error.message);
+    return res.status(500).json({ success: false, message: 'The assistant could not read that. Please fill in the form directly.' });
+  }
+
+  const review = reportAssistant.reviewDraft(result);
+
+  // Preview matches against the unsaved draft, so the student sees a possible match before
+  // submitting. Private registered belongings and archived reports stay out, exactly as in
+  // the public listing.
+  let matches = [];
+  if (result.draft.type && result.draft.category && result.draft.title) {
+    const items = getItems().filter(item => item.type !== 'registered' && item.status !== 'archived');
+    const probe = {
+      id: '__assistant_draft__',
+      type: result.draft.type,
+      category: result.draft.category,
+      title: result.draft.title,
+      desc: result.draft.desc,
+      location: result.draft.location,
+      verification: ''
+    };
+    matches = findMatches(probe, items).slice(0, 3).map(item => publicItemView(item));
+  }
+
+  res.json({
+    success: true,
+    engine: result.engine,
+    draft: result.draft,
+    confidence: result.confidence,
+    evidence: result.evidence,
+    missing: review.missing,
+    uncertain: review.uncertain,
+    question: review.question,
+    ready: review.ready,
+    matches
   });
 });
 

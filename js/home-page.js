@@ -107,12 +107,54 @@ function openChangePasswordModal() {
   // Only students can delete their own account; admins are managed on the admin page.
   document.getElementById('deleteAccountSection').hidden = currentUser.role !== 'student';
   document.getElementById('changePasswordModal').classList.add('open');
+  updateChangePasswordState();
   document.getElementById('currentPassword').focus();
 }
 
 function closeChangePasswordModal() {
   document.getElementById('changePasswordModal').classList.remove('open');
   document.getElementById('changePasswordForm').reset();
+  updateChangePasswordState();
+}
+
+// Live feedback for the change-password form: which requirements the new password still
+// needs, whether the two new-password fields match, and whether Save should be enabled -
+// the same checks middleware/validate.js's passwordStrengthErrors() runs on submission,
+// surfaced as the student types instead of only after a failed save.
+function updateChangePasswordState() {
+  const currentPassword = document.getElementById('currentPassword').value;
+  const newPassword = document.getElementById('newPassword').value;
+  const confirmPassword = document.getElementById('newPasswordConfirm').value;
+
+  const requirements = {
+    length: newPassword.length >= 8,
+    uppercase: /[A-Z]/.test(newPassword),
+    lowercase: /[a-z]/.test(newPassword),
+    number: /[0-9]/.test(newPassword),
+    special: /[!@#$%?&*]/.test(newPassword)
+  };
+  Object.entries(requirements).forEach(([name, satisfied]) => {
+    const item = document.querySelector(`#newPasswordRequirements [data-requirement="${name}"]`);
+    if (!item) return;
+    item.classList.toggle('satisfied', satisfied);
+    item.setAttribute('aria-label', `${satisfied ? 'Met' : 'Required'}: ${item.textContent}`);
+  });
+  const requirementsMet = Object.values(requirements).every(Boolean);
+
+  const matchHint = document.getElementById('passwordMatchHint');
+  if (!confirmPassword) {
+    matchHint.textContent = '';
+    matchHint.className = 'password-match-hint';
+  } else if (confirmPassword === newPassword) {
+    matchHint.textContent = 'Passwords match.';
+    matchHint.className = 'password-match-hint match';
+  } else {
+    matchHint.textContent = 'Passwords do not match yet.';
+    matchHint.className = 'password-match-hint mismatch';
+  }
+
+  document.getElementById('changePasswordSubmit').disabled =
+    !currentPassword || !requirementsMet || confirmPassword !== newPassword;
 }
 
 async function handleChangePassword(event) {

@@ -1,0 +1,423 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Quick Report Assistant — chat intake above the report form.
+   Uses the shared theme tokens from theme.css, so it follows light and dark mode
+   without any selectors of its own beyond the two amber "guess" accents.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+.assistant-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 18px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.assistant-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.assistant-head-icon {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--stat-active-bg);
+  color: var(--blue-text);
+}
+
+.assistant-head-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.assistant-head-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.assistant-head h3 {
+  margin: 0 0 0.15rem;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.assistant-head p {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.assistant-badge {
+  flex: 0 0 auto;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  background: var(--badge-found-bg);
+  color: var(--badge-found-fg);
+  border: 1px solid var(--badge-found-border);
+}
+
+/* ── Chat log ─────────────────────────────────────────────────────────────── */
+
+.assistant-log {
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem;
+  border-radius: 13px;
+  background: var(--well-bg);
+  border: 1px solid var(--well-border);
+  margin-bottom: 0.85rem;
+}
+
+.assistant-msg {
+  max-width: 88%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 13px;
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+
+.assistant-msg p {
+  margin: 0 0 0.4rem;
+}
+
+.assistant-msg p:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-msg--bot {
+  align-self: flex-start;
+  background: var(--card-glass);
+  border: 1px solid var(--card-border);
+  color: var(--text-main);
+  border-bottom-left-radius: 4px;
+}
+
+.assistant-msg--user {
+  align-self: flex-end;
+  background: var(--pill-active-bg);
+  color: var(--pill-active-fg);
+  border-bottom-right-radius: 4px;
+}
+
+.assistant-note {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.assistant-ask {
+  font-weight: 650;
+  color: var(--blue-text);
+}
+
+/* Three dots while the server reads the message. */
+.assistant-typing {
+  display: inline-flex;
+  gap: 4px;
+  padding: 0.15rem 0;
+}
+
+.assistant-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: assistant-bounce 1.1s infinite ease-in-out;
+}
+
+.assistant-typing i:nth-child(2) { animation-delay: 0.15s; }
+.assistant-typing i:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes assistant-bounce {
+  0%, 70%, 100% { transform: translateY(0); opacity: 0.45; }
+  35%           { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ── Extracted-field chips ────────────────────────────────────────────────── */
+
+.assistant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.assistant-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  background: var(--stat-active-bg);
+  border: 1px solid var(--stat-active-ring);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  color: var(--text-main);
+}
+
+.assistant-chip small {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+/* A guessed value: dashed and amber, so "please check this" is visible at a glance. */
+.assistant-chip--guess {
+  background: rgba(245, 158, 11, 0.13);
+  border-style: dashed;
+  border-color: rgba(245, 158, 11, 0.5);
+}
+
+.assistant-chip-icon {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Possible matches ─────────────────────────────────────────────────────── */
+
+.assistant-matches {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.assistant-matches-head {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--badge-lost-fg);
+  margin: 0 0 0.45rem;
+}
+
+.assistant-match {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  background: var(--field-bg);
+  border: 1px solid var(--field-border);
+  text-decoration: none;
+  color: var(--text-main);
+  margin-bottom: 0.4rem;
+}
+
+.assistant-match:hover,
+.assistant-match:focus-visible {
+  border-color: var(--stat-active-ring);
+  background: var(--option-hover);
+}
+
+.assistant-match-photo {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--well-bg);
+}
+
+.assistant-match-photo--empty {
+  display: block;
+  border: 1px dashed var(--field-border);
+}
+
+.assistant-match-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.assistant-match-body strong {
+  font-size: 0.875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assistant-match-body small {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assistant-match-go {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--blue-text);
+}
+
+/* ── Composer ─────────────────────────────────────────────────────────────── */
+
+.assistant-form {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.assistant-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0.7rem 0.85rem;
+  border-radius: 11px;
+  border: 1px solid var(--field-border);
+  background: var(--field-bg);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
+.assistant-input:focus {
+  outline: none;
+  border-color: var(--blue-main);
+  box-shadow: 0 0 0 3px var(--option-hover);
+}
+
+.assistant-mic,
+.assistant-send {
+  flex: 0 0 auto;
+  border-radius: 11px;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+
+.assistant-mic {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+}
+
+.assistant-mic svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.assistant-mic:hover {
+  border-color: var(--blue-main);
+  color: var(--blue-text);
+}
+
+.assistant-mic.listening {
+  background: var(--badge-lost-bg);
+  border-color: var(--badge-lost-border);
+  color: var(--badge-lost-fg);
+  animation: assistant-pulse 1.4s infinite;
+}
+
+@keyframes assistant-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
+  50%      { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+}
+
+.assistant-send {
+  padding: 0.7rem 1.1rem;
+  background: var(--pill-active-bg);
+  border-color: var(--pill-active-bg);
+  color: var(--pill-active-fg);
+}
+
+.assistant-send:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+/* ── Example prompts ──────────────────────────────────────────────────────── */
+
+.assistant-examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.assistant-examples > span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.assistant-example {
+  border: 1px dashed var(--field-border);
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.assistant-example:hover {
+  border-style: solid;
+  border-color: var(--blue-main);
+  color: var(--blue-text);
+}
+
+/* ── The flash on a form field the assistant just filled ──────────────────── */
+
+.assistant-filled {
+  animation: assistant-flash 1.8s ease-out;
+  border-radius: 10px;
+}
+
+@keyframes assistant-flash {
+  0%   { background: var(--stat-active-bg); box-shadow: 0 0 0 3px var(--stat-active-ring); }
+  70%  { background: var(--stat-active-bg); box-shadow: 0 0 0 3px transparent; }
+  100% { background: transparent; box-shadow: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-filled,
+  .assistant-mic.listening,
+  .assistant-typing i {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .assistant-card { padding: 1rem; }
+  .assistant-log { max-height: 260px; }
+  .assistant-msg { max-width: 94%; }
+  .assistant-send { padding: 0.7rem 0.85rem; }
+  .assistant-head { flex-wrap: wrap; }
+}

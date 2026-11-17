@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="/css/lightbox.css" />
   <link rel="stylesheet" href="/css/meetup.css" />
   <link rel="stylesheet" href="/css/brand.css" />
+  <link rel="stylesheet" href="/css/assistant.css" />
   <link rel="stylesheet" href="/css/theme.css" />
   <script src="/js/main.js"></script>
   <script src="/js/ui.js"></script>
@@ -194,6 +195,39 @@
       <div class="section-head-text">
         <p class="section-eyebrow">Submit a report</p>
         <h2 class="section-title">Report an Item</h2>
+      </div>
+    </div>
+
+    <div class="assistant-card" id="reportAssistant">
+      <div class="assistant-head">
+        <span class="assistant-head-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v2m0 14v2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M3 12h2m14 0h2M5.6 18.4 7 17m10-10 1.4-1.4"/><circle cx="12" cy="12" r="3.4"/></svg>
+        </span>
+        <div class="assistant-head-text">
+          <h3>Quick Report Assistant</h3>
+          <p>Skip the form &mdash; just describe what happened and I will fill it in for you.</p>
+        </div>
+        <span class="assistant-badge">Beta</span>
+      </div>
+
+      <div class="assistant-log" id="assistantLog" role="log" aria-live="polite" aria-label="Report assistant conversation"></div>
+
+      <form class="assistant-form" id="assistantForm" data-submit="assistantSubmit">
+        <label class="visually-hidden" for="assistantInput">Describe the lost or found item</label>
+        <input type="text" id="assistantInput" class="assistant-input" maxlength="1000" autocomplete="off"
+               placeholder="e.g. I lost my black AquaFlask near the library this morning" />
+        <button type="button" class="assistant-mic" id="assistantMicBtn" data-action="assistantToggleVoice"
+                aria-label="Dictate your report" aria-pressed="false" title="Dictate your report">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-3 0h6"/></svg>
+        </button>
+        <button type="submit" class="assistant-send" id="assistantSendBtn">Send</button>
+      </form>
+
+      <div class="assistant-examples">
+        <span>Try:</span>
+        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["I lost my black AquaFlask near the library this morning"]'>I lost my black AquaFlask near the library this morning</button>
+        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["I found a blue JanSport backpack at the canteen around lunch"]'>I found a blue JanSport backpack at the canteen</button>
+        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["nawala yung school ID ko sa CCS building kahapon ng hapon"]'>nawala yung school ID ko sa CCS building kahapon</button>
       </div>
     </div>
 
@@ -547,21 +581,52 @@
       <form id="changePasswordForm" data-submit="handleChangePassword">
         <div class="input-field modal-field">
           <label for="currentPassword">Current Password</label>
-          <input type="password" id="currentPassword" autocomplete="current-password" required />
+          <div class="password-wrap">
+            <input type="password" id="currentPassword" autocomplete="current-password" data-input="updateChangePasswordState" required />
+            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["currentPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="input-field modal-field">
           <label for="newPassword">New Password</label>
-          <input type="password" id="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="newPasswordHint" />
+          <div class="password-wrap">
+            <input type="password" id="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="newPasswordRequirements" data-input="updateChangePasswordState" />
+            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["newPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <ul class="password-requirements" id="newPasswordRequirements" aria-live="polite">
+            <li data-requirement="length">At least 8 characters</li>
+            <li data-requirement="uppercase">One uppercase letter (A-Z)</li>
+            <li data-requirement="lowercase">One lowercase letter (a-z)</li>
+            <li data-requirement="number">One number (0-9)</li>
+            <li data-requirement="special">One special symbol (!, @, #, $, %, ?, &amp; *)</li>
+          </ul>
         </div>
         <div class="input-field modal-field">
           <label for="newPasswordConfirm">Confirm New Password</label>
-          <input type="password" id="newPasswordConfirm" autocomplete="new-password" required />
+          <div class="password-wrap">
+            <input type="password" id="newPasswordConfirm" autocomplete="new-password" required data-input="updateChangePasswordState" />
+            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["newPasswordConfirm", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <p class="password-match-hint" id="passwordMatchHint" aria-live="polite"></p>
         </div>
-        <p class="modal-hint" id="newPasswordHint">At least 8 characters, with an uppercase letter, a lowercase letter, a number, and one of ! @ # $ % ? &amp; *</p>
         <p id="changePasswordError" class="modal-error" role="alert" style="display: none;"></p>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeChangePasswordModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="changePasswordSubmit">Save Password</button>
+          <button type="submit" class="btn btn-primary" id="changePasswordSubmit" disabled>Save Password</button>
         </div>
       </form>
 
@@ -887,6 +952,7 @@
   <script src="/vendor/three.min.js"></script>
   <script src="/js/cspc-3d-logo.js"></script>
   <script src="/js/home-page.js"></script>
+  <script src="/js/report-assistant.js"></script>
   <script src="/icons.js"></script>
 </body>
 </html>
