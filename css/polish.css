@@ -415,6 +415,12 @@
 
 /* ── Home: report form ──────────────────────────────────────────────────── */
 /* The form sits directly on its panel instead of a second card inside it. */
+:root #portalHero,
+:root #report,
+:root #items {
+  border: 1px solid var(--clay-edge);
+  border-radius: 18px;
+}
 :root .tools-section > .simple-card {
   padding: 0;
   border: 0;
@@ -422,6 +428,87 @@
   box-shadow: none;
 }
 :root .photo-upload-icon { color: var(--blue-main); }
+
+#itemForm[aria-busy='true'] button[type='submit'] {
+  cursor: wait;
+  opacity: 0.86;
+}
+
+/* ── Portal hero globe ──────────────────────────────────────────────────── */
+.portal-hero-avatar {
+  flex: 0 0 min(40%, 380px);
+  text-align: center;
+}
+.portal-hero-globe {
+  --portal-globe-size: clamp(300px, 35vw, 380px);
+  position: relative;
+  width: var(--portal-globe-size);
+  height: var(--portal-globe-size);
+  margin-inline: auto;
+  perspective: 950px;
+}
+.portal-hero-globe::after {
+  content: '';
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  bottom: 1%;
+  z-index: 1;
+  height: 24px;
+  border: 1px solid color-mix(in srgb, var(--blue-main) 20%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--blue-main) 14%, transparent), transparent 68%);
+  transform: rotateX(68deg);
+  pointer-events: none;
+}
+.portal-hero-glow {
+  position: absolute;
+  inset: 12%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.22) 0%, rgba(30, 58, 138, 0.18) 34%, rgba(37, 99, 235, 0.07) 54%, transparent 72%);
+  filter: blur(3px);
+  pointer-events: none;
+}
+.portal-hero-stage {
+  position: absolute;
+  inset: 0 0 42px;
+  z-index: 2;
+  animation: portal-hero-bob 6s ease-in-out infinite;
+}
+.portal-hero-stage canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+.portal-hero-stage canvas:active { cursor: grabbing; }
+.portal-hero-shadow {
+  position: absolute;
+  left: 50%;
+  bottom: -24px;
+  width: 64%;
+  height: 20px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.24), transparent 70%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+@keyframes portal-hero-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@media (max-width: 768px) {
+  .portal-hero-avatar { flex: 0 0 auto; }
+  .portal-hero-globe { --portal-globe-size: min(82vw, 340px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .portal-hero-stage { animation: none; }
+}
 
 /* ── Sign-in and register forms: same label style as the rest of the site ─ */
 :root .form-group label {

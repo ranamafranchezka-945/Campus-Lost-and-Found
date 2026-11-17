@@ -4,6 +4,7 @@
   --clay-shadow-light: transparent;
   --clay-shadow-dark: transparent;
   --clay-edge: #303746;
+  --form-outline: #424b5b;
   --clay-raised: none;
   --clay-inset: none;
   --scene:
@@ -69,6 +70,7 @@
   --clay-shadow-light: transparent;
   --clay-shadow-dark: transparent;
   --clay-edge: #e2e8f0;
+  --form-outline: #cbd5e1;
   --clay-raised: none;
   --clay-inset: none;
   --scene: #f8fafc;
@@ -158,6 +160,50 @@
   border-radius: 16px;
 }
 
+:root .hero-section {
+  border: none;
+}
+
+:root .items-grid {
+  grid-auto-rows: auto;
+}
+
+:root .listing-category-divider {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+:root .listing-category-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--clay-edge);
+}
+
+:root .hero-section,
+:root .projects-section,
+:root .tools-section {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+:root .auth-card,
+:root #report > .simple-card,
+:root .broadcast-card,
+:root .user-form-panel {
+  border-color: var(--form-outline);
+}
+
 :root .project-card:hover,
 :root .stat-box:hover {
   background: var(--card-glass-hover);
@@ -215,8 +261,14 @@
 :root .inline-status-select,
 :root .claim-review-input {
   background: var(--field-bg);
-  border-color: var(--field-border);
+  border-color: var(--form-outline);
   box-shadow: var(--clay-inset);
+}
+
+:root input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']):not([type='reset']):not([type='hidden']),
+:root select,
+:root textarea {
+  border-color: var(--form-outline);
 }
 
 :root .input-field input:focus,
@@ -392,4 +444,29 @@
   -webkit-background-clip: initial;
   background-clip: initial;
   -webkit-text-fill-color: var(--blue-main);
+}
+
+/* ── CSPC 3D globe logo (js/cspc-3d-logo.js): scene colors per theme ── */
+:root {
+  --cspc-globe-fill: #141c38;
+  --cspc-globe-line: #3d4e84;
+  --cspc-globe-land: #5a6fc0;
+  --cspc-globe-border: #141c38;
+  --cspc-globe-accent: #f5b83d;
+  --cspc-globe-arrow: #7487dc;
+  --cspc-globe-arrow-shadow: #2a3564;
+  --cspc-globe-ring: #cfd6ea;
+  --cspc-globe-pin: #b3bcdc;
+}
+
+:root[data-theme='light'] {
+  --cspc-globe-fill: #ffffff;
+  --cspc-globe-line: #aab3c7;
+  --cspc-globe-land: #2a3a73;
+  --cspc-globe-border: #cdd5e8;
+  --cspc-globe-accent: #f0a82e;
+  --cspc-globe-arrow: #101528;
+  --cspc-globe-arrow-shadow: #a9adb8;
+  --cspc-globe-ring: #101528;
+  --cspc-globe-pin: #3b4256;
 }

@@ -69,6 +69,13 @@ body.auth-checking > .site-footer {
       border-bottom: 1px solid var(--border);
       padding-bottom: 0.75rem;
     }
+    .auth-form-enter {
+      animation: auth-form-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes auth-form-enter {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .auth-tab {
       flex: 1;
       padding: 0.5rem;
@@ -84,6 +91,10 @@ body.auth-checking > .site-footer {
     .auth-tab.active {
       color: var(--blue-light);
       background: rgba(37, 99, 235, 0.15);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .auth-form-enter { animation: none; }
     }
 
     .form-group {

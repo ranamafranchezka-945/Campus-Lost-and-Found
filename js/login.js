@@ -67,7 +67,10 @@ function togglePasswordVisibility(inputId, btn) {
 
     function showAuthForm(formId) {
       ['loginForm', 'registerForm', 'forgotForm', 'resetForm', 'otpForm'].forEach(id => {
-        document.getElementById(id).style.display = id === formId ? 'block' : 'none';
+        const form = document.getElementById(id);
+        const isActive = id === formId;
+        form.style.display = isActive ? 'block' : 'none';
+        if (isActive) restartAnimation(form, 'auth-form-enter');
       });
       // The code step has its own header and back button instead of the tabs.
       document.querySelector('.auth-tabs').style.display = formId === 'otpForm' ? 'none' : '';

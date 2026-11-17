@@ -18,6 +18,7 @@ const postgresStore = require('./services/postgresStore');
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
   if (urlPath === '/vendor/qrcode.js') return require.resolve('qrcode-generator/qrcode.js');
+  if (urlPath === '/vendor/three.min.js') return require.resolve('three/build/three.min.js');
   const match = /^\/(css|js)\/([\w.-]+)$/.exec(urlPath);
   return match ? path.join(__dirname, match[1], match[2]) : null;
 }
@@ -153,13 +154,16 @@ function createApp() {
     sendPage(res, path.join(__dirname, 'admin.html'));
   });
 
-  app.get(['/browse.html', '/item-detail.html'], (req, res) => res.redirect(302, '/#items'));
-  app.get('/report-lost.html', (req, res) => res.redirect(302, '/?report=lost#itemForm'));
-  app.get('/report-found.html', (req, res) => res.redirect(302, '/?report=found#itemForm'));
+  app.get(['/browse.html', '/item-detail.html'], (req, res) => res.redirect(302, '/index.html#items'));
+  app.get('/report-lost.html', (req, res) => res.redirect(302, '/index.html?report=lost#itemForm'));
+  app.get('/report-found.html', (req, res) => res.redirect(302, '/index.html?report=found#itemForm'));
   app.get(['/found', '/match-reference', '/index.html'], (req, res) => sendPage(res, page('index.html')));
+  app.get(['/home', '/home.html'], (req, res) => sendPage(res, page('home.html')));
+  // Signed-in students go straight to the portal; visitors see the public landing page.
   app.get('/', (req, res) => {
-    if (req.session?.user?.role === 'admin') return res.redirect(302, '/admin.html');
-    sendPage(res, page('index.html'));
+    const user = req.session?.user;
+    if (user?.role === 'admin') return res.redirect(302, '/admin.html');
+    sendPage(res, page(user ? 'index.html' : 'home.html'));
   });
   app.get('/login', (req, res) => {
     const user = req.session?.user;
@@ -173,7 +177,7 @@ function createApp() {
   // Serve only browser assets from the project root; server code, scripts and data stay private.
   app.use('/css', express.static(path.join(__dirname, 'css'), { setHeaders: setAssetCacheHeaders }));
   app.use('/js', express.static(path.join(__dirname, 'js'), { setHeaders: setAssetCacheHeaders }));
-  app.get(['/icons.js', '/vendor/qrcode.js'], (req, res) => {
+  app.get(['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js'], (req, res) => {
     setAssetCacheHeaders(res);
     res.sendFile(assetFile(req.path));
   });

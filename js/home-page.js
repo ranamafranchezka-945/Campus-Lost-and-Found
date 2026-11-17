@@ -1810,6 +1810,7 @@ async function handleFormSubmit(e) {
   e.preventDefault();
   if (reportSubmissionInProgress) return;
   reportSubmissionInProgress = true;
+  const form = document.getElementById('itemForm');
   const submitButton = document.querySelector('#itemForm button[type="submit"]');
   const originalSubmitLabel = submitButton ? submitButton.textContent : '';
   if (submitButton) {
@@ -1839,6 +1840,7 @@ async function handleFormSubmit(e) {
   if (selectedPhotoFile) payload.append('photo', selectedPhotoFile);
 
   try {
+    form.setAttribute('aria-busy', 'true');
     const res = await fetch('/api/items', {
       method: 'POST',
       headers: { 'Idempotency-Key': reportSubmissionKey },
@@ -1870,6 +1872,7 @@ async function handleFormSubmit(e) {
   } catch (err) {
     showToast('Network error while saving report.', true);
   } finally {
+    form.removeAttribute('aria-busy');
     reportSubmissionInProgress = false;
     if (submitButton) {
       submitButton.disabled = false;

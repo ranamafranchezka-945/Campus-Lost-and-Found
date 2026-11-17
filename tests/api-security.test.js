@@ -840,7 +840,18 @@ test('pages send a strict script policy and contain no inline scripts or handler
 });
 
 test('page assets are stamped with content versions and cached accordingly', async () => {
-  const html = await (await fetch(`${baseUrl}/`)).text();
+  const landingHtml = await (await fetch(`${baseUrl}/`)).text();
+  for (const [asset, label] of [
+    [landingHtml.match(/src="(\/js\/main\.js\?v=[a-f0-9]{10})"/), 'main.js'],
+    [landingHtml.match(/src="(\/js\/cspc-3d-logo\.js\?v=[a-f0-9]{10})"/), 'CSPC logo script'],
+    [landingHtml.match(/src="(\/vendor\/three\.min\.js\?v=[a-f0-9]{10})"/), 'Three.js']
+  ]) {
+    assert.ok(asset, `${label} is versioned`);
+    const response = await fetch(`${baseUrl}${asset[1]}`);
+    assert.equal(response.status, 200);
+    assert.match(response.headers.get('cache-control'), /immutable/);
+  }
+  const html = await (await fetch(`${baseUrl}/index.html`)).text();
   const stamped = html.match(/src="(\/js\/ui\.js\?v=[a-f0-9]{10})"/);
   assert.ok(stamped, 'ui.js is versioned');
   const versioned = await fetch(`${baseUrl}${stamped[1]}`);

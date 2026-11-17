@@ -1,6 +1,6 @@
 const THEME_STORAGE_KEY = 'cspc_theme';
 
-// Intro screen on the home page (css/splash.css): shown once per browser session.
+// Intro screen shared by the landing and portal pages: shown once per browser session.
 // This file loads in <head>, so a repeat visit hides it before anything is drawn.
 const SPLASH_SEEN_KEY = 'back2you.splashSeen';
 (function setupSplash() {
@@ -14,6 +14,28 @@ const SPLASH_SEEN_KEY = 'back2you.splashSeen';
     const splash = document.getElementById('appSplash');
     if (!splash) return;
     try { sessionStorage.setItem(SPLASH_SEEN_KEY, '1'); } catch { /* ignore */ }
+
+    if (
+      splash.querySelector('[data-cspc-logo-scene]')
+      && !window.THREE
+      && !document.querySelector('script[src^="/js/cspc-3d-logo.js"]')
+    ) {
+      const threeScript = document.createElement('script');
+      threeScript.src = '/vendor/three.min.js';
+      threeScript.addEventListener('load', () => {
+        const logoScript = document.createElement('script');
+        logoScript.src = '/js/cspc-3d-logo.js';
+        logoScript.addEventListener('error', () => {
+          console.error('The intro logo animation script could not be loaded.');
+        }, { once: true });
+        document.head.appendChild(logoScript);
+      }, { once: true });
+      threeScript.addEventListener('error', () => {
+        console.error('Three.js could not be loaded for the intro logo animation.');
+      }, { once: true });
+      document.head.appendChild(threeScript);
+    }
+
     const leave = () => splash.classList.add('is-leaving');
     splash.addEventListener('click', leave);
     document.addEventListener('keydown', leave, { once: true });

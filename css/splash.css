@@ -1,13 +1,13 @@
-/* Intro screen on the home page: the CSPC seal and the BACK2YOU wordmark animate in,
-   then the whole screen fades away (about 3 seconds in all). It runs on CSS alone, so it
-   still leaves on time if a script fails. js/main.js skips it after the first visit in a
-   browser session and lets a click, tap or key press end it early. */
+/* Intro screen: the CSPC 3D logo and BACK2YOU wordmark animate in, then the screen fades.
+   The portal loads the local 3D renderer only when its intro is shown. */
 
 :root {
   --splash-bg: #dde8fb;
   --splash-ink: #2a32d6;
   --splash-accent: #3b82f6;
   --splash-glow: rgba(59, 130, 246, 0.22);
+  --splash-total-duration: 2s;
+  --splash-exit-duration: 420ms;
 }
 [data-theme='dark'] {
   --splash-bg: #0f1526;
@@ -27,15 +27,18 @@
     radial-gradient(circle at 50% 42%, var(--splash-glow), transparent 55%),
     var(--splash-bg);
   cursor: pointer;
-  animation: splash-out 0.55s ease 2.6s forwards;
+  animation: splash-out var(--splash-exit-duration) cubic-bezier(0.4, 0, 0.2, 1)
+    calc(var(--splash-total-duration) - var(--splash-exit-duration)) forwards;
 }
 /* Already seen this session (class set by js/main.js before the page draws). */
 .skip-splash .app-splash { display: none; }
 /* Clicked or a key pressed: leave straight away. */
-.app-splash.is-leaving { animation: splash-out 0.35s ease forwards; }
+.app-splash.is-leaving {
+  animation: splash-out var(--splash-exit-duration) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
 
 @keyframes splash-out {
-  to { opacity: 0; visibility: hidden; }
+  to { opacity: 0; visibility: hidden; transform: scale(1.015); }
 }
 
 .splash-content {
@@ -43,38 +46,91 @@
   justify-items: center;
 }
 
-/* ── CSPC seal: pops in, then a ring pulses out from it ── */
-.splash-seal {
+/* ── CSPC 3D logo: enters, floats, and gently rocks ── */
+.splash-logo {
   position: relative;
-  width: clamp(96px, 26vw, 132px);
+  width: clamp(280px, 42vw, 440px);
   aspect-ratio: 1;
-  animation: splash-seal-in 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.1s both;
+  perspective: 700px;
+  animation: splash-logo-in 0.78s cubic-bezier(0.16, 1, 0.3, 1) 0.06s both;
 }
-.splash-seal img {
+.splash-3d-logo {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  perspective: 950px;
+  transform-style: preserve-3d;
+}
+.splash-3d-glow {
+  position: absolute;
+  inset: 12%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.22) 0%, rgba(30, 58, 138, 0.18) 34%, rgba(37, 99, 235, 0.07) 54%, transparent 72%);
+  filter: blur(3px);
+}
+.splash-logo-float {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: splash-logo-float 5.2s ease-in-out 0.72s infinite;
+}
+.splash-3d-stage {
+  position: absolute;
+  inset: 0 0 42px;
+  z-index: 2;
+}
+.splash-3d-stage canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  padding: 6%;
-  border-radius: 50%;
-  background: #ffffff;
-  object-fit: contain;
-  box-shadow: 0 18px 40px -16px rgba(42, 50, 214, 0.45);
+  cursor: grab;
+  touch-action: none;
 }
-.splash-ring {
+.splash-3d-stage canvas:active {
+  cursor: grabbing;
+}
+.splash-3d-fallback {
   position: absolute;
-  inset: -10px;
-  border: 2px solid var(--splash-ink);
-  border-radius: 50%;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+.splash-3d-fallback img {
+  width: 90%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 18px 20px rgba(15, 23, 42, 0.25));
+}
+.splash-3d-stage.is-ready .splash-3d-fallback {
   opacity: 0;
-  animation: splash-ring 1.3s ease-out 0.6s 2;
 }
-@keyframes splash-seal-in {
-  from { opacity: 0; transform: scale(0.6) rotate(-12deg); }
-  to { opacity: 1; transform: none; }
+.splash-3d-shadow {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -16px;
+  z-index: 1;
+  height: 18px;
+  border: 1px solid color-mix(in srgb, var(--splash-ink) 18%, transparent);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, color-mix(in srgb, var(--splash-ink) 12%, transparent), transparent 70%);
+  transform: rotateX(68deg);
+  pointer-events: none;
 }
-@keyframes splash-ring {
-  from { opacity: 0.55; transform: scale(0.92); }
-  to { opacity: 0; transform: scale(1.4); }
+@keyframes splash-logo-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.93) rotate(-2deg); filter: blur(5px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes splash-logo-float {
+  0%, 100% { transform: translateY(0) rotateY(-6deg) rotateZ(-1deg); }
+  50% { transform: translateY(-9px) rotateY(6deg) rotateZ(1deg); }
 }
 
 /* ── BACK2YOU: letters rise in one after another; the 2 gives a little bounce ── */
@@ -89,21 +145,21 @@
   opacity: 0;
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: splash-letter-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) calc(0.55s + var(--i) * 0.07s) both;
+  animation: splash-letter-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) calc(0.42s + var(--i) * 0.035s) both;
 }
 .splash-letter--accent {
   fill: var(--splash-accent);
   transform-origin: 50% 50%;
   animation:
-    splash-letter-in 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.3) calc(0.55s + var(--i) * 0.07s) both,
-    splash-two-pop 0.5s ease-in-out 1.5s;
+    splash-letter-in 0.36s cubic-bezier(0.16, 1, 0.3, 1) calc(0.42s + var(--i) * 0.035s) both,
+    splash-two-pop 0.38s ease-in-out 1.05s;
 }
 @keyframes splash-letter-in {
-  from { opacity: 0; transform: translateY(45%) scale(0.85); }
+  from { opacity: 0; transform: translateY(28%) scale(0.94); }
   to { opacity: 1; transform: none; }
 }
 @keyframes splash-two-pop {
-  50% { transform: scale(1.25) rotate(-8deg); }
+  50% { transform: scale(1.12) rotate(-4deg); }
 }
 
 /* ── Loading bar under the word ── */
@@ -114,7 +170,7 @@
   overflow: hidden;
   border-radius: 4px;
   background: color-mix(in srgb, var(--splash-ink) 16%, transparent);
-  animation: splash-fade-in 0.3s ease 1s both;
+  animation: splash-fade-in 0.25s ease 0.3s both;
 }
 .splash-progress::after {
   content: '';
@@ -125,14 +181,15 @@
   background: var(--splash-ink);
   transform: scaleX(0);
   transform-origin: left;
-  animation: splash-progress 1.5s ease-in-out 1s forwards;
+  animation: splash-progress 1s cubic-bezier(0.4, 0, 0.2, 1) 0.35s forwards;
 }
 @keyframes splash-fade-in { from { opacity: 0; } }
 @keyframes splash-progress { to { transform: scaleX(1); } }
 
 /* Less motion: everything simply appears, and the screen leaves sooner. */
 @media (prefers-reduced-motion: reduce) {
-  .splash-seal,
+  .splash-logo,
+  .splash-logo-float,
   .splash-letter,
   .splash-letter--accent,
   .splash-progress,
@@ -141,6 +198,17 @@
     opacity: 1;
     transform: none;
   }
-  .splash-ring { display: none; }
-  .app-splash { animation-delay: 1.2s; }
+  .app-splash { animation-delay: calc(var(--splash-total-duration) - var(--splash-exit-duration)); }
+}
+
+@media (max-width: 560px) {
+  .splash-logo {
+    width: min(82vw, 360px);
+  }
+}
+
+@media (max-height: 700px) {
+  .splash-logo {
+    width: min(42vh, 360px);
+  }
 }

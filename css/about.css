@@ -1,6 +1,6 @@
 .about-hero,
 .about-content {
-  width: min(100% - 2rem, 960px);
+  width: min(100% - 2.5rem, 1100px);
   margin-inline: auto;
   position: relative;
   z-index: 1;
@@ -257,11 +257,6 @@
 }
 
 @media (max-width: 420px) {
-  .about-hero,
-  .about-content {
-    width: min(100% - 1.25rem, 960px);
-  }
-
   .benefit-row {
     gap: .75rem;
     padding: 1rem;
