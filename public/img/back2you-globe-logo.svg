@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Back2You globe logo">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#dfeafc"/>
+      <stop offset="38%" stop-color="#a9bdf3"/>
+      <stop offset="68%" stop-color="#6482d8"/>
+      <stop offset="100%" stop-color="#2b3d72"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" x2="1">
+      <stop offset="0%" stop-color="#dfe8ff"/>
+      <stop offset="50%" stop-color="#b8c7f8"/>
+      <stop offset="100%" stop-color="#90a8e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="64" fill="#edf3ff"/>
+  <circle cx="256" cy="256" r="182" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="182" fill="none" stroke="url(#ring)" stroke-width="14" opacity="0.9"/>
+  <g fill="#1e2d52" opacity="0.7">
+    <path d="M164 180c24-12 50-18 84-18 40 0 74 10 100 30-18 6-34 18-48 36s-20 36-22 61c-4 24-16 46-32 62-16 16-38 28-62 30-22 2-44-4-62-20 18-12 31-26 42-42 9-13 15-29 16-48 2-19 8-36 19-57 4-8 9-17 15-34z"/>
+    <path d="M292 140c44 2 78 20 104 52-6 8-12 15-18 21-14 15-29 27-47 35-24 10-48 12-76 8-4-18-2-39 6-61 7-18 16-34 31-55z"/>
+    <path d="M326 245c17 8 34 12 52 12 11 0 23-2 37-6-2 17-9 31-20 44-12 15-29 25-51 30-24 6-46 2-68-12 10-18 20-34 31-49 7-9 13-15 19-19z"/>
+    <path d="M136 302c16 0 32 3 48 10 18 8 34 18 49 32-28 16-58 23-89 20-18-2-34-10-50-24 12-18 24-30 42-38z"/>
+  </g>
+  <g fill="none" stroke="#e5edf9" stroke-width="5" opacity="0.7">
+    <path d="M74 256h364"/>
+    <path d="M256 74v364"/>
+    <path d="M123 148c30 18 52 43 64 77 14 40 14 82 0 127-10 34-32 61-66 82"/>
+    <path d="M389 148c-30 18-52 43-64 77-14 40-14 82 0 127 10 34 32 61 66 82"/>
+  </g>
+  <g fill="#f1f5ff" opacity="0.88">
+    <circle cx="256" cy="256" r="14"/>
+  </g>
+</svg>
