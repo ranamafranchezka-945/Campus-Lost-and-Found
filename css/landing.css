@@ -24,6 +24,27 @@ body.landing-page {
   margin-top: 0;
 }
 
+.landing-page .theme-toggle {
+  border-radius: 7px !important;
+  background: var(--clay-surface) !important;
+  border-color: var(--clay-edge) !important;
+  color: var(--blue-main) !important;
+}
+
+.landing-page .theme-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+@media (max-width: 768px) {
+  .landing-page .nav-actions #userNavSlot .nav-signin-btn {
+    display: inline-flex !important;
+  }
+}
+
 .landing-hero .hero-text {
   position: relative;
   z-index: 1;
