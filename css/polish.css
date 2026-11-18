@@ -366,6 +366,10 @@
   margin-top: 0.35rem;
   padding-top: 0;
 }
+/* Always sits at the right edge of the row, whatever else is there (or alone). */
+:root .listing-card .listing-actions .btn-del {
+  margin-left: auto;
+}
 /* "Potential match" now sits with the card's actions instead of covering the photo. */
 :root .listing-card .listing-actions .potential-match-badge {
   position: relative;

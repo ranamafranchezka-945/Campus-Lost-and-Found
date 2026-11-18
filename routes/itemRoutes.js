@@ -1792,22 +1792,13 @@ router.delete('/:id', requireAuth, async (req, res) => {
   const isOwner = String(item.reportedBy) === String(req.session.user.id);
   if (!isAdmin && !isOwner) return res.status(403).json({ success: false, message: 'You do not have permission to delete this item.' });
 
-  // Self-delete (not admin) is blocked while someone else's in-progress recovery
-  // attempt lives only on this item record - deleting it now would erase that
-  // attempt before anyone reviewed it. Admins can still delete regardless.
-  if (!isAdmin) {
-    if (item.type === 'registered' && Array.isArray(item.notifications) && item.notifications.some(n => !n.read)) {
-      return res.status(409).json({ success: false, message: 'Someone reported finding this item. Please review that notification before deleting it.' });
-    }
-    if (item.type === 'lost' || item.type === 'found') {
-      if (item.claimed) {
-        return res.status(409).json({ success: false, message: 'This report has already been resolved and can no longer be deleted.' });
-      }
-      const hasPendingClaim = getClaims().some(claim => String(claim.itemId) === String(item.id) && claim.status === 'pending');
-      if (hasPendingClaim) {
-        return res.status(409).json({ success: false, message: 'Someone has submitted a claim request for this item. Please wait for it to be reviewed before deleting the report.' });
-      }
-    }
+  // A student can't delete their own registered belonging while an unread finder
+  // alert is waiting on it - that alert lives only on this item record, so deleting
+  // it now would erase someone's "I found this" message before the owner ever saw
+  // it. Lost/found reports can be deleted by their reporter regardless of status
+  // (including already claimed) - admins can always delete regardless either way.
+  if (!isAdmin && item.type === 'registered' && Array.isArray(item.notifications) && item.notifications.some(n => !n.read)) {
+    return res.status(409).json({ success: false, message: 'Someone reported finding this item. Please review that notification before deleting it.' });
   }
 
   items = items.filter(i => String(i.id) !== String(req.params.id));
