@@ -1788,9 +1788,27 @@ router.delete('/:id', requireAuth, async (req, res) => {
   if (!item) {
     return res.status(404).json({ success: false, message: 'Item not found.' });
   }
-  const canDelete = req.session.user.role === 'admin'
-    || (item.type === 'registered' && String(item.reportedBy) === String(req.session.user.id));
-  if (!canDelete) return res.status(403).json({ success: false, message: 'You do not have permission to delete this item.' });
+  const isAdmin = req.session.user.role === 'admin';
+  const isOwner = String(item.reportedBy) === String(req.session.user.id);
+  if (!isAdmin && !isOwner) return res.status(403).json({ success: false, message: 'You do not have permission to delete this item.' });
+
+  // Self-delete (not admin) is blocked while someone else's in-progress recovery
+  // attempt lives only on this item record - deleting it now would erase that
+  // attempt before anyone reviewed it. Admins can still delete regardless.
+  if (!isAdmin) {
+    if (item.type === 'registered' && Array.isArray(item.notifications) && item.notifications.some(n => !n.read)) {
+      return res.status(409).json({ success: false, message: 'Someone reported finding this item. Please review that notification before deleting it.' });
+    }
+    if (item.type === 'lost' || item.type === 'found') {
+      if (item.claimed) {
+        return res.status(409).json({ success: false, message: 'This report has already been resolved and can no longer be deleted.' });
+      }
+      const hasPendingClaim = getClaims().some(claim => String(claim.itemId) === String(item.id) && claim.status === 'pending');
+      if (hasPendingClaim) {
+        return res.status(409).json({ success: false, message: 'Someone has submitted a claim request for this item. Please wait for it to be reviewed before deleting the report.' });
+      }
+    }
+  }
 
   items = items.filter(i => String(i.id) !== String(req.params.id));
   saveItems(items);
