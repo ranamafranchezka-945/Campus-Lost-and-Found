@@ -2276,8 +2276,13 @@ button {
     line-height: 1.2 !important;
   }
 
-  #registerBelongingModal form > .input-field {
+  #registerBelongingModal form > .input-field,
+  #registerBelongingModal .report-more .input-field {
     margin-bottom: .4rem !important;
+  }
+
+  #registerBelongingModal .report-more > summary {
+    padding: .5rem 2.25rem .5rem .75rem !important;
   }
 
   #registerBelongingModal form > .modal-grid-2 {

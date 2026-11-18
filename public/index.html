@@ -744,15 +744,23 @@
           </div>
         </div>
 
-        <div class="input-field modal-field">
-          <label for="regIdentifiers">Distinguishing Marks / Serial No. (Optional)</label>
-          <input type="text" id="regIdentifiers" placeholder="e.g. Anime sticker on lid, engraved initials" maxlength="150" />
-        </div>
+        <!-- Optional fields stay folded away so the required ones stand out; closing the modal folds them again. -->
+        <details class="report-more modal-field modal-field--last" id="registerMoreDetails">
+          <summary>
+            <span class="report-more-title">Add more details</span>
+            <span class="report-more-hint">Serial number, finder note · optional</span>
+          </summary>
 
-        <div class="input-field modal-field modal-field--last">
-          <label for="regInstructions">Default Note for Finder</label>
-          <textarea id="regInstructions" rows="2" placeholder="e.g. If found, please scan this QR to notify me or leave with the library front counter."></textarea>
-        </div>
+          <div class="input-field modal-field">
+            <label for="regIdentifiers">Distinguishing Marks / Serial No. (Optional)</label>
+            <input type="text" id="regIdentifiers" placeholder="e.g. Anime sticker on lid, engraved initials" maxlength="150" />
+          </div>
+
+          <div class="input-field modal-field">
+            <label for="regInstructions">Default Note for Finder (Optional)</label>
+            <textarea id="regInstructions" rows="2" placeholder="e.g. If found, please scan this QR to notify me or leave with the library front counter."></textarea>
+          </div>
+        </details>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeRegisterBelongingModal">Cancel</button>

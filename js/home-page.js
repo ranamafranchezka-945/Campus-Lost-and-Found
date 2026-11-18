@@ -874,6 +874,8 @@ function closeRegisterBelongingModal() {
   const form = document.getElementById('registerBelongingForm');
   if (form) form.reset();
   resetCategoryPicker('regCategory');
+  const moreDetails = document.getElementById('registerMoreDetails');
+  if (moreDetails) moreDetails.open = false;
   editingBelongingId = null;
   document.getElementById('registerModalTitle').textContent = 'Register Valuable Belonging';
   document.getElementById('registerModalSubtitle').textContent = 'Register your laptop, tumbler, or binder before it gets lost to generate an anonymous recovery QR sticker.';
@@ -948,8 +950,12 @@ function editRegisteredBelonging(event, id) {
   categoryPicker.textContent = item.category || 'Select category...';
   categoryPicker.classList.toggle('selected', Boolean(item.category));
   document.getElementById('regLocation').value = item.location || 'Campus-wide';
-  document.getElementById('regIdentifiers').value = item.locationDetails || item.verification || '';
-  document.getElementById('regInstructions').value = item.instructions || '';
+  const identifiers = item.locationDetails || item.verification || '';
+  const instructions = item.instructions || '';
+  document.getElementById('regIdentifiers').value = identifiers;
+  document.getElementById('regInstructions').value = instructions;
+  const moreDetails = document.getElementById('registerMoreDetails');
+  if (moreDetails) moreDetails.open = Boolean(identifiers || instructions);
   document.getElementById('registerModalTitle').textContent = 'Edit Registered Belonging';
   document.getElementById('registerModalSubtitle').textContent = 'Update the details for this registered belonging.';
   document.getElementById('regSubmitBtn').textContent = 'Save Changes';
