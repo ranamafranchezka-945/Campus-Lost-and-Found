@@ -139,6 +139,19 @@
 .side-brand-text strong { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
 .side-brand-text span { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.72); }
 .side-close { display: none; }
+.side-collapse {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-left: auto;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  cursor: pointer;
+}
 
 .side-nav { display: flex; flex-direction: column; gap: 0.2rem; flex: 1 1 auto; }
 .side-group {
@@ -215,7 +228,8 @@
 }
 
 .side-link:focus-visible,
-.side-close:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.side-close:focus-visible,
+.side-collapse:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 .admin-topbar {
@@ -280,6 +294,7 @@
   cursor: pointer;
 }
 .topbar-btn:hover { border-color: var(--blue-main); }
+.topbar-menu { display: none; }
 .topbar-btn:focus-visible,
 .link-btn:focus-visible,
 .viz-toggle:focus-visible,
@@ -703,6 +718,7 @@
     color: #fff;
     cursor: pointer;
   }
+  .side-collapse { display: none; }
   .side-backdrop {
     display: block;
     position: fixed;
@@ -918,9 +934,11 @@
 :root[data-theme='light'] .side-link.active::before { background: #4169e1; }
 :root[data-theme='light'] .side-count { background: rgba(65, 105, 225, 0.1); color: #2f4fc4; }
 :root[data-theme='light'] .side-count--alert { background: #dc2626; color: #fff; }
-:root[data-theme='light'] .side-close { background: rgba(15, 23, 42, 0.06); color: #334155; }
+:root[data-theme='light'] .side-close,
+:root[data-theme='light'] .side-collapse { background: rgba(15, 23, 42, 0.06); color: #334155; }
 :root[data-theme='light'] .side-link:focus-visible,
-:root[data-theme='light'] .side-close:focus-visible { outline-color: #4169e1; }
+:root[data-theme='light'] .side-close:focus-visible,
+:root[data-theme='light'] .side-collapse:focus-visible { outline-color: #4169e1; }
 
 /* ── Header: sun / moon switch, notifications and profile dropdowns ─────────── */
 /* On wide screens the search sits just left of the theme button: the menu button stays on the
@@ -1036,6 +1054,8 @@
   :root .admin-app.is-collapsed { grid-template-columns: 4.75rem minmax(0, 1fr); }
   .is-collapsed .admin-sidebar { padding-inline: 0.6rem; }
   .is-collapsed .side-brand { justify-content: center; padding-inline: 0; }
+  .is-collapsed .side-brand img { display: none; }
+  .is-collapsed .side-collapse { margin-left: 0; }
   .is-collapsed .side-brand-text,
   .is-collapsed .side-link > span:not(.side-count) { display: none; }
   .is-collapsed .side-group {

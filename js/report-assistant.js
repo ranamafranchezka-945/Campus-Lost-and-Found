@@ -318,6 +318,9 @@
       state.turns += 1;
 
       const changed = mergeDraft(data.draft || {}, data.confidence || {}, text);
+      // The form starts folded away; reveal it before filling anything in, so the
+      // student can see the fields light up instead of finding them already filled.
+      if (changed.length && typeof window.openManualReportForm === 'function') window.openManualReportForm();
       const applied = applyDraft(changed);
       const uncertain = (data.uncertain || []).filter(field => applied.includes(field));
       addBubble('bot', summaryHtml(applied, uncertain, data.question || '', data.matches || []));

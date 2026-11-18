@@ -69,6 +69,9 @@ let restoreTarget = null;
         });
       });
       document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+      document.getElementById('sidebarCollapse').addEventListener('click', () => {
+        setSidebarCollapsed(!document.getElementById('adminApp').classList.contains('is-collapsed'));
+      });
       window.addEventListener('resize', syncMenuButton);
       setupHeaderMenus();
       setupThemePill();
@@ -414,6 +417,7 @@ let restoreTarget = null;
         ? !document.getElementById('adminApp').classList.contains('is-collapsed')
         : document.getElementById('adminSidebar').classList.contains('open');
       document.getElementById('sidebarToggle').setAttribute('aria-expanded', String(expanded));
+      document.getElementById('sidebarCollapse').setAttribute('aria-expanded', String(expanded));
     }
 
     // Wide screens: the menu shrinks to an icon rail and the choice is remembered.

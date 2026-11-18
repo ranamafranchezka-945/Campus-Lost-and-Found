@@ -231,7 +231,16 @@
       </div>
     </div>
 
-    <div class="simple-card">
+    <button type="button" class="manual-report-toggle" id="manualReportToggle"
+            data-action="toggleManualReportForm" aria-expanded="false" aria-controls="manualReportCard">
+      <span class="manual-report-toggle-text">
+        <span class="manual-report-toggle-title">Prefer to type it in yourself?</span>
+        <span class="manual-report-toggle-hint">Open the report form instead of using the assistant above</span>
+      </span>
+      <svg class="manual-report-toggle-chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 9 6 6 6-6"/></svg>
+    </button>
+
+    <div class="simple-card" id="manualReportCard" hidden>
       <form id="itemForm" class="report-item-form" data-submit="handleFormSubmit">
         
         <!-- Type Selection -->

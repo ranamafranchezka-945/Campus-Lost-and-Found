@@ -399,6 +399,7 @@ function startReport(type) {
   const typeInput = document.querySelector(`input[name="itemType"][value="${type}"]`);
   if (typeInput) typeInput.checked = true;
   updateTypeRadio();
+  openManualReportForm();
   document.getElementById('itemForm').scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -1834,6 +1835,28 @@ function resetItemForm() {
   removePhoto();
   resetCategoryPicker('itemCategory');
   updateTypeRadio();
+  setManualReportFormOpen(false);
+}
+
+// The report form starts folded away behind "Prefer to type it in yourself?" so the
+// assistant is the only thing competing for attention; the assistant itself calls
+// openManualReportForm() once it has something to show, instead of toggling.
+function setManualReportFormOpen(open) {
+  const card = document.getElementById('manualReportCard');
+  const toggle = document.getElementById('manualReportToggle');
+  if (!card || !toggle) return;
+  card.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.classList.toggle('is-open', open);
+}
+
+function toggleManualReportForm() {
+  const card = document.getElementById('manualReportCard');
+  setManualReportFormOpen(Boolean(card && card.hidden));
+}
+
+function openManualReportForm() {
+  setManualReportFormOpen(true);
 }
 
 const reportSubmissionKeyStorage = 'back2you.reportSubmissionKey';
@@ -1895,6 +1918,8 @@ async function handleFormSubmit(e) {
       document.getElementById('itemForm').reset();
       removePhoto();
       updateTypeRadio();
+      setManualReportFormOpen(false);
+      if (typeof window.assistantReset === 'function') window.assistantReset();
       fetchStats();
       fetchAndRenderItems();
 
