@@ -433,8 +433,8 @@
   -webkit-text-fill-color: transparent;
 }
 
-:root[data-theme='light'] .hero-name {
-  background-image: linear-gradient(90deg, var(--wordmark-primary) 0 62%, var(--wordmark-accent) 62% 100%);
+:root .hero-section .hero-name {
+  background-image: linear-gradient(90deg, var(--wordmark-primary) 0%, var(--wordmark-accent) 100%);
 }
 
 :root .nav-logo-full,
