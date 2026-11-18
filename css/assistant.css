@@ -426,12 +426,14 @@
    is the only thing asking for attention until the student actually needs the form. ── */
 
 .manual-report-toggle {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
   width: 100%;
   margin-bottom: 1.25rem;
-  padding: 0.9rem 1.1rem;
+  padding: 0.8rem 2.75rem 0.8rem 1rem;
   border: 1px dashed var(--panel-border);
   border-radius: 14px;
   background: transparent;
@@ -454,35 +456,29 @@
   outline-offset: 2px;
 }
 
-.manual-report-toggle-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
 .manual-report-toggle-title {
+  color: var(--blue-text);
   font-size: 0.9375rem;
   font-weight: 700;
 }
 
 .manual-report-toggle-hint {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--text-muted);
 }
 
-.manual-report-toggle-chevron {
-  flex: none;
-  width: 1.1rem;
-  height: 1.1rem;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  color: var(--text-muted);
+/* Chevron: points down when closed, up when open - same construction as .report-more. */
+.manual-report-toggle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 1.15rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--blue-light);
+  border-bottom: 2px solid var(--blue-light);
+  transform: translateY(-70%) rotate(45deg);
   transition: transform 0.2s ease;
 }
 
-.manual-report-toggle.is-open .manual-report-toggle-chevron { transform: rotate(180deg); }
+.manual-report-toggle.is-open::after { transform: translateY(-30%) rotate(-135deg); }
