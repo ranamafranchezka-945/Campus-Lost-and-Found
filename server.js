@@ -45,7 +45,10 @@ const siteUnavailableHtml = `<!doctype html>
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
   if (urlPath === '/vendor/qrcode.js') return require.resolve('qrcode-generator/qrcode.js');
-  if (urlPath === '/vendor/three.min.js') return require.resolve('three/build/three.min.js');
+  // three's package.json "exports" map only lists the ESM/CJS entry points, so
+  // the UMD/global build can't be resolved as a subpath import. Derive its path
+  // from the main entry instead, since both files live in the same build/ dir.
+  if (urlPath === '/vendor/three.min.js') return path.join(path.dirname(require.resolve('three')), 'three.min.js');
   const match = /^\/(css|js)\/([\w.-]+)$/.exec(urlPath);
   return match ? path.join(__dirname, match[1], match[2]) : null;
 }
