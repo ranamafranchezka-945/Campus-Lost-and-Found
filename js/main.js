@@ -329,7 +329,7 @@ function syncMobileHeaderControls(navbar) {
   const actions = navbar.querySelector('.nav-actions');
   if (!actions) return;
 
-  const account = navbar.querySelector('.user-pill');
+  const account = navbar.querySelector('.user-pill, .user-account-wrap');
   const authenticated = Boolean(account);
   navbar.classList.toggle('mobile-authenticated', authenticated);
 
@@ -380,9 +380,10 @@ function syncMobileDrawerAccount(navbar) {
   const footer = links && links.querySelector('.mobile-drawer-footer');
   if (!profile || !footer) return;
 
-  const account = navbar.querySelector('.user-pill');
-  const name = account && account.querySelector('.user-name')?.textContent.trim();
+  const account = navbar.querySelector('.user-pill, .user-account-wrap');
+  const name = account && account.querySelector('.user-name, .user-account-name')?.textContent.trim();
   const role = account?.querySelector('.role-badge')?.textContent.trim()
+    || account?.dataset.role
     || (navbar.classList.contains('admin-navbar') ? 'Administrator' : '');
 
   profile.replaceChildren();
@@ -408,14 +409,14 @@ function syncMobileDrawerAccount(navbar) {
   }
 
   footer.replaceChildren();
-  const changePassword = account?.querySelector('.user-name-btn');
+  const changePassword = account?.querySelector('.user-name-btn, .user-account-menu-item[data-action="openChangePasswordModal"]');
   if (changePassword) {
     const drawerPassword = changePassword.cloneNode(false);
     drawerPassword.className = 'mobile-drawer-password';
     drawerPassword.textContent = 'Change Password';
     footer.append(drawerPassword);
   }
-  const logout = account?.querySelector('.user-pill-logout');
+  const logout = account?.querySelector('.user-pill-logout, .user-account-menu-item[data-action="handleLogout"]');
   if (logout) {
     const drawerLogout = logout.cloneNode(true);
     drawerLogout.className = 'mobile-drawer-logout';
