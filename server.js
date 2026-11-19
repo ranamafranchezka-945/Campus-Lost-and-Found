@@ -5,6 +5,7 @@ if (!['test', 'production'].includes(process.env.NODE_ENV)) require('dotenv').co
 const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const PgSessionStore = require('connect-pg-simple')(session);
 const path = require('path');
 const fs = require('fs');
 
@@ -118,10 +119,16 @@ function createApp() {
 
   app.use(express.json({ limit: '256kb' }));
   app.use(express.urlencoded({ extended: true, limit: '64kb' }));
+  // A database-backed store so sessions survive restarts/redeploys on hosts with ephemeral
+  // disks; local dev and tests (no DATABASE_URL) fall back to on-disk sessions.
+  const sessionStore = postgresStore.isConfigured()
+    ? new PgSessionStore({ pool: postgresStore.getPool(), tableName: 'app_sessions', createTableIfMissing: true })
+    : new FileStore({ path: path.join(dataDir, 'sessions'), ttl: 86400, retries: 0 });
+
   app.use(session({
     name: 'cspc.sid',
     secret: sessionSecret,
-    store: new FileStore({ path: path.join(dataDir, 'sessions'), ttl: 86400, retries: 0 }),
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {

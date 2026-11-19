@@ -331,6 +331,7 @@ async function close() {
 module.exports = {
   close,
   commitRequest,
+  getPool,
   importJsonFiles,
   initialize,
   isConfigured,
