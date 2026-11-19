@@ -17,6 +17,7 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ITEMS_FILE = path.join(DATA_DIR, 'items.json');
 const CLAIMS_FILE = path.join(DATA_DIR, 'claims.json');
+const BLOCKED_EMAILS_FILE = path.join(DATA_DIR, 'blockedEmails.json');
 const STUDENT_DEPARTMENTS = new Set([
   'College of Computer Studies (CCS)',
   'College of Engineering and Architecture (CEA)',
@@ -184,6 +185,19 @@ function saveUsers(users) {
   writeJsonArray(USERS_FILE, users);
 }
 
+function getBlockedEmails() {
+  return readJsonArray(BLOCKED_EMAILS_FILE);
+}
+
+function saveBlockedEmails(blockedEmails) {
+  writeJsonArray(BLOCKED_EMAILS_FILE, blockedEmails);
+}
+
+function isEmailBlocked(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return getBlockedEmails().some(entry => entry.email === normalized);
+}
+
 function ensureDefaultAdminAccount() {
   const ensureAccount = () => {
     const users = getUsers();
@@ -240,6 +254,12 @@ router.post('/register', validateUserAuth, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Student registration requires an @my.cspc.edu.ph email address.'
+      });
+    }
+    if (isEmailBlocked(email)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This email address is not allowed to register.'
       });
     }
     if (isRateLimited(registrationAttempts, req.ip, REGISTRATION_LIMIT)) {
@@ -343,6 +363,13 @@ router.post('/login', validateUserAuth, async (req, res) => {
       });
     }
     loginFailures.delete(attemptKey);
+
+    if (isEmailBlocked(email)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been blocked. Contact the administrator.'
+      });
+    }
 
     // Administrators sign in with the password alone, with no emailed code.
     // (Wrong passwords above still count toward the sign-in lockout.)
@@ -791,8 +818,42 @@ router.delete('/users/:id', requireRole('admin'), (req, res) => {
   res.json({ success: true, message: 'User deleted successfully.' });
 });
 
+// GET /api/auth/blocked-emails - Admin-only blocklist directory.
+router.get('/blocked-emails', requireRole('admin'), (req, res) => {
+  res.json({ success: true, blockedEmails: getBlockedEmails() });
+});
+
+// POST /api/auth/blocked-emails - Admin-only: block an email from registering or signing in.
+router.post('/blocked-emails', requireRole('admin'), (req, res) => {
+  const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+  }
+
+  const blockedEmails = getBlockedEmails();
+  if (!blockedEmails.some(entry => entry.email === email)) {
+    blockedEmails.push({
+      id: email,
+      email,
+      blockedAt: new Date().toISOString(),
+      blockedBy: req.session.user.email
+    });
+    saveBlockedEmails(blockedEmails);
+  }
+  res.status(201).json({ success: true, message: 'Email blocked.', blockedEmails });
+});
+
+// DELETE /api/auth/blocked-emails/:email - Admin-only: unblock an email.
+router.delete('/blocked-emails/:email', requireRole('admin'), (req, res) => {
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+  const blockedEmails = getBlockedEmails().filter(entry => entry.email !== email);
+  saveBlockedEmails(blockedEmails);
+  res.json({ success: true, message: 'Email unblocked.', blockedEmails });
+});
+
 router.ensureDefaultAdminAccount = ensureDefaultAdminAccount;
 router.setOtpCodeGeneratorForTests = setOtpCodeGeneratorForTests;
 router.isAccountRemoved = isAccountRemoved;
+router.isEmailBlocked = isEmailBlocked;
 
 module.exports = router;

@@ -1,5 +1,6 @@
 let deleteTargetId = null;
 let restoreTarget = null;
+let blockedEmails = [];
     let activeTab = 'dashboard';
     let adminClaimsFilter = 'pending';
     let adminItems = [];
@@ -54,6 +55,7 @@ let restoreTarget = null;
       refreshStudentBelongings();
       refreshAdminClaims();
       refreshAdminUsers();
+      refreshBlockedEmails();
       window.setInterval(() => {
         refreshAdminItems();
         refreshStudentBelongings();
@@ -141,6 +143,7 @@ let restoreTarget = null;
       document.getElementById('confirmDeleteUser').addEventListener('click', deleteAdminUser);
       document.getElementById('cancelDeleteUser').addEventListener('click', closeDeleteUserModal);
       document.getElementById('deleteUserModal').addEventListener('click', event => { if (event.target.id === 'deleteUserModal') closeDeleteUserModal(); });
+      document.getElementById('blockEmailForm').addEventListener('submit', blockEmail);
       document.getElementById('selectAllItems').addEventListener('change', toggleSelectAllVisible);
       document.getElementById('adminFilterDate').addEventListener('change', () => { adminCurrentPage = 1; renderItemsTable(); });
       document.querySelectorAll('.sort-button').forEach(button => button.addEventListener('click', () => {
@@ -188,6 +191,66 @@ let restoreTarget = null;
           <td><button type="button" class="action-btn action-btn-delete user-delete-button" data-user-id="${escHtml(user.id)}" data-user-name="${escHtml(user.fullName || user.email)}"${user.id === window.currentAdminUserId ? ' disabled' : ''}>Delete</button></td>
         </tr>`).join('');
       body.querySelectorAll('.user-delete-button').forEach(button => button.addEventListener('click', () => openDeleteUserModal(button.dataset.userId, button.dataset.userName)));
+    }
+
+    async function refreshBlockedEmails() {
+      try {
+        const response = await adminFetch('/api/auth/blocked-emails', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        blockedEmails = Array.isArray(data.blockedEmails) ? data.blockedEmails : [];
+        renderBlockedEmails();
+      } catch (error) {
+        showToast('Could not load blocked emails.', 'error');
+      }
+    }
+
+    function renderBlockedEmails() {
+      const body = document.getElementById('blockedEmailsBody');
+      const empty = document.getElementById('blockedEmailsEmptyState');
+      if (!body) return;
+      empty.hidden = blockedEmails.length > 0;
+      body.innerHTML = blockedEmails.map(entry => `
+        <tr>
+          <td>${escHtml(entry.email)}</td>
+          <td>${escHtml(formatDate(entry.blockedAt))}</td>
+          <td><button type="button" class="action-btn action-btn-restore unblock-email-button" data-email="${escHtml(entry.email)}">Unblock</button></td>
+        </tr>`).join('');
+      body.querySelectorAll('.unblock-email-button').forEach(button => button.addEventListener('click', () => unblockEmail(button.dataset.email)));
+    }
+
+    async function blockEmail(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        const email = new FormData(form).get('email');
+        const response = await adminFetch('/api/auth/blocked-emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not block that email.');
+        form.reset();
+        blockedEmails = data.blockedEmails;
+        renderBlockedEmails();
+        showToast('Email blocked.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    async function unblockEmail(email) {
+      try {
+        const response = await adminFetch(`/api/auth/blocked-emails/${encodeURIComponent(email)}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not unblock that email.');
+        blockedEmails = data.blockedEmails;
+        renderBlockedEmails();
+        showToast('Email unblocked.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
     }
 
     function closeCreateUserForm() {

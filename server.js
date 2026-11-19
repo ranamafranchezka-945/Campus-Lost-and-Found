@@ -152,6 +152,20 @@ function createApp() {
     if (req.method === 'POST' && ['/items', '/items/'].includes(req.path)) return next();
     databaseRequest(req, res, next);
   });
+  // A session whose email was blocked after it signed in starts over as a signed-out
+  // visitor. This reads the (database-backed) blocklist, so it must run after
+  // databaseRequest has opened this request's transaction context.
+  app.use('/api', (req, res, next) => {
+    try {
+      if (req.session?.user && authRoutes.isEmailBlocked(req.session.user.email)) {
+        return req.session.regenerate(() => next());
+      }
+    } catch {
+      // No transaction context for this request (e.g. the multipart item-upload
+      // route skips it above); the next /api request will still catch a blocked session.
+    }
+    next();
+  });
   app.use('/api/auth', authRoutes);
   app.use('/api/items', itemRoutes);
   app.use('/api/stats', (req, res) => res.redirect('/api/items/stats'));
