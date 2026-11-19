@@ -15,6 +15,29 @@ const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const postgresStore = require('./services/postgresStore');
 
+// Served to anyone not on the allowlist while it is active. Fully self-contained (no
+// external CSS/JS) so it never depends on anything that might itself be gated.
+const siteUnavailableHtml = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not Available - Back2You</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a; color:#f1f5f9; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; text-align:center; padding:2rem; }
+  .card { max-width:420px; }
+  h1 { font-size:1.5rem; margin:0 0 .5rem; }
+  p { color:#94a3b8; line-height:1.5; margin:0; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Not available</h1>
+    <p>This site isn't available right now. Please check back later.</p>
+  </div>
+</body>
+</html>`;
+
 // Browser assets referenced by the HTML pages, mapped to their files on disk.
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
@@ -145,6 +168,42 @@ function createApp() {
       return req.session.regenerate(() => next());
     }
     next();
+  });
+
+  // While the admin-managed allowlist holds any emails, the whole site (not just
+  // register/login) is hidden from anyone who isn't on it: visitors see an "unavailable"
+  // page instead of the app. Admins always bypass this, and a handful of paths (the
+  // login page, its assets, and the auth API, which already enforces its own allowlist
+  // check with a clearer message) stay reachable. getAllowedEmailsDirect() queries the
+  // database directly, not through the per-request transaction context set up below,
+  // since this must run on every request, not just /api/* ones.
+  const allowlistExemptPaths = new Set(['/login', '/login.html', '/icons.js']);
+  const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
+  app.use(async (req, res, next) => {
+    if (req.session?.user?.role === 'admin') return next();
+    if (allowlistExemptPaths.has(req.path) || allowlistExemptPrefixes.some(prefix => req.path.startsWith(prefix))) {
+      return next();
+    }
+    let allowedEmails;
+    try {
+      allowedEmails = await postgresStore.getAllowedEmailsDirect();
+    } catch (error) {
+      console.error('Could not read the allowlist:', error.message);
+      return next();
+    }
+    if (allowedEmails.length === 0) return next();
+
+    const sessionEmail = req.session?.user?.email ? String(req.session.user.email).trim().toLowerCase() : null;
+    if (sessionEmail && allowedEmails.some(entry => entry.email === sessionEmail)) return next();
+
+    const sendUnavailable = () => {
+      if (req.path.startsWith('/api/')) {
+        return res.status(503).json({ success: false, message: "This site isn't available right now." });
+      }
+      res.status(503).type('html').send(siteUnavailableHtml);
+    };
+    if (req.session?.user) return req.session.regenerate(sendUnavailable);
+    sendUnavailable();
   });
 
   const databaseRequest = postgresStore.requestMiddleware();

@@ -36,6 +36,16 @@ function getPool() {
   return pool;
 }
 
+// Reads the allowlist directly from the pool, independent of the per-request transaction
+// context above: middleware that runs on every request (not just /api/* ones) needs to
+// read it without a transaction ever being opened. Not configured (local/dev without a
+// database) means no restriction is in effect.
+async function getAllowedEmailsDirect() {
+  if (!isConfigured()) return [];
+  const result = await getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`);
+  return result.rows.map(row => row.payload);
+}
+
 function getCollectionName(filePath) {
   const name = path.basename(filePath, '.json');
   if (!collections[name]) throw new Error(`Unsupported persistent data file: ${name}.json`);
@@ -335,6 +345,7 @@ async function close() {
 module.exports = {
   close,
   commitRequest,
+  getAllowedEmailsDirect,
   getPool,
   importJsonFiles,
   initialize,
