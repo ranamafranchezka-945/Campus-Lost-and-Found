@@ -5,6 +5,7 @@ if (!['test', 'production'].includes(process.env.NODE_ENV)) require('dotenv').co
 const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
+const PgSessionStore = require('connect-pg-simple')(session);
 const path = require('path');
 const fs = require('fs');
 
@@ -14,11 +15,40 @@ const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
 const postgresStore = require('./services/postgresStore');
 
+// Served to anyone not on the allowlist while it is active. Fully self-contained (no
+// external CSS/JS) so it never depends on anything that might itself be gated.
+const siteUnavailableHtml = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Not Available - Back2You</title>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a; color:#f1f5f9; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; text-align:center; padding:2rem; }
+  .card { max-width:420px; }
+  h1 { font-size:1.5rem; margin:0 0 .5rem; }
+  p { color:#94a3b8; line-height:1.5; margin:0 0 1.25rem; }
+  a { color:#60a5fa; font-size:0.875rem; text-decoration:none; }
+  a:hover { text-decoration:underline; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Not available</h1>
+    <p>This site isn't available right now. Please check back later.</p>
+    <a href="/login">Sign in</a>
+  </div>
+</body>
+</html>`;
+
 // Browser assets referenced by the HTML pages, mapped to their files on disk.
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
   if (urlPath === '/vendor/qrcode.js') return require.resolve('qrcode-generator/qrcode.js');
-  if (urlPath === '/vendor/three.min.js') return require.resolve('three/build/three.min.js');
+  // three's package.json "exports" map only lists the ESM/CJS entry points, so
+  // the UMD/global build can't be resolved as a subpath import. Derive its path
+  // from the main entry instead, since both files live in the same build/ dir.
+  if (urlPath === '/vendor/three.min.js') return path.join(path.dirname(require.resolve('three')), 'three.min.js');
   const match = /^\/(css|js)\/([\w.-]+)$/.exec(urlPath);
   return match ? path.join(__dirname, match[1], match[2]) : null;
 }
@@ -118,10 +148,16 @@ function createApp() {
 
   app.use(express.json({ limit: '256kb' }));
   app.use(express.urlencoded({ extended: true, limit: '64kb' }));
+  // A database-backed store so sessions survive restarts/redeploys on hosts with ephemeral
+  // disks; local dev and tests (no DATABASE_URL) fall back to on-disk sessions.
+  const sessionStore = postgresStore.isConfigured()
+    ? new PgSessionStore({ pool: postgresStore.getPool(), tableName: 'app_sessions', createTableIfMissing: true })
+    : new FileStore({ path: path.join(dataDir, 'sessions'), ttl: 86400, retries: 0 });
+
   app.use(session({
     name: 'cspc.sid',
     secret: sessionSecret,
-    store: new FileStore({ path: path.join(dataDir, 'sessions'), ttl: 86400, retries: 0 }),
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -140,10 +176,60 @@ function createApp() {
     next();
   });
 
+  // While the admin-managed allowlist holds any emails, the whole site (not just
+  // register/login) is hidden from anyone who isn't on it: visitors see an "unavailable"
+  // page instead of the app. Admins always bypass this, and a handful of paths (the
+  // login page, its assets, and the auth API, which already enforces its own allowlist
+  // check with a clearer message) stay reachable. getAllowedEmailsDirect() queries the
+  // database directly, not through the per-request transaction context set up below,
+  // since this must run on every request, not just /api/* ones.
+  const allowlistExemptPaths = new Set(['/login', '/login.html', '/icons.js']);
+  const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
+  app.use(async (req, res, next) => {
+    if (req.session?.user?.role === 'admin') return next();
+    if (allowlistExemptPaths.has(req.path) || allowlistExemptPrefixes.some(prefix => req.path.startsWith(prefix))) {
+      return next();
+    }
+    let allowedEmails;
+    try {
+      allowedEmails = await postgresStore.getAllowedEmailsDirect();
+    } catch (error) {
+      console.error('Could not read the allowlist:', error.message);
+      return next();
+    }
+    if (allowedEmails.length === 0) return next();
+
+    const sessionEmail = req.session?.user?.email ? String(req.session.user.email).trim().toLowerCase() : null;
+    if (sessionEmail && allowedEmails.some(entry => entry.email === sessionEmail)) return next();
+
+    const sendUnavailable = () => {
+      if (req.path.startsWith('/api/')) {
+        return res.status(503).json({ success: false, message: "This site isn't available right now." });
+      }
+      res.status(503).type('html').send(siteUnavailableHtml);
+    };
+    if (req.session?.user) return req.session.regenerate(sendUnavailable);
+    sendUnavailable();
+  });
+
   const databaseRequest = postgresStore.requestMiddleware();
   app.use('/api', (req, res, next) => {
     if (req.method === 'POST' && ['/items', '/items/'].includes(req.path)) return next();
     databaseRequest(req, res, next);
+  });
+  // A session whose email was blocked after it signed in starts over as a signed-out
+  // visitor. This reads the (database-backed) blocklist, so it must run after
+  // databaseRequest has opened this request's transaction context.
+  app.use('/api', (req, res, next) => {
+    try {
+      if (req.session?.user && authRoutes.isEmailBlocked(req.session.user.email)) {
+        return req.session.regenerate(() => next());
+      }
+    } catch {
+      // No transaction context for this request (e.g. the multipart item-upload
+      // route skips it above); the next /api request will still catch a blocked session.
+    }
+    next();
   });
   app.use('/api/auth', authRoutes);
   app.use('/api/items', itemRoutes);

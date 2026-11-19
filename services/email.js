@@ -105,6 +105,22 @@ async function sendVerificationCodeEmail(user, code, purpose, minutesValid) {
   });
 }
 
+// Fired after a successful sign-in (no code involved, just an after-the-fact heads-up).
+// Failures are caught by the caller and never block the sign-in itself.
+async function sendSignInNotificationEmail(user) {
+  const transport = createTransport();
+  const name = user.fullName || 'there';
+  const when = new Date().toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Asia/Manila' });
+
+  await transport.sendMail({
+    from: process.env.SMTP_FROM,
+    to: user.email,
+    subject: 'You signed in to Back2You',
+    text: `Hi ${name},\n\nYour Back2You account was just signed in to, on ${when} (Philippine time).\n\nIf this was not you, please contact the system administrator immediately and change your password, as someone else may know it.\n\nBack2You – CSPC Lost & Found`,
+    html: `<p>Hi ${escapeHtml(name)},</p><p>Your Back2You account was just signed in to, on ${escapeHtml(when)} (Philippine time).</p><p>If this was not you, please contact the system administrator immediately and change your password, as someone else may know it.</p><p>Back2You – CSPC Lost &amp; Found</p>`
+  });
+}
+
 async function sendPasswordResetEmail(user, token) {
   const transport = createTransport();
   const name = user.fullName || 'there';
@@ -248,6 +264,7 @@ async function sendBroadcastEmail(user, subject, message) {
 
 module.exports = {
   sendVerificationCodeEmail,
+  sendSignInNotificationEmail,
   sendPasswordResetEmail,
   sendPossibleMatchEmail,
   sendClaimStatusEmail,

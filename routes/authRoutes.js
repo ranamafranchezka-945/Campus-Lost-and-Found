@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL, isAdminEmail } = require('../middleware/validate');
-const { sendVerificationCodeEmail, sendPasswordResetEmail } = require('../services/email');
+const { sendVerificationCodeEmail, sendSignInNotificationEmail, sendPasswordResetEmail } = require('../services/email');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
 const postgresStore = require('../services/postgresStore');
 const supabaseStorage = require('../services/supabaseStorage');
@@ -17,6 +17,8 @@ const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const ITEMS_FILE = path.join(DATA_DIR, 'items.json');
 const CLAIMS_FILE = path.join(DATA_DIR, 'claims.json');
+const BLOCKED_EMAILS_FILE = path.join(DATA_DIR, 'blockedEmails.json');
+const ALLOWED_EMAILS_FILE = path.join(DATA_DIR, 'allowedEmails.json');
 const STUDENT_DEPARTMENTS = new Set([
   'College of Computer Studies (CCS)',
   'College of Engineering and Architecture (CEA)',
@@ -184,6 +186,38 @@ function saveUsers(users) {
   writeJsonArray(USERS_FILE, users);
 }
 
+function getBlockedEmails() {
+  return readJsonArray(BLOCKED_EMAILS_FILE);
+}
+
+function saveBlockedEmails(blockedEmails) {
+  writeJsonArray(BLOCKED_EMAILS_FILE, blockedEmails);
+}
+
+function isEmailBlocked(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return getBlockedEmails().some(entry => entry.email === normalized);
+}
+
+function getAllowedEmails() {
+  return readJsonArray(ALLOWED_EMAILS_FILE);
+}
+
+function saveAllowedEmails(allowedEmails) {
+  writeJsonArray(ALLOWED_EMAILS_FILE, allowedEmails);
+}
+
+// An empty allowlist means no restriction is active: every properly domained email may
+// register or sign in. Once it holds at least one entry, only those emails (plus any
+// administrator, who must always be able to manage this list) are let through.
+function isEmailAllowed(email, role) {
+  if (role === 'admin') return true;
+  const allowedEmails = getAllowedEmails();
+  if (allowedEmails.length === 0) return true;
+  const normalized = String(email || '').trim().toLowerCase();
+  return allowedEmails.some(entry => entry.email === normalized);
+}
+
 function ensureDefaultAdminAccount() {
   const ensureAccount = () => {
     const users = getUsers();
@@ -240,6 +274,18 @@ router.post('/register', validateUserAuth, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Student registration requires an @my.cspc.edu.ph email address.'
+      });
+    }
+    if (isEmailBlocked(email)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This email address is not allowed to register.'
+      });
+    }
+    if (!isEmailAllowed(email, 'student')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Registration is currently restricted. Contact the administrator for access.'
       });
     }
     if (isRateLimited(registrationAttempts, req.ip, REGISTRATION_LIMIT)) {
@@ -344,30 +390,41 @@ router.post('/login', validateUserAuth, async (req, res) => {
     }
     loginFailures.delete(attemptKey);
 
-    // Administrators sign in with the password alone, with no emailed code.
+    if (isEmailBlocked(email)) {
+      return res.status(403).json({
+        success: false,
+        message: 'This account has been blocked. Contact the administrator.'
+      });
+    }
+    if (!isEmailAllowed(email, user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Sign-in is currently restricted. Contact the administrator for access.'
+      });
+    }
+
+    // A verified account signs in with the password alone, no emailed code; only an
+    // unconfirmed sign-up still needs one, to prove the inbox is really theirs.
     // (Wrong passwords above still count toward the sign-in lockout.)
-    if (user.role === 'admin') {
+    if (user.emailVerified !== false) {
       const sessionUser = sessionUserFor(user);
       await authenticateSession(req, sessionUser);
+      // Fire-and-forget: a slow mail server should never hold up the sign-in response.
+      sendSignInNotificationEmail(sessionUser).catch(error =>
+        console.error('Sign-in notification email could not be sent:', error.message));
       return res.json({ success: true, message: 'Login successful.', user: sessionUser });
     }
 
-    // Correct password: the emailed code is the second step. An unconfirmed account
-    // gets a sign-up code instead, which confirms the email and signs in at once.
+    // Correct password on an unconfirmed account: resend (or reuse) the sign-up code.
     // A code sent to this browser in the last minute is reused instead of re-sent.
-    const purpose = user.emailVerified === false ? 'signup' : 'login';
     const pending = req.session.otp;
-    const reusable = pending && pending.userId === user.id && pending.purpose === purpose &&
+    const reusable = pending && pending.userId === user.id && pending.purpose === 'signup' &&
       pending.fingerprint === accountFingerprint(user) &&
       Date.now() - pending.sentAt < OTP_RESEND_MS && pending.attempts < OTP_MAX_ATTEMPTS;
-    const emailSent = reusable ? true : await startOtp(req, user, purpose);
-    const body = otpResponse(user, purpose, emailSent);
-
-    if (purpose === 'signup') {
-      return res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', ...body,
-        message: `Please confirm your email first. ${body.message}` });
-    }
-    res.json({ success: true, ...body });
+    const emailSent = reusable ? true : await startOtp(req, user, 'signup');
+    const body = otpResponse(user, 'signup', emailSent);
+    res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', ...body,
+      message: `Please confirm your email first. ${body.message}` });
   } catch (error) {
     res.status(500).json({
       success: false,
@@ -766,6 +823,17 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     };
     users.push(newUser);
     saveUsers(users);
+
+    // An admin creating this account directly is itself the access decision: make sure
+    // an active allowlist does not then turn around and lock the new account out.
+    if (role !== 'admin') {
+      const allowedEmails = getAllowedEmails();
+      if (!allowedEmails.some(entry => entry.email === email)) {
+        allowedEmails.push({ id: email, email, addedAt: new Date().toISOString(), addedBy: req.session.user.email });
+        saveAllowedEmails(allowedEmails);
+      }
+    }
+
     const { passwordHash, ...safeUser } = newUser;
     res.status(201).json({ success: true, message: 'User created successfully.', user: safeUser });
   } catch (error) {
@@ -791,8 +859,76 @@ router.delete('/users/:id', requireRole('admin'), (req, res) => {
   res.json({ success: true, message: 'User deleted successfully.' });
 });
 
+// GET /api/auth/blocked-emails - Admin-only blocklist directory.
+router.get('/blocked-emails', requireRole('admin'), (req, res) => {
+  res.json({ success: true, blockedEmails: getBlockedEmails() });
+});
+
+// POST /api/auth/blocked-emails - Admin-only: block an email from registering or signing in.
+router.post('/blocked-emails', requireRole('admin'), (req, res) => {
+  const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+  }
+
+  const blockedEmails = getBlockedEmails();
+  if (!blockedEmails.some(entry => entry.email === email)) {
+    blockedEmails.push({
+      id: email,
+      email,
+      blockedAt: new Date().toISOString(),
+      blockedBy: req.session.user.email
+    });
+    saveBlockedEmails(blockedEmails);
+  }
+  res.status(201).json({ success: true, message: 'Email blocked.', blockedEmails });
+});
+
+// DELETE /api/auth/blocked-emails/:email - Admin-only: unblock an email.
+router.delete('/blocked-emails/:email', requireRole('admin'), (req, res) => {
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+  const blockedEmails = getBlockedEmails().filter(entry => entry.email !== email);
+  saveBlockedEmails(blockedEmails);
+  res.json({ success: true, message: 'Email unblocked.', blockedEmails });
+});
+
+// GET /api/auth/allowed-emails - Admin-only allowlist directory.
+router.get('/allowed-emails', requireRole('admin'), (req, res) => {
+  res.json({ success: true, allowedEmails: getAllowedEmails() });
+});
+
+// POST /api/auth/allowed-emails - Admin-only: add an email to the allowlist. Once the
+// list holds at least one entry, only those emails (plus admins) may register or sign in.
+router.post('/allowed-emails', requireRole('admin'), (req, res) => {
+  const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Enter a valid email address.' });
+  }
+
+  const allowedEmails = getAllowedEmails();
+  if (!allowedEmails.some(entry => entry.email === email)) {
+    allowedEmails.push({
+      id: email,
+      email,
+      addedAt: new Date().toISOString(),
+      addedBy: req.session.user.email
+    });
+    saveAllowedEmails(allowedEmails);
+  }
+  res.status(201).json({ success: true, message: 'Email allowed.', allowedEmails });
+});
+
+// DELETE /api/auth/allowed-emails/:email - Admin-only: remove an email from the allowlist.
+router.delete('/allowed-emails/:email', requireRole('admin'), (req, res) => {
+  const email = decodeURIComponent(req.params.email).trim().toLowerCase();
+  const allowedEmails = getAllowedEmails().filter(entry => entry.email !== email);
+  saveAllowedEmails(allowedEmails);
+  res.json({ success: true, message: 'Email removed from the allowlist.', allowedEmails });
+});
+
 router.ensureDefaultAdminAccount = ensureDefaultAdminAccount;
 router.setOtpCodeGeneratorForTests = setOtpCodeGeneratorForTests;
 router.isAccountRemoved = isAccountRemoved;
+router.isEmailBlocked = isEmailBlocked;
 
 module.exports = router;

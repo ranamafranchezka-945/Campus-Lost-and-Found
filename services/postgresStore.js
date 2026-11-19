@@ -6,7 +6,9 @@ const { Pool } = require('pg');
 const collections = {
   users: { table: 'app_users' },
   items: { table: 'app_items' },
-  claims: { table: 'app_claims' }
+  claims: { table: 'app_claims' },
+  blockedEmails: { table: 'app_blocked_emails' },
+  allowedEmails: { table: 'app_allowed_emails' }
 };
 const contextStorage = new AsyncLocalStorage();
 let pool;
@@ -32,6 +34,16 @@ function getPool() {
   if (!config) throw new Error('DATABASE_URL must be configured for Supabase PostgreSQL.');
   if (!pool) pool = new Pool(config);
   return pool;
+}
+
+// Reads the allowlist directly from the pool, independent of the per-request transaction
+// context above: middleware that runs on every request (not just /api/* ones) needs to
+// read it without a transaction ever being opened. Not configured (local/dev without a
+// database) means no restriction is in effect.
+async function getAllowedEmailsDirect() {
+  if (!isConfigured()) return [];
+  const result = await getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`);
+  return result.rows.map(row => row.payload);
 }
 
 function getCollectionName(filePath) {
@@ -85,7 +97,7 @@ async function createTables(connection) {
   // These tables are used only by the server through its direct PostgreSQL
   // connection. They must not be reachable through Supabase's Data API.
   // RLS also protects the tables if API grants are accidentally reintroduced.
-  for (const table of ['app_users', 'app_items', 'app_claims', 'app_migrations', 'app_store_lock']) {
+  for (const table of ['app_users', 'app_items', 'app_claims', 'app_blocked_emails', 'app_allowed_emails', 'app_migrations', 'app_store_lock']) {
     await connection.query(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
   }
 
@@ -108,14 +120,16 @@ async function createTables(connection) {
     BEGIN
       IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
         REVOKE ALL ON TABLE public.app_users, public.app_items, public.app_claims,
-          public.app_migrations, public.app_store_lock FROM anon;
+          public.app_blocked_emails, public.app_allowed_emails, public.app_migrations,
+          public.app_store_lock FROM anon;
         IF to_regclass('public.app_sessions') IS NOT NULL THEN
           REVOKE ALL ON TABLE public.app_sessions FROM anon;
         END IF;
       END IF;
       IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
         REVOKE ALL ON TABLE public.app_users, public.app_items, public.app_claims,
-          public.app_migrations, public.app_store_lock FROM authenticated;
+          public.app_blocked_emails, public.app_allowed_emails, public.app_migrations,
+          public.app_store_lock FROM authenticated;
         IF to_regclass('public.app_sessions') IS NOT NULL THEN
           REVOKE ALL ON TABLE public.app_sessions FROM authenticated;
         END IF;
@@ -331,6 +345,8 @@ async function close() {
 module.exports = {
   close,
   commitRequest,
+  getAllowedEmailsDirect,
+  getPool,
   importJsonFiles,
   initialize,
   isConfigured,

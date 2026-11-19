@@ -43,7 +43,8 @@ function verifyCode(cookie, code = TEST_OTP, headers = {}) {
   });
 }
 
-// Password, then the emailed code; returns the signed-in session cookie.
+// A verified account (student or admin) signs in with the password alone, no emailed
+// code; returns the signed-in session cookie.
 async function login(email, password) {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
@@ -51,25 +52,9 @@ async function login(email, password) {
     body: JSON.stringify({ email, password })
   });
   assert.equal(response.status, 200);
-  const passwordStep = await response.json();
-  if (passwordStep.user) {
-    // Administrators sign in with the password alone.
-    assert.equal(passwordStep.user.role, 'admin');
-    const adminCookie = response.headers.get('set-cookie').split(';')[0];
-    const adminSession = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: adminCookie } });
-    assert.equal((await adminSession.json()).authenticated, true);
-    return adminCookie;
-  }
-  assert.equal(passwordStep.otpRequired, true);
-  assert.equal(passwordStep.user, undefined, 'the password alone does not sign in');
-  const pendingCookie = response.headers.get('set-cookie').split(';')[0];
-  const pendingSession = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: pendingCookie } });
-  assert.equal((await pendingSession.json()).authenticated, false);
-
-  const verified = await verifyCode(pendingCookie);
-  assert.equal(verified.status, 200);
-  const cookie = verified.headers.get('set-cookie').split(';')[0];
-  assert.notEqual(cookie, pendingCookie, 'signing in issues a new session id');
+  const body = await response.json();
+  assert.ok(body.user, 'the password alone signs in a verified account');
+  const cookie = response.headers.get('set-cookie').split(';')[0];
   const sessionResponse = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
   assert.equal((await sessionResponse.json()).authenticated, true);
   return cookie;
@@ -418,9 +403,9 @@ test('unconfirmed accounts get a sign-up code when they try to sign in', async (
   assert.equal((await verified.json()).user.email, 'late.confirmer@my.cspc.edu.ph');
 });
 
-test('sign-in codes allow five tries, expire with the session and resend at most once a minute', async () => {
-  const start = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'student@my.cspc.edu.ph', password: studentPassword }));
-  assert.equal(start.status, 200);
+test('sign-up codes allow five tries, expire with the session and resend at most once a minute', async () => {
+  const start = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ email: 'five.tries@my.cspc.edu.ph' }));
+  assert.equal(start.status, 201);
   // Read the whole response: the session is saved before the response finishes.
   assert.equal((await start.json()).otpRequired, true);
   const cookie = start.headers.get('set-cookie').split(';')[0];
@@ -1557,7 +1542,7 @@ test('the admin script turns a student-domain account into an administrator who 
   assert.equal(adminOnly.status, 200);
 });
 
-test('administrators sign in with the password alone while students still need the emailed code', async () => {
+test('verified administrators and students both sign in with the password alone', async () => {
   const signIn = (email, password) => postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email, password }));
 
   const admin = await signIn('admin@cspc.edu.ph', adminPassword);
@@ -1574,10 +1559,10 @@ test('administrators sign in with the password alone while students still need t
   assert.equal(wrong.status, 401);
   assert.equal((await wrong.json()).user, undefined);
 
-  // Students are unchanged: the password only starts the sign-in.
+  // A verified student signs in the same way, no code.
   const student = await signIn('student@my.cspc.edu.ph', studentPassword);
   assert.equal(student.status, 200);
   const studentBody = await student.json();
-  assert.equal(studentBody.otpRequired, true);
-  assert.equal(studentBody.user, undefined);
+  assert.equal(studentBody.otpRequired, undefined, 'no code is asked of a verified student');
+  assert.equal(studentBody.user.role, 'student');
 });

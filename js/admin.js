@@ -1,5 +1,7 @@
 let deleteTargetId = null;
 let restoreTarget = null;
+let blockedEmails = [];
+let allowedEmails = [];
     let activeTab = 'dashboard';
     let adminClaimsFilter = 'pending';
     let adminItems = [];
@@ -54,6 +56,8 @@ let restoreTarget = null;
       refreshStudentBelongings();
       refreshAdminClaims();
       refreshAdminUsers();
+      refreshBlockedEmails();
+      refreshAllowedEmails();
       window.setInterval(() => {
         refreshAdminItems();
         refreshStudentBelongings();
@@ -141,6 +145,8 @@ let restoreTarget = null;
       document.getElementById('confirmDeleteUser').addEventListener('click', deleteAdminUser);
       document.getElementById('cancelDeleteUser').addEventListener('click', closeDeleteUserModal);
       document.getElementById('deleteUserModal').addEventListener('click', event => { if (event.target.id === 'deleteUserModal') closeDeleteUserModal(); });
+      document.getElementById('blockEmailForm').addEventListener('submit', blockEmail);
+      document.getElementById('allowEmailForm').addEventListener('submit', allowEmail);
       document.getElementById('selectAllItems').addEventListener('change', toggleSelectAllVisible);
       document.getElementById('adminFilterDate').addEventListener('change', () => { adminCurrentPage = 1; renderItemsTable(); });
       document.querySelectorAll('.sort-button').forEach(button => button.addEventListener('click', () => {
@@ -188,6 +194,141 @@ let restoreTarget = null;
           <td><button type="button" class="action-btn action-btn-delete user-delete-button" data-user-id="${escHtml(user.id)}" data-user-name="${escHtml(user.fullName || user.email)}"${user.id === window.currentAdminUserId ? ' disabled' : ''}>Delete</button></td>
         </tr>`).join('');
       body.querySelectorAll('.user-delete-button').forEach(button => button.addEventListener('click', () => openDeleteUserModal(button.dataset.userId, button.dataset.userName)));
+    }
+
+    async function refreshBlockedEmails() {
+      try {
+        const response = await adminFetch('/api/auth/blocked-emails', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        blockedEmails = Array.isArray(data.blockedEmails) ? data.blockedEmails : [];
+        renderBlockedEmails();
+      } catch (error) {
+        showToast('Could not load blocked emails.', 'error');
+      }
+    }
+
+    function renderBlockedEmails() {
+      const body = document.getElementById('blockedEmailsBody');
+      const empty = document.getElementById('blockedEmailsEmptyState');
+      const count = document.getElementById('blockedEmailsCount');
+      if (!body) return;
+      empty.hidden = blockedEmails.length > 0;
+      count.hidden = blockedEmails.length === 0;
+      count.textContent = blockedEmails.length;
+      // Most recently blocked first, so a fresh block is immediately visible without scrolling.
+      const sorted = [...blockedEmails].sort((a, b) => new Date(b.blockedAt) - new Date(a.blockedAt));
+      body.innerHTML = sorted.map(entry => `
+        <tr>
+          <td>${escHtml(entry.email)}</td>
+          <td>${escHtml(formatDate(entry.blockedAt))}</td>
+          <td><button type="button" class="action-btn action-btn-restore unblock-email-button" data-email="${escHtml(entry.email)}">Unblock</button></td>
+        </tr>`).join('');
+      body.querySelectorAll('.unblock-email-button').forEach(button => button.addEventListener('click', () => unblockEmail(button.dataset.email)));
+    }
+
+    async function blockEmail(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        const email = new FormData(form).get('email');
+        const response = await adminFetch('/api/auth/blocked-emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not block that email.');
+        form.reset();
+        form.querySelector('input[name="email"]').focus();
+        blockedEmails = data.blockedEmails;
+        renderBlockedEmails();
+        showToast('Email blocked.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    async function unblockEmail(email) {
+      try {
+        const response = await adminFetch(`/api/auth/blocked-emails/${encodeURIComponent(email)}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not unblock that email.');
+        blockedEmails = data.blockedEmails;
+        renderBlockedEmails();
+        showToast('Email unblocked.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function refreshAllowedEmails() {
+      try {
+        const response = await adminFetch('/api/auth/allowed-emails', { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+        allowedEmails = Array.isArray(data.allowedEmails) ? data.allowedEmails : [];
+        renderAllowedEmails();
+      } catch (error) {
+        showToast('Could not load allowed emails.', 'error');
+      }
+    }
+
+    function renderAllowedEmails() {
+      const body = document.getElementById('allowedEmailsBody');
+      const empty = document.getElementById('allowedEmailsEmptyState');
+      const count = document.getElementById('allowedEmailsCount');
+      const status = document.getElementById('allowlistStatus');
+      if (!body) return;
+      empty.hidden = allowedEmails.length > 0;
+      count.hidden = allowedEmails.length === 0;
+      count.textContent = allowedEmails.length;
+      status.textContent = allowedEmails.length === 0
+        ? 'Empty: every @my.cspc.edu.ph address may register and sign in. Add an email below to restrict access to only approved addresses (administrators can always sign in).'
+        : `Restricted: only the ${allowedEmails.length} email(s) below (plus administrators) can register or sign in. Remove all of them to reopen access to everyone.`;
+      const sorted = [...allowedEmails].sort((a, b) => new Date(b.addedAt) - new Date(a.addedAt));
+      body.innerHTML = sorted.map(entry => `
+        <tr>
+          <td>${escHtml(entry.email)}</td>
+          <td>${escHtml(formatDate(entry.addedAt))}</td>
+          <td><button type="button" class="action-btn action-btn-delete remove-allowed-button" data-email="${escHtml(entry.email)}">Remove</button></td>
+        </tr>`).join('');
+      body.querySelectorAll('.remove-allowed-button').forEach(button => button.addEventListener('click', () => removeAllowedEmail(button.dataset.email)));
+    }
+
+    async function allowEmail(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const submit = form.querySelector('button[type="submit"]');
+      submit.disabled = true;
+      try {
+        const email = new FormData(form).get('email');
+        const response = await adminFetch('/api/auth/allowed-emails', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not add that email.');
+        form.reset();
+        form.querySelector('input[name="email"]').focus();
+        allowedEmails = data.allowedEmails;
+        renderAllowedEmails();
+        showToast('Email allowed.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      } finally {
+        submit.disabled = false;
+      }
+    }
+
+    async function removeAllowedEmail(email) {
+      try {
+        const response = await adminFetch(`/api/auth/allowed-emails/${encodeURIComponent(email)}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Could not remove that email.');
+        allowedEmails = data.allowedEmails;
+        renderAllowedEmails();
+        showToast('Email removed from the allowlist.');
+      } catch (error) {
+        showToast(error.message, 'error');
+      }
     }
 
     function closeCreateUserForm() {
