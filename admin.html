@@ -348,16 +348,39 @@
 
           <div class="view-head" style="margin-top:2rem;">
             <div>
-              <h1 style="font-size:1.25rem;">Blocked emails</h1>
+              <h1 style="font-size:1.25rem;">Blocked emails<span id="blockedEmailsCount" class="tab-count" hidden>0</span></h1>
               <p>Blocked emails cannot register or sign in, even on an existing account.</p>
             </div>
           </div>
-          <form id="blockEmailForm" class="user-form-grid">
-            <label>Email to block<input class="form-control" name="email" type="email" required /></label>
-            <div class="user-form-actions"><button class="btn btn-primary" type="submit">Block</button></div>
-          </form>
+          <div class="user-form-panel">
+            <form id="blockEmailForm" class="block-email-form">
+              <label for="blockEmailInput">Email to block</label>
+              <div class="block-email-row">
+                <input id="blockEmailInput" class="form-control" name="email" type="email" required placeholder="student@my.cspc.edu.ph" autocomplete="off" />
+                <button class="btn btn-primary" type="submit"><svg class="ico"><use href="#i-lock"/></svg>Block</button>
+              </div>
+            </form>
+          </div>
           <div class="admin-table-card"><div class="admin-table-wrap admin-table-scroll"><table id="blockedEmailsTable"><thead><tr><th>Email</th><th>Blocked on</th><th>Actions</th></tr></thead><tbody id="blockedEmailsBody"></tbody></table></div></div>
-          <div id="blockedEmailsEmptyState" class="empty-state" hidden><h3>No blocked emails</h3></div>
+          <div id="blockedEmailsEmptyState" class="empty-state" hidden><h3>No blocked emails</h3><p>Emails you block will show up here.</p></div>
+
+          <div class="view-head" style="margin-top:2rem;">
+            <div>
+              <h1 style="font-size:1.25rem;">Allowed emails<span id="allowedEmailsCount" class="tab-count tab-count-active" hidden>0</span></h1>
+              <p id="allowlistStatus">Empty: every @my.cspc.edu.ph address may register and sign in. Add an email below to restrict access to only approved addresses (administrators can always sign in).</p>
+            </div>
+          </div>
+          <div class="user-form-panel">
+            <form id="allowEmailForm" class="block-email-form">
+              <label for="allowEmailInput">Email to allow</label>
+              <div class="block-email-row">
+                <input id="allowEmailInput" class="form-control" name="email" type="email" required placeholder="student@my.cspc.edu.ph" autocomplete="off" />
+                <button class="btn btn-primary" type="submit"><svg class="ico"><use href="#i-shield"/></svg>Allow</button>
+              </div>
+            </form>
+          </div>
+          <div class="admin-table-card"><div class="admin-table-wrap admin-table-scroll"><table id="allowedEmailsTable"><thead><tr><th>Email</th><th>Added on</th><th>Actions</th></tr></thead><tbody id="allowedEmailsBody"></tbody></table></div></div>
+          <div id="allowedEmailsEmptyState" class="empty-state" hidden><h3>No allowed emails</h3><p>The app is open to every @my.cspc.edu.ph address.</p></div>
         </section>
 
         <!-- ── Students' belongings ── -->
