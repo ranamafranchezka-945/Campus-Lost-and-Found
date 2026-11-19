@@ -20,7 +20,7 @@ require.cache[require.resolve('pg')] = {
   id: require.resolve('pg'),
   filename: require.resolve('pg'),
   loaded: true,
-  exports: { Pool: class { async connect() { return connection; } async end() {} } }
+  exports: { Pool: class { on() {} async connect() { return connection; } async end() {} } }
 };
 process.env.DATABASE_URL = 'postgresql://stub/stub';
 const store = require('../services/postgresStore');

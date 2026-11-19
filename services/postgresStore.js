@@ -32,7 +32,12 @@ function isConfigured() {
 function getPool() {
   const config = getConfig();
   if (!config) throw new Error('DATABASE_URL must be configured for Supabase PostgreSQL.');
-  if (!pool) pool = new Pool(config);
+  if (!pool) {
+    pool = new Pool(config);
+    // An idle client can be dropped by the network (e.g. Supabase connection blips) and pg
+    // emits that as an 'error' event; without a listener here, Node crashes the whole process.
+    pool.on('error', error => console.error('Postgres pool idle client error:', error.message));
+  }
   return pool;
 }
 
