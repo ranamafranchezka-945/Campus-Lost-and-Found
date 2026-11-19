@@ -27,13 +27,16 @@ const siteUnavailableHtml = `<!doctype html>
   body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; background:#0f172a; color:#f1f5f9; font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; text-align:center; padding:2rem; }
   .card { max-width:420px; }
   h1 { font-size:1.5rem; margin:0 0 .5rem; }
-  p { color:#94a3b8; line-height:1.5; margin:0; }
+  p { color:#94a3b8; line-height:1.5; margin:0 0 1.25rem; }
+  a { color:#60a5fa; font-size:0.875rem; text-decoration:none; }
+  a:hover { text-decoration:underline; }
 </style>
 </head>
 <body>
   <div class="card">
     <h1>Not available</h1>
     <p>This site isn't available right now. Please check back later.</p>
+    <a href="/login">Sign in</a>
   </div>
 </body>
 </html>`;
