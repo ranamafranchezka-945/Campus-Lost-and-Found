@@ -216,6 +216,13 @@
   box-shadow: var(--clay-inset), 0 0 0 1px var(--stat-active-ring);
 }
 
+:root:not([data-theme='light']) .user-account-menu {
+  background-color: var(--clay-surface);
+  background-image: none;
+  border-color: var(--clay-edge);
+  color: var(--text-main);
+}
+
 :root .btn,
 :root .topbar-btn,
 :root .theme-toggle,

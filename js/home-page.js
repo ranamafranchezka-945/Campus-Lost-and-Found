@@ -36,21 +36,71 @@ function renderAuthenticatedHeader(user) {
   const slot = document.getElementById('userNavSlot');
   const mobileLogout = document.getElementById('mobileMenuLogout');
   const chipVault = document.getElementById('chipMyBelongings');
+  const displayName = isAdmin ? 'Admin' : (user.fullName || 'Account');
+  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
   if (mobileLogout) mobileLogout.classList.add('visible');
   if (slot) {
     slot.innerHTML = `
       <button type="button" id="notifBellBtn" data-action="openNotificationsModal" class="notif-bell-btn" title="View QR Recovery Alerts">
         <span class="notif-icon" aria-hidden="true">🔔</span><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
       </button>
-      <div class="user-pill">
-        <button type="button" class="user-name user-name-btn" data-action="openChangePasswordModal" title="Account settings: change password">${escapeHtml(isAdmin ? 'Admin' : user.fullName)}</button>
-        ${isAdmin ? '' : '<span class="role-badge">Student</span>'}
-        <button type="button" data-action="handleLogout" class="user-pill-logout" title="Sign out of account">Logout</button>
+      <div class="user-account-wrap" data-role="${isAdmin ? 'Administrator' : 'Student'}">
+        <button type="button" class="user-account-trigger" id="userProfileBtn" data-action="toggleUserProfileMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="userProfileMenu" aria-label="Account menu for ${escapeHtml(displayName)}">
+          <span class="user-account-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
+          <span class="user-account-name">${escapeHtml(displayName)}</span>
+          <svg class="user-account-chevron" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="user-account-menu" id="userProfileMenu" role="menu" aria-label="Account" hidden>
+          <div class="user-account-menu-head">
+            <strong>${escapeHtml(displayName)}</strong>
+            <small>${escapeHtml(user.email || '')}</small>
+          </div>
+          <button type="button" class="user-account-menu-item" role="menuitem" data-action="openChangePasswordModal">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3"/><path d="M2 14h4m4-6h4m4 8h4"/></svg>
+            Settings
+          </button>
+          <button type="button" class="user-account-menu-item user-account-menu-item--danger" role="menuitem" data-action="handleLogout">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6"/></svg>
+            Sign out
+          </button>
+        </div>
       </div>
     `;
   }
   if (chipVault) chipVault.style.display = 'inline-block';
 }
+
+function toggleUserProfileMenu() {
+  const button = document.getElementById('userProfileBtn');
+  const menu = document.getElementById('userProfileMenu');
+  if (!button || !menu) return;
+
+  const isOpen = button.getAttribute('aria-expanded') === 'true';
+  button.setAttribute('aria-expanded', String(!isOpen));
+  menu.hidden = isOpen;
+}
+
+function closeUserProfileMenu() {
+  const button = document.getElementById('userProfileBtn');
+  const menu = document.getElementById('userProfileMenu');
+  if (!button || !menu) return;
+
+  button.setAttribute('aria-expanded', 'false');
+  menu.hidden = true;
+}
+
+document.addEventListener('click', event => {
+  const accountMenu = document.querySelector('.user-account-wrap');
+  if (accountMenu && !accountMenu.contains(event.target)) closeUserProfileMenu();
+});
+
+document.addEventListener('keydown', event => {
+  const button = document.getElementById('userProfileBtn');
+  if (event.key !== 'Escape' || !button || button.getAttribute('aria-expanded') !== 'true') return;
+
+  closeUserProfileMenu();
+  button.focus();
+});
 
 async function checkAuthSession() {
   try {
@@ -102,6 +152,7 @@ async function checkAuthSession() {
 
 function openChangePasswordModal() {
   if (!currentUser) return;
+  closeUserProfileMenu();
   document.getElementById('changePasswordEmail').textContent = currentUser.email || '';
   document.getElementById('changePasswordError').style.display = 'none';
   // Only students can delete their own account; admins are managed on the admin page.
@@ -278,6 +329,7 @@ async function executeLogout() {
   }
 }
 function handleLogout() {
+  closeUserProfileMenu();
   openLogoutModal();
 }
 
