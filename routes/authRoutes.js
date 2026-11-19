@@ -6,7 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL, isAdminEmail } = require('../middleware/validate');
-const { sendVerificationCodeEmail, sendPasswordResetEmail } = require('../services/email');
+const { sendVerificationCodeEmail, sendSignInNotificationEmail, sendPasswordResetEmail } = require('../services/email');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
 const postgresStore = require('../services/postgresStore');
 const supabaseStorage = require('../services/supabaseStorage');
@@ -409,6 +409,9 @@ router.post('/login', validateUserAuth, async (req, res) => {
     if (user.emailVerified !== false) {
       const sessionUser = sessionUserFor(user);
       await authenticateSession(req, sessionUser);
+      // Fire-and-forget: a slow mail server should never hold up the sign-in response.
+      sendSignInNotificationEmail(sessionUser).catch(error =>
+        console.error('Sign-in notification email could not be sent:', error.message));
       return res.json({ success: true, message: 'Login successful.', user: sessionUser });
     }
 
