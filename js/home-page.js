@@ -102,6 +102,76 @@ document.addEventListener('keydown', event => {
   button.focus();
 });
 
+function openKeyboardShortcutsModal() {
+  document.getElementById('keyboardShortcutsModal').classList.add('open');
+}
+
+function closeKeyboardShortcutsModal() {
+  document.getElementById('keyboardShortcutsModal').classList.remove('open');
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    if (event.defaultPrevented) return;
+
+    document.querySelectorAll('.button-select.open').forEach(control => closeButtonSelect(control));
+    closeBelongingMenus();
+    const active = document.activeElement;
+    if (active && active.matches('input, textarea, select')) active.blur();
+    return;
+  }
+
+  const target = event.target instanceof Element ? event.target : null;
+  if (target && target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
+  if (document.querySelector('.slip-overlay.open, .del-modal-backdrop.open')) return;
+  if (event.repeat || event.altKey) return;
+
+  const key = event.key.toLowerCase();
+  const hasCommandModifier = event.ctrlKey || event.metaKey;
+  if (hasCommandModifier && key !== 'k') return;
+
+  if ((key === '/' && !hasCommandModifier) || (key === 'k' && hasCommandModifier)) {
+    event.preventDefault();
+    document.getElementById('searchInput').focus();
+    return;
+  }
+
+  if (/^[1-5]$/.test(key) && !hasCommandModifier) {
+    const filters = ['all', 'lost', 'found', 'claimed', 'registered'];
+    const tab = document.querySelector(`.filter-chips .chip[data-filter="${filters[Number(key) - 1]}"]`);
+    if (tab && tab.getClientRects().length) {
+      event.preventDefault();
+      tab.click();
+    }
+    return;
+  }
+
+  if (hasCommandModifier) return;
+
+  if (key === 'r') {
+    event.preventDefault();
+    const report = document.getElementById('report');
+    report.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    report.focus({ preventScroll: true });
+  } else if (key === 'b') {
+    event.preventDefault();
+    handleOpenRegisterBelonging();
+  } else if (key === 'i') {
+    event.preventDefault();
+    document.getElementById('items').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } else if (key === 'arrowleft' || key === 'arrowright') {
+    const buttons = document.querySelectorAll('#itemsPagination .pagination-btn');
+    const button = key === 'arrowleft' ? buttons[0] : buttons[buttons.length - 1];
+    if (button && !button.disabled) {
+      event.preventDefault();
+      button.click();
+    }
+  } else if (key === '?') {
+    event.preventDefault();
+    openKeyboardShortcutsModal();
+  }
+});
+
 async function checkAuthSession() {
   try {
     const res = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });

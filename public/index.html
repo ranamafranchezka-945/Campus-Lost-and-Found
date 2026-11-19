@@ -144,6 +144,7 @@
     <div class="filter-row">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="Search items, codes or places…" data-input="scheduleItemsSearch" aria-label="Search by item name, reference code, location, or details" />
+        <kbd class="search-shortcut-hint" aria-hidden="true">/</kbd>
       </div>
       <div class="filter-chips" role="group" aria-label="Filter items">
         <button class="chip active" data-filter="all" data-action="setFilter" data-args='["all", "$el"]'>All</button>
@@ -190,7 +191,7 @@
   <hr class="section-divider" />
 
   <!-- REPORT FORM -->
-  <section class="tools-section" id="report">
+  <section class="tools-section" id="report" tabindex="-1">
     <div class="section-head">
       <div class="section-head-text">
         <p class="section-eyebrow">Submit a report</p>
@@ -962,6 +963,29 @@
       <p class="footer-location">Camarines Sur Polytechnic Colleges<br />Nabua, Camarines Sur</p>
     </div>
   </footer>
+
+  <div class="slip-overlay keyboard-shortcuts-overlay" id="keyboardShortcutsModal" data-close="closeKeyboardShortcutsModal">
+    <section class="modal-card modal-card--sm keyboard-shortcuts-card" role="dialog" aria-labelledby="keyboardShortcutsTitle">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-heading modal-heading--flush" id="keyboardShortcutsTitle">Keyboard shortcuts</h2>
+          <p class="modal-subtitle">Move around Back2You without taking your hands off the keyboard.</p>
+        </div>
+        <button type="button" class="modal-close" data-action="closeKeyboardShortcutsModal" aria-label="Close shortcuts">&times;</button>
+      </div>
+      <dl class="keyboard-shortcuts-list">
+        <div><dt><kbd>/</kbd><span>or</span><kbd>Ctrl</kbd><span>/</span><kbd>Cmd</kbd><kbd>K</kbd></dt><dd>Focus item search</dd></div>
+        <div><dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Switch item status filter</dd></div>
+        <div><dt><kbd>R</kbd></dt><dd>Go to Quick Report Assistant</dd></div>
+        <div><dt><kbd>B</kbd></dt><dd>Register a belonging</dd></div>
+        <div><dt><kbd>I</kbd></dt><dd>Go to items on campus</dd></div>
+        <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Previous / next listings page</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Close a dialog or blur a field</dd></div>
+        <div><dt><kbd>?</kbd></dt><dd>Show this shortcut guide</dd></div>
+      </dl>
+      <p class="keyboard-shortcuts-note">Shortcuts are paused while you type.</p>
+    </section>
+  </div>
 
   <script src="/vendor/three.min.js"></script>
   <script src="/js/cspc-3d-logo.js"></script>
