@@ -557,8 +557,12 @@
       });
     }
 
+    // Renders the real Google button invisibly, sized to match the visible custom
+    // button in public/login.html (css/login.css stretches its inner iframe to fill
+    // the overlay regardless, as a safety net against any rounding mismatch).
     function renderGoogleButton() {
-      const width = Math.min(400, document.getElementById('loginForm').clientWidth || 320);
+      const customBtn = document.querySelector('.google-custom-btn');
+      const width = Math.min(400, customBtn?.clientWidth || 320);
       google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
         theme: 'outline',
         size: 'large',
