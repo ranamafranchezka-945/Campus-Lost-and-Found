@@ -2377,9 +2377,18 @@ document.addEventListener('DOMContentLoaded', () => {
   setupPhotoLightbox();
   const matchParams = new URLSearchParams(window.location.search);
   checkAuthSession().then(() => {
-    if (matchParams.get('action') === 'register-belonging') {
+    // Deep links from other pages' account menu (e.g. about.html, whose markup has no
+    // notifications/change-password modal of its own): land here and open the real one.
+    const action = matchParams.get('action');
+    if (action === 'register-belonging') {
       window.history.replaceState(window.history.state, '', '/');
       handleOpenRegisterBelonging();
+    } else if (action === 'view-notifications') {
+      window.history.replaceState(window.history.state, '', '/');
+      openNotificationsModal();
+    } else if (action === 'change-password') {
+      window.history.replaceState(window.history.state, '', '/');
+      openChangePasswordModal();
     }
   });
   fetchStats();
