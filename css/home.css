@@ -188,19 +188,36 @@
     .search-box {
       flex: 1;
       min-width: 240px;
+      position: relative;
     }
     .search-box input {
       width: 100%;
       background: rgba(255, 255, 255, 0.05);
       border: 1.5px solid rgba(59, 130, 246, 0.22);
       border-radius: 8px;
-      padding: 0.6rem 0.9rem;
+      padding: 0.6rem 3rem 0.6rem 0.9rem;
       color: var(--text-main);
       font-size: 0.9375rem;
       outline: none;
     }
     .search-box input:focus {
       border-color: var(--blue-main);
+    }
+    .search-shortcut-hint {
+      position: absolute;
+      top: 50%;
+      right: 0.8rem;
+      transform: translateY(-50%);
+      display: grid;
+      width: 1.55rem;
+      height: 1.55rem;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      background: var(--surface-subtle);
+      font: 600 0.8rem/1 "DM Sans", sans-serif;
+      pointer-events: none;
     }
     .filter-chips {
       display: flex;
@@ -584,6 +601,57 @@
     }
     .slip-overlay.open {
       display: flex;
+    }
+    .keyboard-shortcuts-overlay {
+      z-index: 1100;
+    }
+    .keyboard-shortcuts-card {
+      padding: 1.4rem;
+    }
+    .keyboard-shortcuts-card .modal-header {
+      align-items: flex-start;
+    }
+    .keyboard-shortcuts-list {
+      display: grid;
+      gap: 0.15rem;
+      margin: 0;
+    }
+    .keyboard-shortcuts-list > div {
+      display: grid;
+      grid-template-columns: minmax(8.5rem, auto) 1fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--surface-subtle-border);
+    }
+    .keyboard-shortcuts-list dt {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+    .keyboard-shortcuts-list kbd {
+      display: inline-grid;
+      min-width: 1.6rem;
+      height: 1.6rem;
+      padding: 0 0.3rem;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-main);
+      background: var(--surface-subtle);
+      font: 600 0.75rem/1 "DM Sans", sans-serif;
+    }
+    .keyboard-shortcuts-list dd {
+      margin: 0;
+      color: var(--text-main);
+      font-size: 0.875rem;
+    }
+    .keyboard-shortcuts-note {
+      margin: 1rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
     .slip-box {
       background: #ffffff;
