@@ -207,8 +207,12 @@
       window.history.replaceState(null, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
     }
 
-    function updatePasswordRequirements() {
-      const password = document.getElementById('regPassword').value;
+    // Shared by registration and the reset-password form: live-checks a password
+    // against the same rules middleware/validate.js's passwordStrengthErrors() enforces
+    // server-side, and disables the submit button until they're all met - so a weak
+    // password is caught here instead of only after a rejected request.
+    function updatePasswordRequirementsIn(passwordInputId, listId, submitButtonId) {
+      const password = document.getElementById(passwordInputId).value;
       const requirements = {
         length: password.length >= 8,
         uppercase: /[A-Z]/.test(password),
@@ -217,13 +221,22 @@
         special: /[!@#$%?&*]/.test(password)
       };
 
+      const list = document.getElementById(listId);
       Object.entries(requirements).forEach(([name, satisfied]) => {
-        const item = document.querySelector(`[data-requirement="${name}"]`);
+        const item = list.querySelector(`[data-requirement="${name}"]`);
         item.classList.toggle('satisfied', satisfied);
         item.setAttribute('aria-label', `${satisfied ? 'Met' : 'Required'}: ${item.textContent}`);
       });
 
-      document.getElementById('registerSubmit').disabled = !Object.values(requirements).every(Boolean);
+      document.getElementById(submitButtonId).disabled = !Object.values(requirements).every(Boolean);
+    }
+
+    function updatePasswordRequirements() {
+      updatePasswordRequirementsIn('regPassword', 'passwordRequirements', 'registerSubmit');
+    }
+
+    function updateResetPasswordRequirements() {
+      updatePasswordRequirementsIn('resetPassword', 'resetPasswordRequirements', 'resetSubmit');
     }
 
     // Sign-in and sign-up wait for the code email to be sent, which takes a few
@@ -611,6 +624,8 @@
 
     document.getElementById('regPassword').addEventListener('input', updatePasswordRequirements);
     updatePasswordRequirements();
+    document.getElementById('resetPassword').addEventListener('input', updateResetPasswordRequirements);
+    updateResetPasswordRequirements();
     setupGoogleSignIn();
     setupOtpBoxes();
     showVerificationResult();
