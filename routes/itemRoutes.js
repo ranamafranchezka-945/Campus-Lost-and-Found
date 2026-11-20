@@ -411,7 +411,7 @@ function getStudentReporter(lostItem, users) {
   if (!lostItem.reportedBy || lostItem.reportedBy === 'guest') return null;
   return users.find(user =>
     String(user.id) === String(lostItem.reportedBy) &&
-    user.role === 'student'
+    user.role !== 'admin'
   ) || null;
 }
 
@@ -514,14 +514,14 @@ router.get('/claims', requireRole('admin'), (req, res) => {
   res.json({ success: true, claims });
 });
 
-// POST /api/items/broadcast - Send an admin announcement to registered students.
+// POST /api/items/broadcast - Send an admin announcement to registered students and employees.
 router.post('/broadcast', requireRole('admin'), async (req, res) => {
   const subject = sanitizeString(req.body.subject || '');
   const message = sanitizeString(req.body.message || '');
   if (subject.length < 3 || subject.length > 120 || message.length < 5 || message.length > 2000) {
     return res.status(400).json({ success: false, message: 'Subject or message length is invalid.' });
   }
-  const recipients = readJsonArray(USERS_FILE).filter(user => user.role === 'student' && user.email);
+  const recipients = readJsonArray(USERS_FILE).filter(user => user.role !== 'admin' && user.email);
   let sent = 0;
   // Nothing to save; unlock the database so the site keeps working while the emails go out.
   await postgresStore.commitRequest();

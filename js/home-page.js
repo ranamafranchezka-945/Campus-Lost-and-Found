@@ -33,6 +33,7 @@ function renderGuestHeader() {
 function renderAuthenticatedHeader(user) {
   currentUser = user;
   const isAdmin = user.role === 'admin';
+  const roleLabel = isAdmin ? 'Administrator' : (user.role === 'employee' ? 'Employee' : 'Student');
   const slot = document.getElementById('userNavSlot');
   const mobileLogout = document.getElementById('mobileMenuLogout');
   const chipVault = document.getElementById('chipMyBelongings');
@@ -44,7 +45,7 @@ function renderAuthenticatedHeader(user) {
       <button type="button" id="notifBellBtn" data-action="openNotificationsModal" class="notif-bell-btn" title="View QR Recovery Alerts">
         <span class="notif-icon" aria-hidden="true">🔔</span><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
       </button>
-      <div class="user-account-wrap" data-role="${isAdmin ? 'Administrator' : 'Student'}">
+      <div class="user-account-wrap" data-role="${roleLabel}">
         <button type="button" class="user-account-trigger" id="userProfileBtn" data-action="toggleUserProfileMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="userProfileMenu" aria-label="Account menu for ${escapeHtml(displayName)}">
           <span class="user-account-avatar" aria-hidden="true">${escapeHtml(initials)}</span>
           <span class="user-account-name">${escapeHtml(displayName)}</span>
@@ -173,21 +174,41 @@ document.addEventListener('keydown', event => {
 });
 
 async function checkAuthSession() {
+  // Render the cached session immediately, before the /api/auth/me round-trip, so a
+  // returning student's header (Register Belonging, bell, avatar) is already in place
+  // on first paint instead of flashing from the static "Sign In" markup to the
+  // authenticated one a moment later on every page navigation.
+  let cachedUser = null;
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+    if (stored && ['admin', 'student', 'employee'].includes(stored.role)
+      && sessionStorage.getItem('userRole') === stored.role) {
+      cachedUser = stored;
+      renderAuthenticatedHeader(cachedUser);
+      if (cachedUser.role !== 'admin') installDashboardBackGuard();
+    }
+  } catch (storageError) {
+    // Ignore unreadable cached state; the live check below still runs.
+  }
+
   try {
     const res = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });
     if (!res.ok) throw new Error('Unable to verify the current session.');
     const data = await res.json();
 
-    if (data.authenticated && data.user && ['admin', 'student'].includes(data.user.role)) {
+    if (data.authenticated && data.user && ['admin', 'student', 'employee'].includes(data.user.role)) {
+      const matchesCache = cachedUser && cachedUser.email === data.user.email && cachedUser.role === data.user.role;
       currentUser = data.user;
-      if (currentUser.role === 'student') installDashboardBackGuard();
+      if (currentUser.role !== 'admin') installDashboardBackGuard();
       if (currentUser.role === 'admin' && window.location.pathname === '/') {
         window.location.replace('/admin.html');
         return;
       }
       sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
       sessionStorage.setItem('userRole', currentUser.role);
-      renderAuthenticatedHeader(currentUser);
+      // Skip the re-render when the confirmed session matches what the cache already
+      // showed above, so the header never visibly changes twice on the same page load.
+      if (!matchesCache) renderAuthenticatedHeader(currentUser);
       fetchMyBelongingsCount();
       loadMyNotifications();
       // Keep the bell's count current, e.g. when someone asks for your location.
@@ -206,17 +227,8 @@ async function checkAuthSession() {
       renderGuestHeader();
     }
   } catch (err) {
-    try {
-      const cachedUser = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
-      if (cachedUser && ['admin', 'student'].includes(cachedUser.role)
-        && sessionStorage.getItem('userRole') === cachedUser.role) {
-        renderAuthenticatedHeader(cachedUser);
-        if (cachedUser.role === 'student') installDashboardBackGuard();
-        return;
-      }
-    } catch (storageError) {
-      // Ignore unreadable cached state and leave authentication to the next request.
-    }
+    // Network/API failure: keep whatever the cache above already rendered, if anything -
+    // there's nothing more authoritative to fall back to.
   }
 }
 
@@ -225,8 +237,8 @@ function openChangePasswordModal() {
   closeUserProfileMenu();
   document.getElementById('changePasswordEmail').textContent = currentUser.email || '';
   document.getElementById('changePasswordError').style.display = 'none';
-  // Only students can delete their own account; admins are managed on the admin page.
-  document.getElementById('deleteAccountSection').hidden = currentUser.role !== 'student';
+  // Students and employees can delete their own account; admins are managed on the admin page.
+  document.getElementById('deleteAccountSection').hidden = currentUser.role === 'admin';
   document.getElementById('changePasswordModal').classList.add('open');
   updateChangePasswordState();
   refreshMessengerAlertsSection();
@@ -315,9 +327,9 @@ async function handleChangePassword(event) {
   }
 }
 
-// ── Delete account (students) ─────────────────────────────────────────────
+// ── Delete account (students and employees) ───────────────────────────────
 function openDeleteAccountModal() {
-  if (!currentUser || currentUser.role !== 'student') return;
+  if (!currentUser || currentUser.role === 'admin') return;
   closeChangePasswordModal();
   document.getElementById('deleteAccountForm').reset();
   document.getElementById('deleteAccountEmail').textContent = currentUser.email || '';
@@ -380,13 +392,13 @@ async function handleDeleteAccount(event) {
   }
 }
 
-// ── Messenger alerts (students) ───────────────────────────────────────────
+// ── Messenger alerts (students and employees) ─────────────────────────────
 let messengerAlertsLinked = false;
 
 async function refreshMessengerAlertsSection() {
   const section = document.getElementById('messengerAlertsSection');
   if (!section) return;
-  if (!currentUser || currentUser.role !== 'student') {
+  if (!currentUser || currentUser.role === 'admin') {
     section.hidden = true;
     return;
   }

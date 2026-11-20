@@ -1,6 +1,6 @@
 .about-hero,
 .about-content {
-  width: min(100% - 2.5rem, 1100px);
+  width: min(100% - 2.5rem, 1400px);
   margin-inline: auto;
   position: relative;
   z-index: 1;
@@ -95,8 +95,7 @@
 }
 
 .about-card,
-.benefit-row,
-.guidance-list {
+.benefit-row {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--card-bg);
@@ -192,23 +191,6 @@
   background: var(--card-bg);
 }
 
-.guidance-list {
-  display: grid;
-  gap: .9rem;
-  padding: 1.25rem 1.5rem 1.25rem 2.6rem;
-  color: var(--text-muted);
-  font-size: 0.9375rem;
-  line-height: 1.75;
-}
-
-.guidance-list li::marker {
-  color: var(--blue-main);
-}
-
-.guidance-list strong {
-  color: var(--text-main);
-}
-
 .about-cta {
   display: flex;
   align-items: center;
@@ -232,7 +214,6 @@
 
 [data-theme='light'] .about-card,
 [data-theme='light'] .benefit-row,
-[data-theme='light'] .guidance-list,
 [data-theme='light'] .about-cta {
   box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
 }
@@ -260,9 +241,5 @@
   .benefit-row {
     gap: .75rem;
     padding: 1rem;
-  }
-
-  .guidance-list {
-    padding: 1rem 1rem 1rem 2rem;
   }
 }

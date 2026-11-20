@@ -43,6 +43,19 @@
     fill 0.4s ease, stroke 0.4s ease, box-shadow 0.4s ease !important;
 }
 
+/* Navbar links (About, Sign In, the logo, ...) that leave the page: Chrome/Edge animate
+   these natively via the `@view-transition` rule below. Browsers without that feature get
+   the same app-page-exit/enter animation here instead (js/main.js adds these classes), so
+   every nav link feels consistent regardless of browser support. Both classes are added
+   once per page (never toggled), so this costs one short animation, not an ongoing one. */
+html.page-leaving body {
+  animation: app-page-exit 140ms ease-out both;
+  pointer-events: none;
+}
+html.page-entering body {
+  animation: app-page-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -60,20 +73,22 @@ html {
 }
 
 ::view-transition-old(root) {
-  animation: app-page-exit 160ms ease-out both;
+  animation: app-page-exit 140ms ease-out both;
 }
 
 ::view-transition-new(root) {
-  animation: app-page-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: app-page-enter 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+/* opacity + transform only: both are compositor-only (no layout, no repaint), so this
+   stays smooth on low-end devices no matter how heavy the page underneath it is. */
 @keyframes app-page-exit {
-  to { opacity: 0; }
+  to { opacity: 0; transform: translateY(4px); }
 }
 
 @keyframes app-page-enter {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 body {
@@ -168,7 +183,7 @@ body::after {
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1in;
   margin-left: auto;
   margin-right: auto;
 }
@@ -1086,6 +1101,11 @@ h2 {
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
+    animation: none;
+  }
+
+  html.page-leaving body,
+  html.page-entering body {
     animation: none;
   }
 

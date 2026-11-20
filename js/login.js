@@ -42,7 +42,7 @@
         const response = await fetch('/api/auth/me', { cache: 'no-store', credentials: 'same-origin' });
         if (response.ok) {
           const data = await response.json();
-          if (data.authenticated && data.user && ['admin', 'student'].includes(data.user.role)) {
+          if (data.authenticated && data.user && ['admin', 'student', 'employee'].includes(data.user.role)) {
             window.location.replace(getPostLoginUrl(data.user));
             return;
           }
@@ -71,6 +71,25 @@
 
     function switchTab(tab) {
       showAuthForm(tab === 'login' ? 'loginForm' : 'registerForm');
+    }
+
+    // Student vs employee self-registration: same form, different required email domain
+    // (@my.cspc.edu.ph vs @cspc.edu.ph) and submitted account type.
+    function setAccountType(type) {
+      const isEmployee = type === 'employee';
+      document.getElementById('regAccountType').value = isEmployee ? 'employee' : 'student';
+      document.getElementById('tabAccountStudent').classList.toggle('active', !isEmployee);
+      document.getElementById('tabAccountEmployee').classList.toggle('active', isEmployee);
+
+      const email = document.getElementById('regEmail');
+      email.placeholder = isEmployee ? 'e.g., juan.delacruz@cspc.edu.ph' : 'e.g., student@my.cspc.edu.ph';
+      email.pattern = isEmployee ? '[A-Za-z0-9._%+\\-]+@cspc\\.edu\\.ph' : '[A-Za-z0-9._%+\\-]+@my\\.cspc\\.edu\\.ph';
+      email.title = isEmployee
+        ? 'Use your CSPC employee email address ending in @cspc.edu.ph'
+        : 'Use your CSPC email address ending in @my.cspc.edu.ph';
+      email.value = '';
+
+      document.getElementById('registerSubmit').textContent = isEmployee ? 'Create Employee Account' : 'Create Student Account';
     }
 
     function showForgotPassword() {
@@ -477,19 +496,21 @@
       const fullName = document.getElementById('regFullName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
       const password = document.getElementById('regPassword').value;
+      const accountType = document.getElementById('regAccountType').value;
 
       try {
         const res = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ fullName, email, password })
+          body: JSON.stringify({ fullName, email, password, accountType })
         });
 
         const data = await res.json();
         if (data.success) {
           // The new account is confirmed with the emailed code, which also signs in.
           document.getElementById('registerForm').reset();
+          setAccountType('student');
           updatePasswordRequirements();
           document.getElementById('loginEmail').value = email;
           showOtpStep(data, 'registerForm');

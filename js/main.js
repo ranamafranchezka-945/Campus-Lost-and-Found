@@ -1,5 +1,15 @@
 const THEME_STORAGE_KEY = 'cspc_theme';
 
+// Fallback for browsers without the Cross-Document View Transitions API (the
+// `@view-transition` rule in css/styles.css animates Chrome/Edge natively): this file
+// runs synchronously in <head>, before <body> is parsed, so adding the class here - not
+// in a DOMContentLoaded handler - lets the entrance animation cover the very first paint
+// instead of a flash of the fully-visible page first.
+const supportsNativePageTransition = 'onpageswap' in window;
+if (!supportsNativePageTransition) {
+  document.documentElement.classList.add('page-entering');
+}
+
 // Shared by every password field that sits in a .password-wrap (login, registration,
 // password reset, and the change-password modal): toggles type="password"/"text" and
 // swaps the eye icon. Lives here, not in js/login.js, because both login.html and
@@ -630,6 +640,25 @@ function closeMobileNav(navbar, returnFocus = false) {
   if (returnFocus) button.focus();
 }
 
+// Fades the page out with the same timing as css/styles.css's app-page-exit before a
+// navbar link leaves the page, so About, Sign In, the logo, etc. all feel consistent
+// no matter which browser renders them (see supportsNativePageTransition above).
+function handleNavPageLeave(event) {
+  if (supportsNativePageTransition) return false;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+  const link = event.target.closest('.navbar a[href]');
+  if (!link || link.target === '_blank' || link.hasAttribute('download')) return false;
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+  let url;
+  try { url = new URL(link.href, location.href); } catch { return false; }
+  if (url.origin !== location.origin) return false;
+  if (url.pathname === location.pathname && url.hash) return false; // same-page anchors (#items, #report) keep their own handling
+  event.preventDefault();
+  document.documentElement.classList.add('page-leaving');
+  setTimeout(() => { location.href = url.href; }, 140);
+  return true;
+}
+
 loadTheme();
 document.addEventListener('DOMContentLoaded', () => {
   initNav();
@@ -653,6 +682,8 @@ document.addEventListener('click', event => {
     window.history.replaceState(window.history.state, '', reportLink.hash);
     reportSection.scrollIntoView();
   }
+
+  handleNavPageLeave(event);
 
   if (event.target.closest('.theme-toggle')) {
     if (event.target.closest('.theme-toggle').dataset.themeBound === 'true') return;

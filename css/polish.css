@@ -585,6 +585,11 @@
   color: var(--blue-light);
   border: 1px solid rgba(59, 130, 246, 0.35);
 }
+:root .badge-role-employee {
+  background: rgba(45, 212, 191, 0.14);
+  color: #2dd4bf;
+  border: 1px solid rgba(45, 212, 191, 0.35);
+}
 
 /* ── Admin: broadcast form ──────────────────────────────────────────────── */
 :root .broadcast-card {

@@ -117,6 +117,11 @@
 
       <!-- REGISTRATION FORM -->
       <form id="registerForm" style="display: none;" data-submit="handleRegister">
+        <input type="hidden" id="regAccountType" value="student" />
+        <div class="auth-tabs auth-tabs--account-type" id="accountTypeTabs" role="group" aria-label="Account type">
+          <button type="button" class="auth-tab active" id="tabAccountStudent" data-action="setAccountType" data-args='["student"]'>Student</button>
+          <button type="button" class="auth-tab" id="tabAccountEmployee" data-action="setAccountType" data-args='["employee"]'>Employee</button>
+        </div>
         <div class="form-group">
           <label>Full Name *</label>
           <input type="text" id="regFullName" placeholder="e.g., Maria Santos" required />

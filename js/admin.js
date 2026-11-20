@@ -143,8 +143,21 @@ let allowedEmails = [];
       document.getElementById('createUserForm').addEventListener('submit', createAdminUser);
       document.querySelector('#createUserForm [name="role"]').addEventListener('change', event => {
         const department = document.querySelector('#createUserForm [name="department"]');
-        if (event.target.value === 'admin') department.value = 'Administration';
-        else if (department.value === 'Administration') department.value = '';
+        const departmentField = document.getElementById('createUserDepartmentField');
+        if (event.target.value === 'admin') {
+          department.value = 'Administration';
+          department.required = true;
+          departmentField.hidden = false;
+        } else if (event.target.value === 'employee') {
+          // Employees aren't in a college department; the backend accepts a blank one.
+          department.value = '';
+          department.required = false;
+          departmentField.hidden = true;
+        } else {
+          if (department.value === 'Administration') department.value = '';
+          department.required = true;
+          departmentField.hidden = false;
+        }
       });
       document.getElementById('confirmDeleteUser').addEventListener('click', deleteAdminUser);
       document.getElementById('cancelDeleteUser').addEventListener('click', closeDeleteUserModal);
@@ -192,7 +205,7 @@ let allowedEmails = [];
         <tr>
           <td>${escHtml(user.fullName || '—')}</td>
           <td>${escHtml(user.email || '—')}</td>
-          <td><span class="badge ${user.role === 'admin' ? 'badge-role-admin' : 'badge-role-student'}">${escHtml(user.role === 'admin' ? 'Admin' : 'Student')}</span></td>
+          <td><span class="badge ${user.role === 'admin' ? 'badge-role-admin' : user.role === 'employee' ? 'badge-role-employee' : 'badge-role-student'}">${escHtml(user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : 'Student')}</span></td>
           <td>${escHtml(user.department || '—')}</td>
           <td>${escHtml(formatDate(user.createdAt))}</td>
           <td><button type="button" class="action-btn action-btn-delete user-delete-button" data-user-id="${escHtml(user.id)}" data-user-name="${escHtml(user.fullName || user.email)}"${user.id === window.currentAdminUserId ? ' disabled' : ''}>Delete</button></td>
@@ -339,6 +352,8 @@ let allowedEmails = [];
       const form = document.getElementById('createUserForm');
       form.reset();
       form.elements.studentId.value = 'N/A';
+      form.elements.department.required = true;
+      document.getElementById('createUserDepartmentField').hidden = false;
       document.getElementById('userFormPanel').hidden = true;
     }
 

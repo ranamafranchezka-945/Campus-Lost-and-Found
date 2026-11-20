@@ -121,9 +121,12 @@ function validateUserAuth(req, res, next) {
 
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
   if (req.path === '/register') {
-    // Self-registration is for students only.
-    if (!STUDENT_EMAIL.test(normalizedEmail)) {
-      errors.push('Use your CSPC student email address ending in @my.cspc.edu.ph.');
+    // Self-registration is for students and employees; each uses its own CSPC domain.
+    const isEmployee = req.body.accountType === 'employee';
+    if (isEmployee ? !STAFF_EMAIL.test(normalizedEmail) : !STUDENT_EMAIL.test(normalizedEmail)) {
+      errors.push(isEmployee
+        ? 'Use your CSPC employee email address ending in @cspc.edu.ph.'
+        : 'Use your CSPC student email address ending in @my.cspc.edu.ph.');
     }
   } else if (!STUDENT_EMAIL.test(normalizedEmail) && !STAFF_EMAIL.test(normalizedEmail)) {
     errors.push('Use your CSPC email address ending in @my.cspc.edu.ph.');

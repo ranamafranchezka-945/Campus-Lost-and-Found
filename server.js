@@ -251,7 +251,7 @@ function createApp() {
   app.get('/report-found.html', (req, res) => res.redirect(302, '/index.html?report=found#itemForm'));
   app.get(['/found', '/match-reference', '/index.html'], (req, res) => sendPage(res, page('index.html')));
   app.get(['/home', '/home.html'], (req, res) => sendPage(res, page('home.html')));
-  // Signed-in students go straight to the portal; visitors see the public landing page.
+  // Signed-in students and employees go straight to the portal; visitors see the public landing page.
   app.get('/', (req, res) => {
     const user = req.session?.user;
     if (user?.role === 'admin') return res.redirect(302, '/admin.html');
@@ -260,7 +260,7 @@ function createApp() {
   app.get('/login', (req, res) => {
     const user = req.session?.user;
     if (user?.role === 'admin') return res.redirect(302, '/admin.html');
-    if (user?.role === 'student') return res.redirect(302, '/');
+    if (user?.role === 'student' || user?.role === 'employee') return res.redirect(302, '/');
     sendPage(res, page('login.html'));
   });
   app.get(['/login.html', '/about.html'], (req, res) => sendPage(res, page(path.basename(req.path))));

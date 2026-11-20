@@ -2436,6 +2436,13 @@ button {
     font-size: 0.9375rem;
   }
 
+  /* "My Belongings" filters by ownership, not status like its siblings - a gap
+     instead of a border keeps it grouped with the row while reading as its own
+     thing, rather than a same-kind option that happens to look different. */
+  .filter-chips .chip-my-vault {
+    margin-left: 0.5rem;
+  }
+
   .hero-stats .stat-box {
     padding: 1rem;
   }

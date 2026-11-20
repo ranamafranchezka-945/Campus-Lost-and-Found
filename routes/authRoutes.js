@@ -270,10 +270,14 @@ function ensureDefaultAdminAccount() {
 router.post('/register', validateUserAuth, async (req, res) => {
   try {
     const { email, password, fullName } = req.body;
-    if (!STUDENT_EMAIL.test(email)) {
+    const role = req.body.accountType === 'employee' ? 'employee' : 'student';
+    const emailPattern = role === 'employee' ? STAFF_EMAIL : STUDENT_EMAIL;
+    if (!emailPattern.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Student registration requires an @my.cspc.edu.ph email address.'
+        message: role === 'employee'
+          ? 'Employee registration requires an @cspc.edu.ph email address.'
+          : 'Student registration requires an @my.cspc.edu.ph email address.'
       });
     }
     if (isEmailBlocked(email)) {
@@ -282,7 +286,7 @@ router.post('/register', validateUserAuth, async (req, res) => {
         message: 'This email address is not allowed to register.'
       });
     }
-    if (!isEmailAllowed(email, 'student')) {
+    if (!isEmailAllowed(email, role)) {
       return res.status(403).json({
         success: false,
         message: 'Registration is currently restricted. Contact the administrator for access.'
@@ -313,10 +317,10 @@ router.post('/register', validateUserAuth, async (req, res) => {
       id: existingIndex === -1 ? 'usr-' + Date.now() : users[existingIndex].id,
       email,
       passwordHash,
-      fullName: sanitizeString(fullName) || 'CSPC Student',
+      fullName: sanitizeString(fullName) || (role === 'employee' ? 'CSPC Employee' : 'CSPC Student'),
       // Self-registration no longer asks for a student ID or department.
       studentId: 'N/A',
-      role: 'student', // default self-registration is student role
+      role,
       department: '',
       emailVerified: false,
       createdAt: new Date().toISOString()
@@ -377,8 +381,12 @@ router.post('/login', validateUserAuth, async (req, res) => {
     const users = getUsers();
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
-    // Students may only use @my.cspc.edu.ph; an admin account may be on either CSPC domain.
-    const domainAllowed = Boolean(user) && (user.role === 'admin' ? isAdminEmail(email) : STUDENT_EMAIL.test(email));
+    // Students use @my.cspc.edu.ph, employees use @cspc.edu.ph; an admin account may be on either domain.
+    const domainAllowed = Boolean(user) && (
+      user.role === 'admin' ? isAdminEmail(email)
+        : user.role === 'employee' ? STAFF_EMAIL.test(email)
+          : STUDENT_EMAIL.test(email)
+    );
     // Always run bcrypt so response time does not reveal whether the account exists.
     const isMatch = await bcrypt.compare(password, domainAllowed ? user.passwordHash : DUMMY_PASSWORD_HASH);
     if (!domainAllowed || !isMatch) {
@@ -722,7 +730,7 @@ router.post('/delete-account', requireAuth, async (req, res) => {
     const index = users.findIndex(u => String(u.id) === String(req.session.user.id));
     if (index === -1) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
     const user = users[index];
-    if (user.role !== 'student') {
+    if (user.role === 'admin') {
       return res.status(403).json({ success: false, message: 'Admin accounts are removed by another administrator from the admin page.' });
     }
     if (req.body.confirm !== 'DELETE') {
@@ -792,15 +800,15 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     const fullName = sanitizeString(req.body.fullName);
     const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
     const password = typeof req.body.password === 'string' ? req.body.password : '';
-    const role = req.body.role === 'admin' ? 'admin' : 'student';
+    const role = ['admin', 'employee'].includes(req.body.role) ? req.body.role : 'student';
     const studentId = sanitizeString(req.body.studentId) || 'N/A';
     const department = sanitizeString(req.body.department) || (role === 'admin' ? 'Administration' : '');
     const errors = [];
 
     if (!fullName || fullName.length < 2 || fullName.length > 100) errors.push('Full name must be between 2 and 100 characters.');
-    if ((role === 'student' && !STUDENT_EMAIL.test(email)) || (role === 'admin' && !isAdminEmail(email))) {
-      errors.push(role === 'student' ? 'Student accounts must use an @my.cspc.edu.ph email.' : 'Admin accounts must use an @cspc.edu.ph or @my.cspc.edu.ph email.');
-    }
+    if (role === 'student' && !STUDENT_EMAIL.test(email)) errors.push('Student accounts must use an @my.cspc.edu.ph email.');
+    if (role === 'employee' && !STAFF_EMAIL.test(email)) errors.push('Employee accounts must use an @cspc.edu.ph email.');
+    if (role === 'admin' && !isAdminEmail(email)) errors.push('Admin accounts must use an @cspc.edu.ph or @my.cspc.edu.ph email.');
     if (passwordStrengthErrors(password, role === 'admin' ? 12 : 8).length) {
       errors.push(`Password must be at least ${role === 'admin' ? 12 : 8} characters and include uppercase, lowercase, number, and special character.`);
     }

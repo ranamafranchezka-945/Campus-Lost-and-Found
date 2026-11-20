@@ -337,9 +337,9 @@
               <label>Full name<input class="form-control" name="fullName" required maxlength="100" /></label>
               <label>Email<input class="form-control" name="email" type="email" required /></label>
               <label>Password<input class="form-control" name="password" type="password" required minlength="8" autocomplete="new-password" /></label>
-              <label>Role<select class="form-control" name="role"><option value="student">Student</option><option value="admin">Administrator</option></select></label>
+              <label>Role<select class="form-control" name="role"><option value="student">Student</option><option value="employee">Employee</option><option value="admin">Administrator</option></select></label>
               <label>Student ID<input class="form-control" name="studentId" maxlength="30" value="N/A" /></label>
-              <label>Department<select class="form-control" name="department" required>
+              <label id="createUserDepartmentField">Department<select class="form-control" name="department" required>
                 <option value="">Select department</option>
                 <option>College of Computer Studies (CCS)</option><option>College of Engineering and Architecture (CEA)</option>
                 <option>College of Health Sciences (CHS)</option><option>College of Tourism, Hospitality and Business Management (CTHBM)</option>

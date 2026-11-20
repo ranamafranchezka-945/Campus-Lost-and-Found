@@ -22,10 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     userName.textContent = user.role === 'admin' ? 'Admin' : user.fullName;
     userPill.append(userName);
 
-    if (user.role === 'student') {
+    if (user.role === 'student' || user.role === 'employee') {
       const roleBadge = document.createElement('span');
       roleBadge.className = 'role-badge';
-      roleBadge.textContent = 'Student';
+      roleBadge.textContent = user.role === 'employee' ? 'Employee' : 'Student';
       userPill.append(roleBadge);
     }
 
@@ -53,6 +53,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Render the cached session immediately, before the /api/auth/me round-trip, so a
+  // returning student's nav is already in place on first paint instead of flashing from
+  // the static "Sign In" markup to the authenticated one a moment later - the same cache
+  // js/home-page.js keeps in sync on index.html.
+  let cachedUser = null;
+  try {
+    const stored = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
+    if (stored && ['admin', 'student', 'employee'].includes(stored.role)
+      && sessionStorage.getItem('userRole') === stored.role) {
+      cachedUser = stored;
+      renderAuthenticatedNavigation(cachedUser);
+    }
+  } catch (storageError) {
+    // Ignore unreadable cached state; the live check below still runs.
+  }
+
   async function loadAccountNavigation() {
     try {
       const response = await fetch('/api/auth/me', {
@@ -62,8 +78,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error(`Session check failed (${response.status}).`);
       const data = await response.json();
 
-      if (data.authenticated && data.user && ['admin', 'student'].includes(data.user.role)) {
-        renderAuthenticatedNavigation(data.user);
+      if (data.authenticated && data.user && ['admin', 'student', 'employee'].includes(data.user.role)) {
+        const matchesCache = cachedUser && cachedUser.email === data.user.email && cachedUser.role === data.user.role;
+        if (!matchesCache) renderAuthenticatedNavigation(data.user);
       } else {
         renderGuestNavigation();
       }

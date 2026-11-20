@@ -307,18 +307,28 @@
 
 .password-requirements {
   list-style: none;
-  margin: 0.55rem 0 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  column-gap: 0.75rem;
+  row-gap: 0.35rem;
+  margin: 0.6rem 0 0;
   padding: 0;
   color: var(--text-muted);
   font-size: 0.8125rem;
-  line-height: 1.7;
+  line-height: 1.4;
+}
+.password-requirements li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
 }
 .password-requirements li::before {
   content: '○';
-  display: inline-block;
-  width: 1.2rem;
+  flex-shrink: 0;
+  width: 1rem;
   color: var(--text-muted);
   font-weight: 700;
+  line-height: 1.4;
 }
 .password-requirements li.satisfied {
   color: var(--tone-success);
