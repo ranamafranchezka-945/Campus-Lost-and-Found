@@ -55,9 +55,14 @@
 
     // Theme initialization and click handling are provided by the shared main.js.
 
+    const AUTH_DEFAULT_TITLE = 'Welcome to Back2You';
+    const AUTH_TITLES = {
+      registerForm: 'Create an Account'
+      // Every other form keeps AUTH_DEFAULT_TITLE.
+    };
     const AUTH_SUBTITLES = {
       loginForm: 'Sign in to your account',
-      registerForm: 'Create your CSPC account',
+      registerForm: 'Join the Back2You - CSPC Lost and Found Community',
       forgotForm: 'Reset your password',
       resetForm: 'Choose a new password'
       // otpForm has its own header (otp-title) instead of this one.
@@ -70,6 +75,7 @@
         form.style.display = isActive ? 'block' : 'none';
         if (isActive) restartAnimation(form, 'auth-form-enter');
       });
+      document.getElementById('authTitle').textContent = AUTH_TITLES[formId] || AUTH_DEFAULT_TITLE;
       const subtitle = document.getElementById('authSubtitle');
       if (AUTH_SUBTITLES[formId]) subtitle.textContent = AUTH_SUBTITLES[formId];
       hideError();
