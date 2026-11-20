@@ -41,15 +41,51 @@ body.auth-checking > .site-footer {
       text-align: center;
       margin-bottom: 2rem;
     }
-    .auth-header img {
-      width: 65px;
-      height: 65px;
-      object-fit: contain;
+    /* Animated 3D CSPC seal (js/cspc-3d-logo.js), scaled down from the landing-page hero
+       size (~300-380px) to fit this card - small enough not to push the form down, large
+       enough that the globe/seal/flame detail still reads instead of blurring together. */
+    .auth-logo-scene {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin: 0 auto 0.8rem;
+      perspective: 700px;
+    }
+    .auth-logo-glow {
+      position: absolute;
+      inset: 12%;
+      z-index: 0;
       border-radius: 50%;
-      background: #ffffff;
-      padding: 3px;
-      margin-bottom: 0.8rem;
-      box-shadow: 0 0 18px rgba(37, 99, 235, 0.35);
+      background: radial-gradient(circle, rgba(15, 23, 42, 0.22) 0%, rgba(30, 58, 138, 0.18) 34%, rgba(37, 99, 235, 0.07) 54%, transparent 72%);
+      filter: blur(3px);
+    }
+    .auth-logo-stage {
+      position: absolute;
+      inset: 0 0 18px;
+      z-index: 2;
+    }
+    .auth-logo-stage canvas {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+      touch-action: none;
+    }
+    .auth-logo-stage canvas:active {
+      cursor: grabbing;
+    }
+    .auth-logo-shadow {
+      position: absolute;
+      left: 22%;
+      right: 22%;
+      bottom: -6px;
+      height: 10px;
+      z-index: 1;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, rgba(15, 23, 42, 0.32) 0%, transparent 70%);
+      filter: blur(2px);
     }
     .auth-header h1 {
       font-size: 1.25rem;

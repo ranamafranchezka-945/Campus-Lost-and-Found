@@ -41,7 +41,11 @@
   <div class="auth-container">
     <div class="auth-card">
       <div class="auth-header">
-        <img src="cspc-logo.png" alt="CSPC Seal" />
+        <div class="auth-logo-scene" data-cspc-logo-scene>
+          <span class="auth-logo-glow" aria-hidden="true"></span>
+          <div class="auth-logo-stage" data-cspc-logo-stage role="img" aria-label="Animated 3D CSPC seal logo."></div>
+          <span class="auth-logo-shadow" aria-hidden="true"></span>
+        </div>
         <h1 id="authTitle">Welcome to Back2You</h1>
         <p id="authSubtitle">Sign in to your account</p>
       </div>
@@ -262,6 +266,8 @@
     </div>
   </footer>
 
+  <script src="/vendor/three.min.js"></script>
+  <script src="/js/cspc-3d-logo.js"></script>
   <script src="/js/login.js"></script>
   <script src="/icons.js"></script>
 </body>
