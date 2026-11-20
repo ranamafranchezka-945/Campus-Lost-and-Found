@@ -656,6 +656,28 @@
   background: var(--well-bg);
 }
 .account-danger[hidden] { display: none; }
+.account-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1.75rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: var(--well-bg);
+}
+.account-section[hidden] { display: none; }
+.account-section-title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.account-section-text {
+  margin: 0.15rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+.account-section .btn { align-self: flex-end; }
 .account-danger-title {
   margin: 0;
   font-size: 0.9375rem;

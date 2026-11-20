@@ -13,6 +13,7 @@ const crypto = require('crypto');
 
 const authRoutes = require('./routes/authRoutes');
 const itemRoutes = require('./routes/itemRoutes');
+const messengerRoutes = require('./routes/messengerRoutes');
 const postgresStore = require('./services/postgresStore');
 
 // Served to anyone not on the allowlist while it is active. Fully self-contained (no
@@ -183,7 +184,7 @@ function createApp() {
   // check with a clearer message) stay reachable. getAllowedEmailsDirect() queries the
   // database directly, not through the per-request transaction context set up below,
   // since this must run on every request, not just /api/* ones.
-  const allowlistExemptPaths = new Set(['/login', '/login.html', '/icons.js']);
+  const allowlistExemptPaths = new Set(['/login', '/login.html', '/icons.js', '/api/messenger/webhook']);
   const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
   app.use(async (req, res, next) => {
     if (req.session?.user?.role === 'admin') return next();
@@ -233,6 +234,7 @@ function createApp() {
   });
   app.use('/api/auth', authRoutes);
   app.use('/api/items', itemRoutes);
+  app.use('/api/messenger', messengerRoutes);
   app.use('/api/stats', (req, res) => res.redirect('/api/items/stats'));
   app.use('/uploads', express.static(path.join(dataDir, 'uploads'), { fallthrough: false, maxAge: '7d' }));
 

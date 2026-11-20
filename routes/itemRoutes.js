@@ -18,6 +18,7 @@ const {
   sendBroadcastEmail,
   sendMeetupRequestEmail
 } = require('../services/email');
+const messenger = require('../services/messenger');
 const postgresStore = require('../services/postgresStore');
 const supabaseStorage = require('../services/supabaseStorage');
 const reportAssistant = require('../services/reportAssistant');
@@ -718,6 +719,12 @@ router.post('/claims/:claimId/meetup/request', requireAuth, async (req, res) => 
     await sendMeetupRequestEmail(other, me.fullName || 'The other person', item.title);
   } catch (error) {
     console.error('Location request email could not be sent:', error.message);
+  }
+  if (other.messengerPsid) {
+    const requesterName = firstName(me.fullName, 'The other person');
+    messenger.sendMessengerText(other.messengerPsid,
+      `${requesterName} asked for your current location to meet and hand over "${item.title}". Sign in to Back2You and open your notifications (the bell icon) to respond.`
+    ).catch(error => console.error('Location request Messenger alert could not be sent:', error.message));
   }
   res.status(201).json({ success: true, message: `We asked ${otherName} to share their location.` });
 });
@@ -1610,6 +1617,11 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
         await sendPossibleMatchEmail(student, lostItem, foundItem);
       } catch (error) {
         console.error('Possible-match notification email could not be sent:', error.message);
+      }
+      if (student.messengerPsid) {
+        messenger.sendMessengerText(student.messengerPsid,
+          `A found item may match your lost-item report "${lostItem.title}". Sign in to Back2You to review the possible match (${foundItem.title}, ${foundItem.refCode}).`
+        ).catch(error => console.error('Possible-match Messenger alert could not be sent:', error.message));
       }
     }
 

@@ -159,6 +159,7 @@ function openChangePasswordModal() {
   document.getElementById('deleteAccountSection').hidden = currentUser.role !== 'student';
   document.getElementById('changePasswordModal').classList.add('open');
   updateChangePasswordState();
+  refreshMessengerAlertsSection();
   document.getElementById('currentPassword').focus();
 }
 
@@ -307,6 +308,76 @@ async function handleDeleteAccount(event) {
     button.textContent = 'Delete account';
     updateDeleteAccountButton();
   }
+}
+
+// ── Messenger alerts (students) ───────────────────────────────────────────
+let messengerAlertsLinked = false;
+
+async function refreshMessengerAlertsSection() {
+  const section = document.getElementById('messengerAlertsSection');
+  if (!section) return;
+  if (!currentUser || currentUser.role !== 'student') {
+    section.hidden = true;
+    return;
+  }
+  section.hidden = false;
+  const statusText = document.getElementById('messengerAlertsStatus');
+  const button = document.getElementById('messengerAlertsBtn');
+  try {
+    const res = await fetch('/api/messenger/status', { credentials: 'same-origin' });
+    const data = await res.json();
+    if (res.status === 503) {
+      section.hidden = true;
+      return;
+    }
+    messengerAlertsLinked = Boolean(data.linked);
+    statusText.textContent = messengerAlertsLinked
+      ? 'Possible-match and location-request alerts are being sent to your Messenger.'
+      : 'Get possible-match and location-request alerts on Messenger too.';
+    button.textContent = messengerAlertsLinked ? 'Disconnect Messenger' : 'Connect Messenger';
+  } catch (err) {
+    section.hidden = true;
+  }
+}
+
+async function handleMessengerAlertsClick() {
+  const button = document.getElementById('messengerAlertsBtn');
+  button.disabled = true;
+  try {
+    if (messengerAlertsLinked) {
+      await fetch('/api/messenger/unlink', { method: 'POST', credentials: 'same-origin' });
+      await refreshMessengerAlertsSection();
+      showToast('Messenger alerts disconnected.');
+    } else {
+      const res = await fetch('/api/messenger/link-code', { method: 'POST', credentials: 'same-origin' });
+      const data = await res.json();
+      if (!data.success) {
+        showToast(data.message || 'Could not start Messenger linking.');
+        return;
+      }
+      document.getElementById('messengerLinkCode').textContent = data.code;
+      document.getElementById('messengerLinkExpiry').textContent =
+        `This code expires in ${data.expiresInMinutes} minutes and can only be used once.`;
+      const pageBtn = document.getElementById('messengerLinkPageBtn');
+      if (data.pageUrl) {
+        pageBtn.href = data.pageUrl;
+        pageBtn.style.display = '';
+      } else {
+        pageBtn.style.display = 'none';
+      }
+      closeChangePasswordModal();
+      document.getElementById('messengerLinkModal').classList.add('open');
+    }
+  } catch (err) {
+    showToast('Network error. Please try again.');
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function closeMessengerLinkModal() {
+  document.getElementById('messengerLinkModal').classList.remove('open');
+  refreshMessengerAlertsSection();
 }
 
 function openLogoutModal() {

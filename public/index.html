@@ -637,6 +637,15 @@
       </form>
 
       <!-- Students only (hidden for admins by js/home-page.js) -->
+      <div class="account-section" id="messengerAlertsSection" hidden>
+        <div>
+          <p class="account-section-title">Messenger alerts</p>
+          <p class="account-section-text" id="messengerAlertsStatus">Get possible-match and location-request alerts on Messenger too.</p>
+        </div>
+        <button type="button" class="btn btn-outline btn-compact" id="messengerAlertsBtn" data-action="handleMessengerAlertsClick">Connect Messenger</button>
+      </div>
+
+      <!-- Students only (hidden for admins by js/home-page.js) -->
       <div class="account-danger" id="deleteAccountSection">
         <div>
           <p class="account-danger-title">Delete account</p>
@@ -677,6 +686,29 @@
           <button type="submit" class="btn btn-danger" id="deleteAccountSubmit" disabled>Delete account</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- MESSENGER ALERTS LINK MODAL -->
+  <div class="slip-overlay" id="messengerLinkModal" data-close="closeMessengerLinkModal">
+    <div class="modal-card modal-card--sm">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title modal-heading modal-heading--flush">Connect Messenger</h2>
+          <p class="modal-subtitle">One-time code to link your account</p>
+        </div>
+        <button type="button" class="modal-close" data-action="closeMessengerLinkModal" aria-label="Close">&times;</button>
+      </div>
+      <p class="modal-body-text">Send this code as a message to our Facebook Page. Once received, Messenger alerts will turn on for your account.</p>
+      <div class="info-panel">
+        <div class="info-panel-label">Your code</div>
+        <div class="info-panel-code" id="messengerLinkCode">000000</div>
+      </div>
+      <p class="modal-body-text" id="messengerLinkExpiry"></p>
+      <div class="modal-actions">
+        <a class="btn btn-outline" id="messengerLinkPageBtn" href="#" target="_blank" rel="noopener">Message us on Facebook</a>
+        <button type="button" class="btn btn-primary" data-action="closeMessengerLinkModal">Done</button>
+      </div>
     </div>
   </div>
 
