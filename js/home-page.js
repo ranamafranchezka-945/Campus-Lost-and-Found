@@ -56,6 +56,9 @@ function renderAuthenticatedHeader(user) {
             <strong>${escapeHtml(displayName)}</strong>
             <small>${escapeHtml(user.email || '')}</small>
           </div>
+          <button type="button" class="user-account-menu-item" role="menuitem" data-action="openKeyboardShortcutsModal">
+            Keyboard shortcuts
+          </button>
           <button type="button" class="user-account-menu-item" role="menuitem" data-action="openChangePasswordModal">
             <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3"/><path d="M2 14h4m4-6h4m4 8h4"/></svg>
             Settings
@@ -2389,6 +2392,9 @@ document.addEventListener('DOMContentLoaded', () => {
     } else if (action === 'change-password') {
       window.history.replaceState(window.history.state, '', '/');
       openChangePasswordModal();
+    } else if (action === 'keyboard-shortcuts') {
+      window.history.replaceState(window.history.state, '', '/index.html');
+      openKeyboardShortcutsModal();
     }
   });
   fetchStats();

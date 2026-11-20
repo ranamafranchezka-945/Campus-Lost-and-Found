@@ -11,6 +11,10 @@ window.goToChangePassword = () => {
   window.location.href = '/?action=change-password';
 };
 
+window.goToKeyboardShortcuts = () => {
+  window.location.href = '/index.html?action=keyboard-shortcuts';
+};
+
 window.toggleUserProfileMenu = () => {
   const button = document.getElementById('userProfileBtn');
   const menu = document.getElementById('userProfileMenu');
@@ -38,6 +42,14 @@ document.addEventListener('keydown', event => {
   if (event.key !== 'Escape' || !button || button.getAttribute('aria-expanded') !== 'true') return;
   window.closeUserProfileMenu();
   button.focus();
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key !== '?' || event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (target && target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
+  event.preventDefault();
+  window.goToKeyboardShortcuts();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -79,6 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <strong></strong>
             <small></small>
           </div>
+          <button type="button" class="user-account-menu-item" role="menuitem" data-action="goToKeyboardShortcuts">
+            Keyboard shortcuts
+          </button>
           <button type="button" class="user-account-menu-item" role="menuitem" data-action="goToChangePassword">
             <svg class="ico" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3"/><path d="M2 14h4m4-6h4m4 8h4"/></svg>
             Settings
