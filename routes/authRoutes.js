@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { OAuth2Client } = require('google-auth-library');
 const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL, isAdminEmail } = require('../middleware/validate');
 const { sendVerificationCodeEmail, sendSignInNotificationEmail, sendPasswordResetEmail } = require('../services/email');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
@@ -39,6 +40,10 @@ const LOGIN_LIMIT = { max: 8, windowMs: 15 * 60 * 1000 };
 const REGISTRATION_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 };
 const RESET_REQUEST_LIMIT = { max: 5, windowMs: 60 * 60 * 1000 };
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equalizer-not-a-real-password', 10);
+// CSPC's @my.cspc.edu.ph / @cspc.edu.ph addresses run on Google Workspace, so a verified
+// Google sign-in is proof of the same CSPC identity a password sign-in proves. Unset
+// GOOGLE_CLIENT_ID disables the feature entirely rather than half-configuring it.
+const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null;
 const loginFailures = new Map();
 const registrationAttempts = new Map();
 const resetRequests = new Map();
@@ -343,6 +348,76 @@ router.post('/register', validateUserAuth, async (req, res) => {
       message: 'Internal server error during registration.'
     });
   }
+});
+
+// GET /api/auth/google-client-id - Lets the login page decide whether to show the Google
+// button, without baking the client ID into static HTML (this app has no templating).
+router.get('/google-client-id', (req, res) => {
+  res.json({ clientId: process.env.GOOGLE_CLIENT_ID || null });
+});
+
+// POST /api/auth/google - Sign in (or self-register) with a verified Google Workspace
+// account. Skips the emailed code a password sign-in needs, since Google already proved
+// the inbox; student vs employee is the same @my.cspc.edu.ph / @cspc.edu.ph split as
+// manual registration, read from Google's own verified email instead of a form field.
+router.post('/google', async (req, res) => {
+  if (!googleClient) {
+    return res.status(503).json({ success: false, message: 'Google sign-in is not configured on this server.' });
+  }
+  const credential = typeof req.body.credential === 'string' ? req.body.credential : '';
+  if (!credential) {
+    return res.status(400).json({ success: false, message: 'Missing Google credential.' });
+  }
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
+    payload = ticket.getPayload();
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Could not verify your Google sign-in. Please try again.' });
+  }
+
+  const email = String(payload.email || '').trim().toLowerCase();
+  if (!payload.email_verified || (!STUDENT_EMAIL.test(email) && !STAFF_EMAIL.test(email))) {
+    return res.status(403).json({
+      success: false,
+      message: 'Sign in with your CSPC Google account (@my.cspc.edu.ph or @cspc.edu.ph).'
+    });
+  }
+  if (isEmailBlocked(email)) {
+    return res.status(403).json({ success: false, message: 'This account has been blocked. Contact the administrator.' });
+  }
+
+  const role = STUDENT_EMAIL.test(email) ? 'student' : 'employee';
+  const users = getUsers();
+  let user = users.find(u => u.email.toLowerCase() === email);
+
+  if (!isEmailAllowed(email, user ? user.role : role)) {
+    return res.status(403).json({ success: false, message: 'Sign-in is currently restricted. Contact the administrator for access.' });
+  }
+
+  if (!user) {
+    user = {
+      id: 'usr-' + Date.now(),
+      email,
+      // No password is ever checked for a Google-created account; a long random hash
+      // means nothing a user could type at the sign-in form will ever match it.
+      passwordHash: bcrypt.hashSync(crypto.randomBytes(48).toString('hex'), 10),
+      fullName: sanitizeString(payload.name) || (role === 'employee' ? 'CSPC Employee' : 'CSPC Student'),
+      studentId: 'N/A',
+      role,
+      department: '',
+      emailVerified: true,
+      authProvider: 'google',
+      createdAt: new Date().toISOString()
+    };
+    users.push(user);
+    saveUsers(users);
+  }
+
+  const sessionUser = sessionUserFor(user);
+  await authenticateSession(req, sessionUser);
+  res.json({ success: true, message: 'Login successful.', user: sessionUser });
 });
 
 // GET /api/auth/verify-email?token=... - Confirmation links emailed before sign-up

@@ -816,7 +816,7 @@ test('pages send a strict script policy and contain no inline scripts or handler
   for (const url of ['/', '/login', '/about.html']) {
     const response = await fetch(`${baseUrl}${url}`);
     const policy = response.headers.get('content-security-policy');
-    assert.match(policy, /script-src 'self'(;|$)/, url);
+    assert.match(policy, /script-src 'self' https:\/\/accounts\.google\.com\/gsi\/client(;|$)/, url);
     assert.match(policy, /object-src 'none'/, url);
     const html = await response.text();
     assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)[^>]*>/i, `${url} has an inline <script>`);

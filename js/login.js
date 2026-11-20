@@ -522,8 +522,60 @@
       }
     }
 
+    // Shows the "Sign in with Google" button only when the server has GOOGLE_CLIENT_ID
+    // configured - a deployment without it never shows a button that can't work.
+    async function setupGoogleSignIn() {
+      let clientId;
+      try {
+        const res = await fetch('/api/auth/google-client-id', { credentials: 'same-origin' });
+        ({ clientId } = await res.json());
+      } catch (error) {
+        return;
+      }
+      if (!clientId) return;
+
+      await new Promise(resolve => {
+        const script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.addEventListener('load', resolve, { once: true });
+        script.addEventListener('error', resolve, { once: true });
+        document.head.appendChild(script);
+      });
+      if (!window.google?.accounts?.id) return;
+
+      google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+      google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
+        theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_blue',
+        size: 'large',
+        width: 320,
+        text: 'signin_with'
+      });
+      document.getElementById('googleSignInContainer').hidden = false;
+    }
+
+    async function handleGoogleCredential(response) {
+      hideError();
+      try {
+        const res = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await res.json();
+        if (data.success) {
+          window.location.replace(getPostLoginUrl(data.user));
+        } else {
+          showError(data.message || 'Google sign-in failed.');
+        }
+      } catch (error) {
+        showError('Network error during Google sign-in.');
+      }
+    }
+
     document.getElementById('regPassword').addEventListener('input', updatePasswordRequirements);
     updatePasswordRequirements();
+    setupGoogleSignIn();
     setupOtpBoxes();
     showVerificationResult();
     if (openResetFromLink()) document.body.classList.remove('auth-checking');

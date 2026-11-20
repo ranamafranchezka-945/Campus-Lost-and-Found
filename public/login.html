@@ -55,6 +55,10 @@
 
       <!-- LOGIN FORM -->
       <form id="loginForm" data-submit="handleLogin">
+        <div id="googleSignInContainer" class="google-signin-container" hidden>
+          <div id="googleSignInButton"></div>
+          <div class="auth-divider"><span>or</span></div>
+        </div>
         <div class="form-group">
           <label>CSPC Email</label>
           <input type="email" id="loginEmail" placeholder="e.g., student@my.cspc.edu.ph" pattern="[A-Za-z0-9._%+\-]+@(my\.)?cspc\.edu\.ph" title="Use your CSPC email address ending in @my.cspc.edu.ph" required />
@@ -75,6 +79,7 @@
           Sign In
         </button>
         <button type="button" class="auth-link-btn" data-action="showForgotPassword">Forgot password?</button>
+        <button type="button" class="auth-link-btn" data-action="switchTab" data-args='["register"]'>Don't have an account? <strong>Sign up</strong></button>
       </form>
 
       <!-- FORGOT PASSWORD FORM -->
@@ -118,9 +123,10 @@
       <!-- REGISTRATION FORM -->
       <form id="registerForm" style="display: none;" data-submit="handleRegister">
         <input type="hidden" id="regAccountType" value="student" />
-        <div class="auth-tabs auth-tabs--account-type" id="accountTypeTabs" role="group" aria-label="Account type">
-          <button type="button" class="auth-tab active" id="tabAccountStudent" data-action="setAccountType" data-args='["student"]'>Student</button>
-          <button type="button" class="auth-tab" id="tabAccountEmployee" data-action="setAccountType" data-args='["employee"]'>Employee</button>
+        <p class="account-type-label">Register as</p>
+        <div class="account-type-toggle" id="accountTypeTabs" role="group" aria-label="Account type">
+          <button type="button" class="account-type-option active" id="tabAccountStudent" data-action="setAccountType" data-args='["student"]'>Student</button>
+          <button type="button" class="account-type-option" id="tabAccountEmployee" data-action="setAccountType" data-args='["employee"]'>Employee</button>
         </div>
         <div class="form-group">
           <label>Full Name *</label>

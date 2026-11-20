@@ -132,11 +132,14 @@ function createApp() {
       // OpenStreetMap tiles draw the small map of a shared meetup location.
       'Content-Security-Policy': [
         "default-src 'self'",
-        "script-src 'self'",
+        // Google Identity Services (the "Sign in with Google" button) loads its script
+        // from here and renders its button/consent prompt in an iframe from here too.
+        "script-src 'self' https://accounts.google.com/gsi/client",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob: https://tile.openstreetmap.org",
-        "connect-src 'self'",
+        "connect-src 'self' https://accounts.google.com",
+        "frame-src https://accounts.google.com",
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",
