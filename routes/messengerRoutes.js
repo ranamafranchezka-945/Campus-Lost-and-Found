@@ -48,6 +48,7 @@ router.get('/webhook', (req, res) => {
 router.post('/webhook', async (req, res) => {
   // Acknowledge immediately: Meta retries on anything other than a fast 200.
   res.sendStatus(200);
+  console.log('Messenger webhook received:', JSON.stringify(req.body));
   if (req.body?.object !== 'page') return;
 
   try {
