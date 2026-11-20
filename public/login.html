@@ -55,10 +55,6 @@
 
       <!-- LOGIN FORM -->
       <form id="loginForm" data-submit="handleLogin">
-        <div id="googleSignInContainer" class="google-signin-container" hidden>
-          <div id="googleSignInButton"></div>
-          <div class="auth-divider"><span>or</span></div>
-        </div>
         <div class="form-group">
           <label>CSPC Email</label>
           <input type="email" id="loginEmail" placeholder="e.g., student@my.cspc.edu.ph" pattern="[A-Za-z0-9._%+\-]+@(my\.)?cspc\.edu\.ph" title="Use your CSPC email address ending in @my.cspc.edu.ph" required />
@@ -78,6 +74,10 @@
         <button type="submit" id="loginSubmit" class="btn btn-primary" style="width: 100%; border: none; cursor: pointer; margin-top: 0.5rem;">
           Sign In
         </button>
+        <div id="googleSignInContainer" class="google-signin-container" hidden>
+          <div class="auth-divider"><span>or</span></div>
+          <div id="googleSignInButton"></div>
+        </div>
         <button type="button" class="auth-link-btn" data-action="showForgotPassword">Forgot password?</button>
         <button type="button" class="auth-link-btn" data-action="switchTab" data-args='["register"]'><span class="auth-link-prefix">Don't have an account?</span> Sign up</button>
       </form>
