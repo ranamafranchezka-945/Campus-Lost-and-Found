@@ -55,6 +55,14 @@
 
     // Theme initialization and click handling are provided by the shared main.js.
 
+    const AUTH_SUBTITLES = {
+      loginForm: 'Sign in to your account',
+      registerForm: 'Create your CSPC account',
+      forgotForm: 'Reset your password',
+      resetForm: 'Choose a new password'
+      // otpForm has its own header (otp-title) instead of this one.
+    };
+
     function showAuthForm(formId) {
       ['loginForm', 'registerForm', 'forgotForm', 'resetForm', 'otpForm'].forEach(id => {
         const form = document.getElementById(id);
@@ -62,10 +70,8 @@
         form.style.display = isActive ? 'block' : 'none';
         if (isActive) restartAnimation(form, 'auth-form-enter');
       });
-      // The code step has its own header and back button instead of the tabs.
-      document.querySelector('.auth-tabs').style.display = formId === 'otpForm' ? 'none' : '';
-      document.getElementById('tabLogin').classList.toggle('active', formId !== 'registerForm');
-      document.getElementById('tabRegister').classList.toggle('active', formId === 'registerForm');
+      const subtitle = document.getElementById('authSubtitle');
+      if (AUTH_SUBTITLES[formId]) subtitle.textContent = AUTH_SUBTITLES[formId];
       hideError();
     }
 
@@ -522,8 +528,17 @@
       }
     }
 
-    // Shows the "Sign in with Google" button only when the server has GOOGLE_CLIENT_ID
-    // configured - a deployment without it never shows a button that can't work.
+    // One real Google button per visible spot: Sign In (sign-in copy) and Register
+    // Account (sign-up copy). Both call the same /api/auth/google, which signs in an
+    // existing account or creates one on first use - "sign in" vs "sign up" here is
+    // only which label/container is shown, not different behaviour.
+    const GOOGLE_BUTTONS = [
+      { containerId: 'googleSignInContainer', overlayId: 'googleSignInButton', text: 'signin_with' },
+      { containerId: 'googleSignUpContainer', overlayId: 'googleSignUpButton', text: 'signup_with' }
+    ];
+
+    // Shows the Google buttons only when the server has GOOGLE_CLIENT_ID configured -
+    // a deployment without it never shows a button that can't work.
     async function setupGoogleSignIn() {
       let clientId;
       try {
@@ -544,31 +559,33 @@
       if (!window.google?.accounts?.id) return;
 
       google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
-      renderGoogleButton();
-      document.getElementById('googleSignInContainer').hidden = false;
+      renderGoogleButtons();
+      GOOGLE_BUTTONS.forEach(({ containerId }) => { document.getElementById(containerId).hidden = false; });
 
-      // The button has a fixed pixel width (GIS does not reflow on its own), so it's
-      // recomputed from the card's own width instead of a guessed constant - otherwise
-      // it either clips on a narrow phone or leaves an odd gap on a wider card.
+      // Each button has a fixed pixel width (GIS does not reflow on its own), so it's
+      // recomputed from its own custom button's width instead of a guessed constant -
+      // otherwise it either clips on a narrow phone or leaves an odd gap on a wider card.
       let resizeTimer;
       window.addEventListener('resize', () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(renderGoogleButton, 200);
+        resizeTimer = setTimeout(renderGoogleButtons, 200);
       });
     }
 
-    // Renders the real Google button invisibly, sized to match the visible custom
-    // button in public/login.html (css/login.css stretches its inner iframe to fill
-    // the overlay regardless, as a safety net against any rounding mismatch).
-    function renderGoogleButton() {
-      const customBtn = document.querySelector('.google-custom-btn');
-      const width = Math.min(400, customBtn?.clientWidth || 320);
-      google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
-        theme: 'outline',
-        size: 'large',
-        shape: 'rectangular',
-        width,
-        text: 'signin_with'
+    // Renders each real Google button invisibly, sized to match its own visible custom
+    // button (css/login.css stretches its inner iframe to fill the overlay regardless,
+    // as a safety net against any rounding mismatch).
+    function renderGoogleButtons() {
+      GOOGLE_BUTTONS.forEach(({ overlayId, text }) => {
+        const overlay = document.getElementById(overlayId);
+        const width = Math.min(400, overlay?.closest('.google-custom-btn')?.clientWidth || 320);
+        google.accounts.id.renderButton(overlay, {
+          theme: 'outline',
+          size: 'large',
+          shape: 'rectangular',
+          width,
+          text
+        });
       });
     }
 

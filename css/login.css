@@ -62,13 +62,6 @@ body.auth-checking > .site-footer {
       color: var(--text-muted);
     }
 
-    .auth-tabs {
-      display: flex;
-      gap: 0.5rem;
-      margin-bottom: 1.5rem;
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 0.75rem;
-    }
     .auth-form-enter {
       animation: auth-form-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
     }
@@ -76,26 +69,10 @@ body.auth-checking > .site-footer {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .auth-tab {
-      flex: 1;
-      padding: 0.5rem;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      font-weight: 700;
-      font-size: 0.9375rem;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-    .auth-tab.active {
-      color: var(--blue-light);
-      background: rgba(37, 99, 235, 0.15);
-    }
 
     /* Account-type toggle (Student/Employee) inside the register form. Deliberately its
-       own small component, not a reuse of .auth-tabs/.auth-tab: those are restyled by
-       glass.css/theme.css into the page-level "Sign In / Register" pill switch, and
+       own small component, not .auth-tab/.auth-tabs (the page-level Sign In/Register
+       switch those used to be, now removed in favour of inline "Sign up"/"Login" links):
        reusing them here would make this secondary, nested choice look identical to that
        top-level one instead of visually subordinate to it. */
     .account-type-label {
