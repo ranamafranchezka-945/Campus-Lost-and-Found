@@ -544,13 +544,27 @@
       if (!window.google?.accounts?.id) return;
 
       google.accounts.id.initialize({ client_id: clientId, callback: handleGoogleCredential });
+      renderGoogleButton();
+      document.getElementById('googleSignInContainer').hidden = false;
+
+      // The button has a fixed pixel width (GIS does not reflow on its own), so it's
+      // recomputed from the card's own width instead of a guessed constant - otherwise
+      // it either clips on a narrow phone or leaves an odd gap on a wider card.
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(renderGoogleButton, 200);
+      });
+    }
+
+    function renderGoogleButton() {
+      const width = Math.min(400, document.getElementById('loginForm').clientWidth || 320);
       google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
         theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_blue',
         size: 'large',
-        width: 320,
+        width,
         text: 'signin_with'
       });
-      document.getElementById('googleSignInContainer').hidden = false;
     }
 
     async function handleGoogleCredential(response) {

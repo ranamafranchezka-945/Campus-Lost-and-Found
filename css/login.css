@@ -252,6 +252,14 @@ body.auth-checking > .site-footer {
       cursor: pointer;
       text-decoration: underline;
     }
+    /* "Don't have an account?" reads as plain text; only "Sign up" itself looks
+       clickable, so the two Forgot-password/Sign-up lines don't look like duplicate
+       links stacked on top of each other. */
+    .auth-link-prefix {
+      color: var(--text-muted);
+      font-weight: 400;
+      text-decoration: none;
+    }
     .auth-form-intro,
     .auth-form-hint {
       color: var(--text-muted);
