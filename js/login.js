@@ -228,7 +228,11 @@
         item.setAttribute('aria-label', `${satisfied ? 'Met' : 'Required'}: ${item.textContent}`);
       });
 
-      document.getElementById(submitButtonId).disabled = !Object.values(requirements).every(Boolean);
+      const allMet = Object.values(requirements).every(Boolean);
+      // Hidden until there's something to correct: empty (nothing typed yet) or already
+      // fully valid both mean there's no unmet requirement to show.
+      list.hidden = !password || allMet;
+      document.getElementById(submitButtonId).disabled = !allMet;
     }
 
     function updatePasswordRequirements() {
