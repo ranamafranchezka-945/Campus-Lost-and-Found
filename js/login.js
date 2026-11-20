@@ -559,8 +559,11 @@
 
     function renderGoogleButton() {
       const width = Math.min(400, document.getElementById('loginForm').clientWidth || 320);
+      // 'filled_blue' everywhere - 'outline''s thin border read as weak/unclear next
+      // to the solid "Sign In" button, and this way there's no light/dark swap to keep
+      // in sync either.
       google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
-        theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_blue',
+        theme: 'filled_blue',
         size: 'large',
         shape: 'pill',
         width,
