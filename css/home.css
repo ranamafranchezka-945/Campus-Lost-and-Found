@@ -372,6 +372,13 @@
     .btn-del:hover {
       background: rgba(239, 68, 68, 0.15);
     }
+    [data-theme='light'] .btn-del {
+      color: #b91c1c;
+      border-color: rgba(185, 28, 28, 0.45);
+    }
+    [data-theme='light'] .btn-del:hover {
+      background: rgba(185, 28, 28, 0.1);
+    }
     .btn-qr {
       border-color: rgba(59, 130, 246, 0.4);
       color: var(--blue-light);
