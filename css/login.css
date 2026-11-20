@@ -252,6 +252,11 @@ body.auth-checking > .site-footer {
       cursor: pointer;
       text-decoration: none;
     }
+    /* Back-to-back links (Forgot password? / Sign up) sit closer together than the
+       gap above the first one, which still separates it from the form above. */
+    .auth-link-btn + .auth-link-btn {
+      margin-top: 0;
+    }
     /* "Don't have an account?" reads as plain text; only "Sign up" itself looks
        clickable, so the two Forgot-password/Sign-up lines don't look like duplicate
        links stacked on top of each other. */
