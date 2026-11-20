@@ -250,7 +250,7 @@ body.auth-checking > .site-footer {
       font-size: 0.875rem;
       font-weight: 600;
       cursor: pointer;
-      text-decoration: underline;
+      text-decoration: none;
     }
     /* "Don't have an account?" reads as plain text; only "Sign up" itself looks
        clickable, so the two Forgot-password/Sign-up lines don't look like duplicate

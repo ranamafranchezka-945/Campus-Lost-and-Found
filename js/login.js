@@ -562,6 +562,7 @@
       google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
         theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'outline' : 'filled_blue',
         size: 'large',
+        shape: 'pill',
         width,
         text: 'signin_with'
       });
