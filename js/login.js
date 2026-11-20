@@ -559,13 +559,13 @@
 
     function renderGoogleButton() {
       const width = Math.min(400, document.getElementById('loginForm').clientWidth || 320);
-      // 'filled_blue' everywhere - 'outline''s thin border read as weak/unclear next
-      // to the solid "Sign In" button, and this way there's no light/dark swap to keep
-      // in sync either.
+      // 'filled_black' - a solid neutral button reads as "a different, secondary sign-in
+      // method" next to our own blue "Sign In" button, instead of a second blue button
+      // competing with it for attention.
       google.accounts.id.renderButton(document.getElementById('googleSignInButton'), {
-        theme: 'filled_blue',
+        theme: 'filled_black',
         size: 'large',
-        shape: 'pill',
+        shape: 'rectangular',
         width,
         text: 'signin_with'
       });
