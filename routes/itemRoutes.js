@@ -22,6 +22,8 @@ const messenger = require('../services/messenger');
 const postgresStore = require('../services/postgresStore');
 const supabaseStorage = require('../services/supabaseStorage');
 const reportAssistant = require('../services/reportAssistant');
+const imageModeration = require('../services/imageModeration');
+const matchScorer = require('../services/matchScorer');
 
 function finderSubmissionFingerprint(target, message, locationFound, finderContact) {
   return crypto.createHash('sha256').update(JSON.stringify({
@@ -327,19 +329,39 @@ function isStrongPotentialMatch(meta) {
   );
 }
 
+// Word-overlap scoring above misses pairs that describe the same item in different words
+// ("blue Jansport bag" vs. "navy backpack" share no tokens). For same-category pairs, consult
+// services/matchScorer's cache of Claude's semantic read on the pair, which catches those.
+// A live AI call per pair would make every listing fetch far too slow, so a cache miss queues
+// the pair for background scoring and falls back to the heuristic result for this request -
+// the AI's answer is picked up on a later look rather than blocking this one.
 function findMatches(item, allItems) {
   if (isItemClaimed(item)) return [];
   const targetType = item.type === 'lost' ? 'found' : 'lost';
-  return allItems
-    .filter(other =>
-      other.id !== item.id &&
-      other.type === targetType &&
-      !isItemClaimed(other)
-    )
-    .map(other => ({ item: other, meta: scorePotentialMatch(item, other) }))
-    .filter(({ meta }) => isStrongPotentialMatch(meta))
-    .sort((a, b) => b.meta.score - a.meta.score)
-    .map(({ item: match }) => match);
+  const candidates = allItems.filter(other =>
+    other.id !== item.id &&
+    other.type === targetType &&
+    !isItemClaimed(other)
+  );
+
+  return candidates
+    .map(other => {
+      const meta = scorePotentialMatch(item, other);
+      let aiScore = null;
+      if (meta.categoryMatch && matchScorer.isConfigured()) {
+        const cached = matchScorer.getCachedScore(item, other);
+        if (cached) aiScore = cached.score;
+        else matchScorer.queueScoring(item, other);
+      }
+      return {
+        item: other,
+        isMatch: isStrongPotentialMatch(meta) || (aiScore !== null && aiScore >= matchScorer.MATCH_THRESHOLD),
+        rank: aiScore !== null ? Math.max(aiScore, meta.score) : meta.score
+      };
+    })
+    .filter(entry => entry.isMatch)
+    .sort((a, b) => b.rank - a.rank)
+    .map(entry => entry.item);
 }
 
 function findMatch(item, allItems) {
@@ -1562,6 +1584,16 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
     const reportLimit = req.session?.user ? ACCOUNT_REPORT_LIMIT : GUEST_REPORT_LIMIT;
     if (isRateLimited(reportAttempts, reporterKey, reportLimit)) {
       return res.status(429).json({ success: false, message: 'Too many reports were submitted in the last hour. Please try again later.' });
+    }
+
+    if (req.file) {
+      const moderation = await imageModeration.moderateImage(req.file);
+      if (!moderation.allowed) {
+        return res.status(422).json({
+          success: false,
+          message: `This photo could not be used${moderation.reason ? `: ${moderation.reason}` : '.'} Please choose another photo, or submit the report without one.`
+        });
+      }
     }
 
     const refCode = newRefCode(items, `CSPC-LF-${currentYear()}`, 5);

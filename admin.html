@@ -126,6 +126,12 @@
             </div>
             <div class="view-head-actions">
               <span class="live is-offline" id="liveStatus" role="status"><i aria-hidden="true"></i><span id="liveText">Connecting…</span></span>
+              <div class="seg" role="group" aria-label="Date range for resolution rate and top lists" id="dashRangeSeg">
+                <button type="button" class="seg-btn" data-range="week" aria-pressed="false">This week</button>
+                <button type="button" class="seg-btn" data-range="month" aria-pressed="false">This month</button>
+                <button type="button" class="seg-btn" data-range="quarter" aria-pressed="false">This quarter</button>
+                <button type="button" class="seg-btn active" data-range="all" aria-pressed="true">All time</button>
+              </div>
               <button type="button" class="btn btn-outline view-head-btn" data-action="exportCSV"><svg class="ico"><use href="#i-download"/></svg>Export CSV</button>
             </div>
           </div>
@@ -169,7 +175,7 @@
               <div class="card-head">
                 <div>
                   <h2 id="rateTitle">Resolution rate</h2>
-                  <p>Reports that ended with the item returned</p>
+                  <p id="rateSubtitle">Reports that ended with the item returned</p>
                 </div>
               </div>
               <div id="claimMeter"><span class="skel skel--lg"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
@@ -178,11 +184,11 @@
 
           <div class="dash-row dash-row--even">
             <article class="dash-card" aria-labelledby="catTitle">
-              <div class="card-head"><div><h2 id="catTitle">Top categories</h2><p>Most reported kinds of items</p></div></div>
+              <div class="card-head"><div><h2 id="catTitle">Top categories</h2><p id="catSubtitle">Most reported kinds of items</p></div></div>
               <div class="rank-list" id="topCategories"><span class="skel skel--line"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
             <article class="dash-card" aria-labelledby="locTitle">
-              <div class="card-head"><div><h2 id="locTitle">Top locations</h2><p>Offices and areas with the most reports</p></div></div>
+              <div class="card-head"><div><h2 id="locTitle">Top locations</h2><p id="locSubtitle">Offices and areas with the most reports</p></div></div>
               <div class="rank-list" id="topLocations"><span class="skel skel--line"></span><span class="skel skel--line"></span><span class="skel skel--line"></span></div>
             </article>
           </div>

@@ -4,6 +4,7 @@ let blockedEmails = [];
 let allowedEmails = [];
     let activeTab = 'dashboard';
     let adminClaimsFilter = 'pending';
+    let dashboardRange = 'all';
     let adminItems = [];
     let claimRequests = [];
     let adminClaimsSignature = null;
@@ -85,6 +86,9 @@ let allowedEmails = [];
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSidebar(); });
       document.querySelectorAll('[data-claims-filter]').forEach(button => {
         button.addEventListener('click', () => setClaimsFilter(button.dataset.claimsFilter));
+      });
+      document.querySelectorAll('#dashRangeSeg [data-range]').forEach(button => {
+        button.addEventListener('click', () => setDashboardRange(button.dataset.range));
       });
       // The top-bar search always searches items, so typing there leaves the dashboard.
       document.getElementById('adminSearch').addEventListener('input', () => {
@@ -737,6 +741,33 @@ let allowedEmails = [];
       return `<svg class="spark" viewBox="0 0 ${width} ${height}" aria-hidden="true" focusable="false"><polyline points="${points.map(point => point.join(',')).join(' ')}"/><circle cx="${last[0]}" cy="${last[1]}" r="3.5"/></svg>`;
     }
 
+    // Rolling windows for the dashboard's date-range filter. It only scopes the
+    // resolution-rate card and the top-categories/top-locations lists, which otherwise
+    // average over every report ever filed; the KPI tiles, trend chart and queues below
+    // stay on their own fixed windows.
+    const DASHBOARD_RANGE_MS = { week: 7 * DAY_MS, month: 30 * DAY_MS, quarter: 90 * DAY_MS, all: Infinity };
+    const DASHBOARD_RANGE_LABEL = { week: 'the last 7 days', month: 'the last 30 days', quarter: 'the last 90 days', all: '' };
+
+    function setDashboardRange(range) {
+      dashboardRange = DASHBOARD_RANGE_MS[range] ? range : 'all';
+      document.querySelectorAll('#dashRangeSeg [data-range]').forEach(button => {
+        const on = button.dataset.range === dashboardRange;
+        button.classList.toggle('active', on);
+        button.setAttribute('aria-pressed', String(on));
+      });
+      renderDashboard(adminItems);
+    }
+
+    function itemsInDashboardRange(items) {
+      const windowMs = DASHBOARD_RANGE_MS[dashboardRange];
+      if (!Number.isFinite(windowMs)) return items;
+      const now = Date.now();
+      return items.filter(item => {
+        const time = itemTime(item);
+        return time && now - time <= windowMs;
+      });
+    }
+
     // New items in the last 30 days compared with the 30 days before that.
     function periodChange(times) {
       const now = Date.now();
@@ -804,6 +835,17 @@ let allowedEmails = [];
       const rate = counted ? Math.round(resolved / counted * 100) : 0;
       const oldest = pending.reduce((first, claim) => (!first || Date.parse(claim.createdAt) < Date.parse(first.createdAt) ? claim : first), null);
 
+      // Resolution rate, top categories and top locations respect the date-range picker;
+      // everything else above keeps using the full, unscoped `items`.
+      const rangeItems = itemsInDashboardRange(items);
+      const rangeResolved = rangeItems.filter(isResolved).length;
+      const rangeCounted = rangeItems.filter(item => item.status !== 'archived').length;
+      const rangeRate = rangeCounted ? Math.round(rangeResolved / rangeCounted * 100) : 0;
+      const rangeSuffix = DASHBOARD_RANGE_LABEL[dashboardRange] ? ` · ${DASHBOARD_RANGE_LABEL[dashboardRange]}` : '';
+      document.getElementById('rateSubtitle').textContent = `Reports that ended with the item returned${rangeSuffix}`;
+      document.getElementById('catSubtitle').textContent = `Most reported kinds of items${rangeSuffix}`;
+      document.getElementById('locSubtitle').textContent = `Offices and areas with the most reports${rangeSuffix}`;
+
       const lostTimes = lost.map(itemTime);
       const foundTimes = found.map(itemTime);
       const lostChange = periodChange(lostTimes);
@@ -833,31 +875,31 @@ let allowedEmails = [];
         banner.querySelector('small').textContent = oldest ? `The oldest was submitted ${relativeTime(oldest.createdAt)}.` : '';
       }
 
-      const resolveDays = items.filter(isResolved)
+      const resolveDays = rangeItems.filter(isResolved)
         .map(item => (Date.parse(item.claimedAt) - itemTime(item)) / DAY_MS)
         .filter(days => Number.isFinite(days) && days >= 0);
       const averageDays = resolveDays.length ? resolveDays.reduce((sum, days) => sum + days, 0) / resolveDays.length : null;
-      const longestOpen = items.filter(isOpenItem).filter(item => itemTime(item)).sort((a, b) => itemTime(a) - itemTime(b))[0];
+      const longestOpen = rangeItems.filter(isOpenItem).filter(item => itemTime(item)).sort((a, b) => itemTime(a) - itemTime(b))[0];
       const longestDays = longestOpen ? Math.floor((now - itemTime(longestOpen)) / DAY_MS) : null;
       const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
 
       renderTrendChart(items);
 
       document.getElementById('claimMeter').innerHTML = `
-        <div class="meter-head"><span class="meter-value">${rate}%</span><span class="meter-caption">of reports resolved</span></div>
-        <div class="meter-track" role="progressbar" aria-label="Resolved reports" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${rate}"><i style="width:${rate}%"></i></div>
+        <div class="meter-head"><span class="meter-value">${rangeRate}%</span><span class="meter-caption">of reports resolved</span></div>
+        <div class="meter-track" role="progressbar" aria-label="Resolved reports" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${rangeRate}"><i style="width:${rangeRate}%"></i></div>
         <dl class="meter-facts">
-          <div><dt>Active</dt><dd>${items.filter(isOpenItem).length}</dd></div>
-          <div><dt>Resolved</dt><dd>${resolved}</dd></div>
-          <div><dt>Archived</dt><dd>${items.length - counted}</dd></div>
+          <div><dt>Active</dt><dd>${rangeItems.filter(isOpenItem).length}</dd></div>
+          <div><dt>Resolved</dt><dd>${rangeResolved}</dd></div>
+          <div><dt>Archived</dt><dd>${rangeItems.length - rangeCounted}</dd></div>
         </dl>
         <ul class="metric-list">
           <li><span>Average time to resolve</span><b>${averageDays === null ? 'Not enough data' : plural(Math.round(averageDays * 10) / 10, 'day')}</b></li>
           <li><span>Longest open report</span><b${longestOpen ? ` title="${escHtml(longestOpen.title)}"` : ''}>${longestDays === null ? 'None open' : plural(longestDays, 'day')}</b></li>
         </ul>`;
 
-      renderRankList('topCategories', countValues(items, 'category').slice(0, 5));
-      renderRankList('topLocations', countValues(items, officeOf).slice(0, 5));
+      renderRankList('topCategories', countValues(rangeItems, 'category').slice(0, 5));
+      renderRankList('topLocations', countValues(rangeItems, officeOf).slice(0, 5));
 
       const waiting = [...pending].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(0, 5);
       document.getElementById('dashClaims').innerHTML = waiting.length
