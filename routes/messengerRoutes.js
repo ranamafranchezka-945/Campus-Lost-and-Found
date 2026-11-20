@@ -46,11 +46,13 @@ router.get('/webhook', (req, res) => {
 // POST /api/messenger/webhook - Incoming Messenger events. The only thing a message can do
 // here is complete an account-linking code; everything else gets a short help reply.
 router.post('/webhook', async (req, res) => {
-  // Acknowledge immediately: Meta retries on anything other than a fast 200.
-  res.sendStatus(200);
-  console.log('Messenger webhook received:', JSON.stringify(req.body));
-  if (req.body?.object !== 'page') return;
+  if (req.body?.object !== 'page') return res.sendStatus(200);
 
+  // Matching and saving must finish (and the database transaction must be committed) before
+  // the response is sent: this app's store auto-commits on res.end, and Meta doesn't need the
+  // ack sub-second, just within its retry window. The actual Messenger replies are slow network
+  // calls, so those fire only after the database work is safely saved and the response is sent.
+  const replies = [];
   try {
     const users = getUsers();
     let changed = false;
@@ -73,13 +75,9 @@ router.post('/webhook', async (req, res) => {
           delete user.messengerLinkCode;
           delete user.messengerLinkCodeExpiresAt;
           changed = true;
-          messenger.sendMessengerText(psid,
-            "You're connected! Back2You will send your possible-match and location-request alerts here from now on."
-          ).catch(error => console.error('Messenger confirmation could not be sent:', error.message));
+          replies.push({ psid, text: "You're connected! Back2You will send your possible-match and location-request alerts here from now on." });
         } else {
-          messenger.sendMessengerText(psid,
-            "That code wasn't recognized or has expired. Generate a new one from your Back2You account menu and send it here again."
-          ).catch(error => console.error('Messenger help reply could not be sent:', error.message));
+          replies.push({ psid, text: "That code wasn't recognized or has expired. Generate a new one from your Back2You account menu and send it here again." });
         }
       }
     }
@@ -87,6 +85,11 @@ router.post('/webhook', async (req, res) => {
     if (changed) saveUsers(users);
   } catch (error) {
     console.error('Messenger webhook could not be processed:', error.message);
+  }
+
+  res.sendStatus(200);
+  for (const { psid, text } of replies) {
+    messenger.sendMessengerText(psid, text).catch(error => console.error('Messenger reply could not be sent:', error.message));
   }
 });
 
