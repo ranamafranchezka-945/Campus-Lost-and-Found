@@ -63,7 +63,7 @@ let allowedEmails = [];
         refreshAdminItems();
         refreshStudentBelongings();
         refreshAdminClaims();
-      }, 5000);
+      }, 20000);
 
       // Sidebar navigation (the items links carry the lost / found filter)
       document.querySelectorAll('.side-link[data-view]').forEach(link => {

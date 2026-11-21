@@ -3,6 +3,7 @@
 if (!['test', 'production'].includes(process.env.NODE_ENV)) require('dotenv').config();
 
 const express = require('express');
+const compression = require('compression');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
 const PgSessionStore = require('connect-pg-simple')(session);
@@ -115,6 +116,9 @@ function createApp() {
   }
 
   app.disable('x-powered-by');
+  // Gzips HTML/CSS/JS/JSON responses (notably the 600KB+ three.min.js bundle on first
+  // visit); already-compressed formats like images skip it automatically.
+  app.use(compression());
   app.use((req, res, next) => {
     res.set({
       'X-Content-Type-Options': 'nosniff',
