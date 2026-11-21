@@ -293,7 +293,8 @@ body::after {
 }
 
 .theme-toggle,
-.notif-bell-btn {
+.notif-bell-btn,
+.keyboard-shortcuts-trigger {
   width: var(--nav-control-size);
   height: var(--nav-control-size);
   min-width: var(--nav-control-size);
@@ -337,6 +338,21 @@ body::after {
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.keyboard-shortcuts-trigger {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font: 700 1rem/1 "DM Sans", sans-serif;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.keyboard-shortcuts-trigger:hover {
+  border-color: var(--blue-main);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--blue-main);
 }
 
 .theme-toggle:hover {

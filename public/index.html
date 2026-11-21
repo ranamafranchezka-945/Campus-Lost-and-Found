@@ -68,6 +68,7 @@
         <button type="button" class="mobile-menu-logout" id="mobileMenuLogout" data-action="handleLogout">Logout</button>
       </div>
       <div class="nav-actions">
+        <button type="button" class="keyboard-shortcuts-trigger" data-action="openKeyboardShortcutsModal" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">?</button>
         <button type="button" class="btn btn-outline nav-btn-action nav-register-btn" data-action="handleOpenRegisterBelonging">Register Belonging</button>
         <button type="button" class="theme-toggle" id="themeToggleBtn" title="Toggle Theme" aria-label="Toggle theme">
           <span class="theme-toggle-icon"></span>
@@ -1035,13 +1036,13 @@
         <button type="button" class="modal-close" data-action="closeKeyboardShortcutsModal" aria-label="Close shortcuts">&times;</button>
       </div>
       <dl class="keyboard-shortcuts-list">
-        <div><dt><kbd>/</kbd><span>or</span><kbd>Ctrl</kbd><span>/</span><kbd>Cmd</kbd><kbd>K</kbd></dt><dd>Focus item search</dd></div>
+        <div><dt><kbd>/</kbd><span>or</span><kbd>Ctrl</kbd><span>/</span><kbd>Cmd</kbd><kbd>K</kbd></dt><dd>Focus item or admin search</dd></div>
         <div><dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Switch item status filter</dd></div>
         <div><dt><kbd>R</kbd></dt><dd>Go to Quick Report Assistant</dd></div>
         <div><dt><kbd>B</kbd></dt><dd>Register a belonging</dd></div>
         <div><dt><kbd>I</kbd></dt><dd>Go to items on campus</dd></div>
-        <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Previous / next listings page</dd></div>
-        <div><dt><kbd>Esc</kbd></dt><dd>Close a dialog or blur a field</dd></div>
+        <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Previous / next listings page, or move between photos in the viewer</dd></div>
+        <div><dt><kbd>Esc</kbd></dt><dd>Close an open dialog, menu, sidebar, or tooltip; clear or blur search</dd></div>
         <div><dt><kbd>?</kbd></dt><dd>Show this shortcut guide</dd></div>
       </dl>
       <p class="keyboard-shortcuts-note">Shortcuts are paused while you type.</p>

@@ -60,6 +60,14 @@
   padding-bottom: 3.5rem;
 }
 
+:root .about-page .about-hero,
+:root .about-page .about-section,
+:root .about-page .about-card,
+:root .about-page .benefit-row,
+:root .about-page .about-cta {
+  background-color: transparent;
+}
+
 .about-section {
   padding: 1.75rem 0;
 }
