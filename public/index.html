@@ -977,8 +977,37 @@
       </div>
 
       <div class="no-print modal-actions">
+        <button type="button" class="btn btn-outline" id="matchContactFinderBtn" style="display: none;" data-action="openClaimRequestModalFromMatch">📨 Contact Finder</button>
         <button type="button" class="btn btn-primary" data-action="printMatchQr">🖨️ Print Match Reference</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CLAIM REQUEST MODAL: submit ownership proof for a matched found item -->
+  <div class="slip-overlay" id="claimRequestModal" data-close="closeClaimRequestModal">
+    <div class="modal-card modal-card--sm">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title modal-heading modal-heading--flush">Contact Finder</h2>
+          <p class="modal-subtitle">Submit proof this is your item. An administrator reviews it before you can arrange a handover with the finder.</p>
+        </div>
+        <button type="button" class="modal-close" data-action="closeClaimRequestModal" aria-label="Close">&times;</button>
+      </div>
+      <form id="claimRequestForm" data-submit="handleSubmitClaimRequest">
+        <div class="input-field modal-field">
+          <label for="claimRequestProof">An identifying detail only the real owner would know <span class="required">*</span></label>
+          <textarea id="claimRequestProof" rows="3" minlength="5" maxlength="500" placeholder="e.g. There's a small scratch near the charging port, and a blue sticker inside the lid." required></textarea>
+        </div>
+        <div class="input-field modal-field">
+          <label for="claimRequestContact">Contact number (optional)</label>
+          <input type="text" id="claimRequestContact" maxlength="50" placeholder="e.g. 09XX-XXX-XXXX" />
+        </div>
+        <p id="claimRequestError" class="modal-error" role="alert" style="display: none;"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" data-action="closeClaimRequestModal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="claimRequestSubmit">Submit Claim</button>
+        </div>
+      </form>
     </div>
   </div>
 

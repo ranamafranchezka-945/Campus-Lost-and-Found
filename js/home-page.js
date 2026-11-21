@@ -1315,6 +1315,17 @@ async function handleAnonymousFinderSubmit(e) {
 }
 
 // ── Match QR Modal ────────────────────────────────────────────────────────
+// "Contact Finder" only ever submits a claim request for admin review - it never reveals
+// the finder's contact info directly, matching the privacy the status-only API response
+// already enforces (it strips location/contact for anyone but an admin or the owner).
+function updateMatchContactFinderButton(canRequestClaim, lostId, foundId) {
+  const button = document.getElementById('matchContactFinderBtn');
+  if (!button) return;
+  button.style.display = canRequestClaim ? '' : 'none';
+  button.dataset.lostId = lostId || '';
+  button.dataset.foundId = foundId || '';
+}
+
 async function openMatchQrModal(lostId, foundId) {
   try {
     const response = await fetch(`/api/items/match-reference-token?lostId=${encodeURIComponent(lostId)}&foundId=${encodeURIComponent(foundId)}`);
@@ -1328,6 +1339,7 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
+    updateMatchContactFinderButton(data.canRequestClaim, lost.id, found.id);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1352,6 +1364,58 @@ function closeMatchQrModal() {
 
 function printMatchQr() {
   window.print();
+}
+
+// ── Claim request (opened from the Match QR modal's "Contact Finder" button) ──────
+function openClaimRequestModalFromMatch() {
+  const button = document.getElementById('matchContactFinderBtn');
+  openClaimRequestModal(button.dataset.lostId, button.dataset.foundId);
+}
+
+function openClaimRequestModal(lostId, foundId) {
+  closeMatchQrModal();
+  const form = document.getElementById('claimRequestForm');
+  form.reset();
+  form.dataset.lostId = lostId;
+  form.dataset.foundId = foundId;
+  document.getElementById('claimRequestError').style.display = 'none';
+  document.getElementById('claimRequestModal').classList.add('open');
+}
+
+function closeClaimRequestModal() {
+  document.getElementById('claimRequestModal').classList.remove('open');
+}
+
+async function handleSubmitClaimRequest(event) {
+  event.preventDefault();
+  const errorBox = document.getElementById('claimRequestError');
+  errorBox.style.display = 'none';
+  const form = event.target;
+  const proof = document.getElementById('claimRequestProof').value.trim();
+  const contactNumber = document.getElementById('claimRequestContact').value.trim();
+  const button = document.getElementById('claimRequestSubmit');
+  button.disabled = true;
+  try {
+    const res = await fetch(`/api/items/${encodeURIComponent(form.dataset.foundId)}/claim-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ proof, contactNumber, lostId: form.dataset.lostId })
+    });
+    const data = await res.json();
+    if (data.success) {
+      closeClaimRequestModal();
+      showToast('Claim submitted. An administrator will review it.');
+    } else {
+      errorBox.textContent = data.message || 'Could not submit the claim.';
+      errorBox.style.display = 'block';
+    }
+  } catch (err) {
+    errorBox.textContent = 'Network error. Please try again.';
+    errorBox.style.display = 'block';
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function openMatchReferenceFromQr(token) {

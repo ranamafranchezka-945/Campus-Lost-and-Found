@@ -1283,6 +1283,7 @@ router.get('/match-reference/:token', (req, res) => {
       issuedAt: new Date(reference.issuedAt).toISOString(),
       expiresAt: new Date(reference.expiresAt).toISOString(),
       referenceId,
+      canRequestClaim: Boolean(req.session?.user) && String(lost.reportedBy) === String(req.session.user.id) && !found.claimed,
       status,
       lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
       found: { id: found.id, title: found.title, refCode: found.refCode }
