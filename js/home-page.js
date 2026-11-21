@@ -1504,7 +1504,7 @@ function meetupNotificationHtml(n) {
   const theirs = n.theirLocation || {};
   let theirsHtml;
   if (theirs.status === 'shared' && theirs.location) {
-    theirsHtml = meetupMapHtml(theirs.location, n.otherName);
+    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId);
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -1551,45 +1551,73 @@ function meetupNotificationHtml(n) {
     </div>`;
 }
 
-// A small OpenStreetMap map (3×3 tiles) centred on the shared point, with the
-// reading's accuracy as a circle and links to open it in a full map app.
-function meetupMapHtml(location, otherName) {
-  const zoom = MEETUP_MAP_ZOOM;
-  const tilesPerSide = 2 ** zoom;
-  const latRad = location.latitude * Math.PI / 180;
-  const worldX = (location.longitude + 180) / 360 * tilesPerSide * 256;
-  const worldY = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * tilesPerSide * 256;
-  const tileX = Math.floor(worldX / 256);
-  const tileY = Math.floor(worldY / 256);
-  const offsetX = worldX - (tileX - 1) * 256;
-  const offsetY = worldY - (tileY - 1) * 256;
-  const tiles = [];
-  for (let dy = -1; dy <= 1; dy += 1) {
-    for (let dx = -1; dx <= 1; dx += 1) {
-      const x = (tileX + dx + tilesPerSide) % tilesPerSide;
-      const y = tileY + dy;
-      if (y < 0 || y >= tilesPerSide) continue;
-      tiles.push(`<img src="https://tile.openstreetmap.org/${zoom}/${x}/${y}.png" alt="" draggable="false" style="left:${(dx + 1) * 256}px;top:${(dy + 1) * 256}px">`);
-    }
-  }
-  const metersPerPixel = 156543.03392 * Math.cos(latRad) / tilesPerSide;
-  const radius = Math.round(Math.min(140, Math.max(10, location.accuracy / metersPerPixel)));
+// A live, pannable/zoomable OpenStreetMap (via Leaflet) centred on the shared point,
+// with the reading's accuracy as a circle and links to open it in a full map app.
+// The map itself is only a placeholder div here - initMeetupMaps() below turns every
+// one of these into an actual Leaflet instance once the markup is in the DOM.
+function meetupMapHtml(location, otherName, claimId) {
   const lat = location.latitude.toFixed(6);
   const lng = location.longitude.toFixed(6);
   const name = escapeHtml(otherName);
+  const containerId = `meetup-map-${escapeHtml(String(claimId)).replace(/[^\w-]/g, '')}`;
   return `
-    <div class="meetup-map" role="img" aria-label="Map showing where ${name} is">
-      <div class="meetup-tiles" style="left:calc(50% - ${offsetX.toFixed(1)}px);top:calc(50% - ${offsetY.toFixed(1)}px)">${tiles.join('')}</div>
-      <span class="meetup-accuracy" style="width:${radius * 2}px;height:${radius * 2}px" aria-hidden="true"></span>
-      <span class="meetup-pin" aria-hidden="true"></span>
-      <a class="meetup-attribution" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap</a>
-    </div>
+    <div class="meetup-map" id="${containerId}" aria-label="Map showing where ${name} is"
+      data-meetup-map data-lat="${lat}" data-lng="${lng}" data-accuracy="${escapeHtml(String(location.accuracy))}"></div>
     ${location.note ? `<p class="meetup-note-text">“${escapeHtml(location.note)}”</p>` : ''}
     <p class="meetup-hint">Shared ${escapeHtml(relativeTimeLabel(new Date(location.sharedAt)))} · accurate to about ${escapeHtml(String(location.accuracy))} m · visible until ${meetupTime(location.expiresAt)}</p>
     <div class="meetup-actions">
       <a class="btn btn-primary btn-compact meetup-btn" href="https://www.google.com/maps/search/?api=1&amp;query=${lat},${lng}" target="_blank" rel="noopener">Open in Google Maps</a>
       <a class="btn btn-outline btn-compact meetup-btn" href="https://www.openstreetmap.org/?mlat=${lat}&amp;mlon=${lng}#map=18/${lat}/${lng}" target="_blank" rel="noopener">OpenStreetMap</a>
     </div>`;
+}
+
+// Tracks live Leaflet instances (keyed by container id) so a notifications refresh can
+// tear them down before their containers are replaced - Leaflet leaves listeners behind
+// otherwise, and refuses to reinitialize a container id it still remembers.
+const activeMeetupMaps = new Map();
+
+function destroyMeetupMaps() {
+  activeMeetupMaps.forEach(map => map.remove());
+  activeMeetupMaps.clear();
+}
+
+function initMeetupMaps() {
+  if (typeof L === 'undefined') return;
+  document.querySelectorAll('#notificationsList [data-meetup-map]').forEach(container => {
+    const lat = Number(container.dataset.lat);
+    const lng = Number(container.dataset.lng);
+    const accuracy = Number(container.dataset.accuracy);
+    const map = L.map(container, { attributionControl: false }).setView([lat, lng], MEETUP_MAP_ZOOM);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+    L.circle([lat, lng], {
+      radius: accuracy,
+      color: '#2563eb',
+      weight: 2,
+      fillColor: '#3b82f6',
+      fillOpacity: 0.16
+    }).addTo(map);
+    L.marker([lat, lng], {
+      icon: L.divIcon({
+        className: 'meetup-pin-wrap',
+        html: '<span class="meetup-pin" aria-hidden="true"></span>',
+        iconSize: [18, 18],
+        iconAnchor: [9, 9]
+      })
+    }).addTo(map);
+
+    const attribution = document.createElement('a');
+    attribution.className = 'meetup-attribution';
+    attribution.href = 'https://www.openstreetmap.org/copyright';
+    attribution.target = '_blank';
+    attribution.rel = 'noopener';
+    attribution.textContent = '© OpenStreetMap';
+    container.appendChild(attribution);
+
+    activeMeetupMaps.set(container.id, map);
+  });
 }
 
 async function meetupAction(claimId, path, body, button, busyLabel) {
@@ -1665,6 +1693,7 @@ function shareMeetupLocation(claimId, button) {
 
 async function loadNotificationsIntoModal() {
   const list = document.getElementById('notificationsList');
+  destroyMeetupMaps();
   list.innerHTML = '<p class="notif-empty">Loading…</p>';
   try {
     const res = await fetch('/api/items/my-notifications');
@@ -1721,6 +1750,7 @@ async function loadNotificationsIntoModal() {
       </div>
     `).join('');
     updateNotificationSelection();
+    initMeetupMaps();
 
     // Update badge
     const badge = document.getElementById('notifCountBadge');

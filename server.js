@@ -51,6 +51,8 @@ function assetFile(urlPath) {
   // the UMD/global build can't be resolved as a subpath import. Derive its path
   // from the main entry instead, since both files live in the same build/ dir.
   if (urlPath === '/vendor/three.min.js') return path.join(path.dirname(require.resolve('three')), 'three.min.js');
+  if (urlPath === '/vendor/leaflet.js') return require.resolve('leaflet/dist/leaflet.js');
+  if (urlPath === '/vendor/leaflet.css') return require.resolve('leaflet/dist/leaflet.css');
   const match = /^\/(css|js)\/([\w.-]+)$/.exec(urlPath);
   return match ? path.join(__dirname, match[1], match[2]) : null;
 }
@@ -276,7 +278,7 @@ function createApp() {
   // Serve only browser assets from the project root; server code, scripts and data stay private.
   app.use('/css', express.static(path.join(__dirname, 'css'), { setHeaders: setAssetCacheHeaders }));
   app.use('/js', express.static(path.join(__dirname, 'js'), { setHeaders: setAssetCacheHeaders }));
-  app.get(['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js'], (req, res) => {
+  app.get(['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js', '/vendor/leaflet.js', '/vendor/leaflet.css'], (req, res) => {
     setAssetCacheHeaders(res);
     res.sendFile(assetFile(req.path));
   });

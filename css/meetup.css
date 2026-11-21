@@ -94,7 +94,7 @@
 .meetup-live { color: rgba(34, 197, 94, 0.5); }
 .meetup-waiting { color: color-mix(in srgb, var(--blue-main) 50%, transparent); }
 
-/* ── The map: 3×3 OpenStreetMap tiles centred on the shared point ── */
+/* ── The map: a live, pannable/zoomable Leaflet map (js/home-page.js's initMeetupMaps) ── */
 .meetup-map {
   position: relative;
   height: 210px;
@@ -103,44 +103,27 @@
   border-radius: 14px;
   background: #e5e7eb;
 }
-.meetup-tiles {
-  position: absolute;
-  width: 768px;
-  height: 768px;
+/* The accuracy circle is drawn by Leaflet itself (L.circle), not CSS. */
+
+/* Pin: a blue dot with a white ring that drops in, then pulses. Leaflet positions the
+   wrapper (.meetup-pin-wrap) at the right pixel coordinates itself via its own inline
+   transform, so this inner span is the only element the drop/pulse animation touches. */
+.meetup-pin-wrap {
+  background: transparent;
+  border: none;
 }
-.meetup-tiles img {
-  position: absolute;
-  width: 256px;
-  height: 256px;
-  max-width: none;
-  user-select: none;
-}
-.meetup-accuracy {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border: 2px solid rgba(37, 99, 235, 0.55);
-  border-radius: 50%;
-  background: rgba(59, 130, 246, 0.16);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-/* Pin: a blue dot with a white ring that drops in, then pulses. */
 .meetup-pin {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  display: block;
   width: 18px;
   height: 18px;
   border: 3px solid #ffffff;
   border-radius: 50%;
   background: #2563eb;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  transform: translate(-50%, -50%);
   animation: meetup-pin-drop 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both, meetup-pin-pulse 2s ease-out 0.5s infinite;
 }
 @keyframes meetup-pin-drop {
-  from { opacity: 0; transform: translate(-50%, -160%); }
+  from { opacity: 0; transform: translateY(-20px); }
 }
 @keyframes meetup-pin-pulse {
   0% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), 0 0 0 0 rgba(37, 99, 235, 0.45); }
@@ -150,6 +133,7 @@
   position: absolute;
   right: 0;
   bottom: 0;
+  z-index: 1000;
   padding: 0.1rem 0.4rem;
   border-top-left-radius: 6px;
   background: rgba(255, 255, 255, 0.85);
