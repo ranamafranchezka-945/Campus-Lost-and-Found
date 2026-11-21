@@ -116,32 +116,32 @@ function passwordStrengthErrors(password, minLength = 8) {
 }
 
 function validateUserAuth(req, res, next) {
-  const { email, password } = req.body;
+  const { email } = req.body;
   const errors = [];
+  const isRegister = req.path === '/register';
 
   const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-  if (req.path === '/register') {
+  if (isRegister) {
     // Self-registration is for students and employees; each uses its own CSPC domain.
+    // The password itself is collected later, once the OTP confirms this inbox.
     const isEmployee = req.body.accountType === 'employee';
     if (isEmployee ? !STAFF_EMAIL.test(normalizedEmail) : !STUDENT_EMAIL.test(normalizedEmail)) {
       errors.push(isEmployee
         ? 'Use your CSPC employee email address ending in @cspc.edu.ph.'
         : 'Use your CSPC student email address ending in @my.cspc.edu.ph.');
     }
-  } else if (!STUDENT_EMAIL.test(normalizedEmail) && !STAFF_EMAIL.test(normalizedEmail)) {
-    errors.push('Use your CSPC email address ending in @my.cspc.edu.ph.');
-  }
-
-  if (typeof password !== 'string' || !password) {
-    errors.push('Password is required.');
-  } else if (password.length > 128) {
-    errors.push('Password must be at most 128 characters long.');
-  } else if (req.path !== '/register' && password.length < 6) {
-    errors.push('Password must be at least 6 characters long.');
-  }
-
-  if (req.path === '/register') {
-    errors.push(...passwordStrengthErrors(password));
+  } else {
+    if (!STUDENT_EMAIL.test(normalizedEmail) && !STAFF_EMAIL.test(normalizedEmail)) {
+      errors.push('Use your CSPC email address ending in @my.cspc.edu.ph.');
+    }
+    const { password } = req.body;
+    if (typeof password !== 'string' || !password) {
+      errors.push('Password is required.');
+    } else if (password.length > 128) {
+      errors.push('Password must be at most 128 characters long.');
+    } else if (password.length < 6) {
+      errors.push('Password must be at least 6 characters long.');
+    }
   }
 
   if (errors.length > 0) {

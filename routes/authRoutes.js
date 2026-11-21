@@ -107,10 +107,11 @@ function setOtpCodeGeneratorForTests(generator) {
   generateOtpCode = generator;
 }
 
-// Changes when the password does, so a pending code dies if the password changes
-// or an unconfirmed sign-up is re-registered by someone else.
+// Changes when the password does, or when a pending sign-up (no password yet) is
+// re-registered by someone else, so a stale pending code or password-creation step
+// dies rather than carrying over to whoever re-registers that address next.
 function accountFingerprint(user) {
-  return hashToken(`${user.id}|${user.passwordHash}`);
+  return hashToken(`${user.id}|${user.passwordHash || ''}|${user.registrationNonce || ''}`);
 }
 
 async function deliverOtpEmail(user, code, purpose) {
@@ -271,10 +272,12 @@ function ensureDefaultAdminAccount() {
   return ensureAccount();
 }
 
-// POST /api/auth/register
+// POST /api/auth/register - Step 1: collect only the email (and name/type); the OTP
+// below proves the inbox belongs to whoever is registering before a password is ever
+// asked for. POST /api/auth/complete-registration is step 2, once that code is verified.
 router.post('/register', validateUserAuth, async (req, res) => {
   try {
-    const { email, password, fullName } = req.body;
+    const { email, fullName } = req.body;
     const role = req.body.accountType === 'employee' ? 'employee' : 'student';
     const emailPattern = role === 'employee' ? STAFF_EMAIL : STUDENT_EMAIL;
     if (!emailPattern.test(email)) {
@@ -315,19 +318,19 @@ router.post('/register', validateUserAuth, async (req, res) => {
       });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
     const newUser = {
       id: existingIndex === -1 ? 'usr-' + Date.now() : users[existingIndex].id,
       email,
-      passwordHash,
       fullName: sanitizeString(fullName) || (role === 'employee' ? 'CSPC Employee' : 'CSPC Student'),
       // Self-registration no longer asks for a student ID or department.
       studentId: 'N/A',
       role,
       department: '',
       emailVerified: false,
+      // No passwordHash yet - that's collected only after the OTP below confirms the
+      // inbox. Regenerated on every (re-)registration so a stale pending session from
+      // an earlier registration attempt (by someone else) can never be used to set it.
+      registrationNonce: crypto.randomBytes(16).toString('hex'),
       createdAt: new Date().toISOString()
     };
 
@@ -457,7 +460,9 @@ router.post('/login', validateUserAuth, async (req, res) => {
     const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
 
     // Students use @my.cspc.edu.ph, employees use @cspc.edu.ph; an admin account may be on either domain.
-    const domainAllowed = Boolean(user) && (
+    // A pending sign-up (OTP confirmed or not) has no passwordHash yet, so there is no
+    // password it could ever match - treat it the same as "no such account".
+    const domainAllowed = Boolean(user) && Boolean(user.passwordHash) && (
       user.role === 'admin' ? isAdminEmail(email)
         : user.role === 'employee' ? STAFF_EMAIL.test(email)
           : STUDENT_EMAIL.test(email)
@@ -555,6 +560,22 @@ router.post('/verify-code', async (req, res) => {
       });
     }
 
+    // A brand-new sign-up has no password yet: the inbox is confirmed, but registration
+    // only finishes once /complete-registration sets one. Nothing is saved to the user
+    // record here, so a password is never asked for before the OTP that gates it.
+    if (pending.purpose === 'signup' && !user.passwordHash) {
+      req.session.pendingPassword = { userId: user.id, fingerprint: accountFingerprint(user) };
+      delete req.session.otp;
+      return res.json({
+        success: true,
+        passwordRequired: true,
+        email: user.email,
+        message: 'Your CSPC email is verified. Create a password to finish setting up your account.'
+      });
+    }
+
+    // An older account that already had a password before this step existed (created
+    // before this flow shipped): confirm it the same way sign-up used to.
     if (pending.purpose === 'signup' && user.emailVerified === false) {
       user.emailVerified = true;
       user.emailVerifiedAt = new Date().toISOString();
@@ -574,6 +595,43 @@ router.post('/verify-code', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error during verification.' });
+  }
+});
+
+// POST /api/auth/complete-registration - Step 2 of sign-up: create the password, now that
+// /verify-code has proven this session's owner controls the inbox. Reachable only with the
+// session marker verify-code sets, which dies if the account is re-registered meanwhile.
+router.post('/complete-registration', async (req, res) => {
+  try {
+    const pending = req.session.pendingPassword;
+    if (!pending) {
+      return res.status(400).json({ success: false, code: 'PENDING_MISSING',
+        message: 'Your verification has expired. Please register again.' });
+    }
+
+    const users = getUsers();
+    const user = users.find(u => u.id === pending.userId);
+    if (!user || user.passwordHash || accountFingerprint(user) !== pending.fingerprint) {
+      delete req.session.pendingPassword;
+      return res.status(400).json({ success: false, code: 'PENDING_MISSING',
+        message: 'Your verification has expired. Please register again.' });
+    }
+
+    const errors = passwordStrengthErrors(req.body.password, minimumPasswordLength(user));
+    if (errors.length) return res.status(400).json({ success: false, message: errors.join(' '), errors });
+
+    user.passwordHash = await bcrypt.hash(req.body.password, 10);
+    user.emailVerified = true;
+    user.emailVerifiedAt = new Date().toISOString();
+    delete user.registrationNonce;
+    saveUsers(users);
+    delete req.session.pendingPassword;
+
+    const sessionUser = sessionUserFor(user);
+    await authenticateSession(req, sessionUser);
+    res.json({ success: true, message: 'Your account is ready. Welcome to Back2You!', user: sessionUser });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Internal server error while creating your password.' });
   }
 });
 
@@ -862,10 +920,14 @@ router.get('/me', (req, res) => {
 
 // GET /api/auth/users - Admin-only user directory (never expose password hashes).
 router.get('/users', requireRole('admin'), (req, res) => {
-  const users = getUsers().map(({
-    passwordHash, verificationTokenHash, verificationExpiresAt, verificationSentAt,
-    passwordResetTokenHash, passwordResetExpiresAt, passwordResetSentAt, ...user
-  }) => user);
+  const users = getUsers()
+    // A pending sign-up (no password yet - the OTP was never entered) never finished
+    // registering, so it shouldn't appear as an account the admin can manage.
+    .filter(user => Boolean(user.passwordHash))
+    .map(({
+      passwordHash, verificationTokenHash, verificationExpiresAt, verificationSentAt,
+      passwordResetTokenHash, passwordResetExpiresAt, passwordResetSentAt, ...user
+    }) => user);
   res.json({ success: true, users });
 });
 

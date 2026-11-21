@@ -57,19 +57,21 @@
 
     const AUTH_DEFAULT_TITLE = 'Welcome to Back2You';
     const AUTH_TITLES = {
-      registerForm: 'Create an Account'
+      registerForm: 'Create an Account',
+      createPasswordForm: 'Create Your Password'
       // Every other form keeps AUTH_DEFAULT_TITLE.
     };
     const AUTH_SUBTITLES = {
       loginForm: 'Sign in to your account',
       registerForm: 'Join the Back2You - CSPC Lost and Found Community',
       forgotForm: 'Reset your password',
-      resetForm: 'Choose a new password'
+      resetForm: 'Choose a new password',
+      createPasswordForm: 'One more step to finish setting up your account'
       // otpForm has its own header (otp-title) instead of this one.
     };
 
     function showAuthForm(formId) {
-      ['loginForm', 'registerForm', 'forgotForm', 'resetForm', 'otpForm'].forEach(id => {
+      ['loginForm', 'registerForm', 'forgotForm', 'resetForm', 'otpForm', 'createPasswordForm'].forEach(id => {
         const form = document.getElementById(id);
         const isActive = id === formId;
         form.style.display = isActive ? 'block' : 'none';
@@ -101,7 +103,7 @@
         : 'Use your CSPC email address ending in @my.cspc.edu.ph';
       email.value = '';
 
-      document.getElementById('registerSubmit').textContent = isEmployee ? 'Create Employee Account' : 'Create Student Account';
+      document.getElementById('registerSubmit').textContent = isEmployee ? 'Continue as Employee' : 'Continue as Student';
     }
 
     function showForgotPassword() {
@@ -239,10 +241,6 @@
       // fully valid both mean there's no unmet requirement to show.
       list.hidden = !password || allMet;
       document.getElementById(submitButtonId).disabled = !allMet;
-    }
-
-    function updatePasswordRequirements() {
-      updatePasswordRequirementsIn('regPassword', 'passwordRequirements', 'registerSubmit');
     }
 
     function updateResetPasswordRequirements() {
@@ -445,6 +443,14 @@
           body: JSON.stringify({ code })
         });
         const data = await res.json();
+        if (data.success && data.passwordRequired) {
+          clearInterval(otpCountdownTimer);
+          document.activeElement?.blur();
+          document.getElementById('otpForm').classList.add('is-success');
+          button.textContent = 'Verified';
+          setTimeout(() => showCreatePasswordStep(data), 1100);
+          return;
+        }
         if (data.success && data.user) {
           clearInterval(otpCountdownTimer);
           document.activeElement?.blur();
@@ -509,22 +515,12 @@
       e.preventDefault();
       if (authRequestBusy) return;
       hideError();
-      updatePasswordRequirements();
-
-      if (document.getElementById('registerSubmit').disabled) {
-        showError('Please meet all password requirements before registering.');
-        return;
-      }
-
-      await runWhileBusy('registerSubmit', 'Creating account…', submitRegistration);
-      // The button's enabled state follows the password rules again.
-      updatePasswordRequirements();
+      await runWhileBusy('registerSubmit', 'Sending code…', submitRegistration);
     }
 
     async function submitRegistration() {
       const fullName = document.getElementById('regFullName').value.trim();
       const email = document.getElementById('regEmail').value.trim();
-      const password = document.getElementById('regPassword').value;
       const accountType = document.getElementById('regAccountType').value;
 
       try {
@@ -532,19 +528,74 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ fullName, email, password, accountType })
+          body: JSON.stringify({ fullName, email, accountType })
         });
 
         const data = await res.json();
         if (data.success) {
-          // The new account is confirmed with the emailed code, which also signs in.
+          // The email is confirmed with the code next, then the password is created.
           document.getElementById('registerForm').reset();
           setAccountType('student');
-          updatePasswordRequirements();
           document.getElementById('loginEmail').value = email;
           showOtpStep(data, 'registerForm');
         } else {
           showError(data.message || (data.errors ? data.errors.join(' ') : 'Registration failed.'));
+        }
+      } catch (err) {
+        showError('Network error connecting to registration service.');
+      }
+    }
+
+    // ── Create-password step (final step of sign-up, after the OTP above) ──────────
+    function showCreatePasswordStep(data) {
+      clearInterval(otpCountdownTimer);
+      document.getElementById('createPasswordForm').reset();
+      updateCreatePasswordRequirements();
+      showAuthForm('createPasswordForm');
+      if (data.message) showNotice(data.message);
+      document.getElementById('createPassword').focus();
+    }
+
+    function updateCreatePasswordRequirements() {
+      updatePasswordRequirementsIn('createPassword', 'createPasswordRequirements', 'createPasswordSubmit');
+    }
+
+    async function handleCompleteRegistration(e) {
+      e.preventDefault();
+      if (authRequestBusy) return;
+      hideError();
+      updateCreatePasswordRequirements();
+
+      if (document.getElementById('createPasswordSubmit').disabled) {
+        showError('Please meet all password requirements before continuing.');
+        return;
+      }
+      if (document.getElementById('createPassword').value !== document.getElementById('createPasswordConfirm').value) {
+        showError('The two passwords do not match.');
+        return;
+      }
+
+      await runWhileBusy('createPasswordSubmit', 'Creating account…', submitCompleteRegistration);
+      updateCreatePasswordRequirements();
+    }
+
+    async function submitCompleteRegistration() {
+      const password = document.getElementById('createPassword').value;
+      try {
+        const res = await fetch('/api/auth/complete-registration', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ password })
+        });
+        const data = await res.json();
+        if (data.success && data.user) {
+          finishSignIn(data.user);
+        } else if (data.code === 'PENDING_MISSING') {
+          showAuthForm('registerForm');
+          showError(data.message);
+        } else {
+          showError(data.message || (data.errors ? data.errors.join(' ') : 'Could not create your account.'));
         }
       } catch (err) {
         showError('Network error connecting to registration service.');
@@ -632,10 +683,10 @@
       }
     }
 
-    document.getElementById('regPassword').addEventListener('input', updatePasswordRequirements);
-    updatePasswordRequirements();
     document.getElementById('resetPassword').addEventListener('input', updateResetPasswordRequirements);
     updateResetPasswordRequirements();
+    document.getElementById('createPassword').addEventListener('input', updateCreatePasswordRequirements);
+    updateCreatePasswordRequirements();
     setupGoogleSignIn();
     setupOtpBoxes();
     showVerificationResult();

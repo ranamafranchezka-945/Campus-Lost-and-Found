@@ -206,7 +206,6 @@ let allowedEmails = [];
           <td>${escHtml(user.fullName || '—')}</td>
           <td>${escHtml(user.email || '—')}</td>
           <td><span class="badge ${user.role === 'admin' ? 'badge-role-admin' : user.role === 'employee' ? 'badge-role-employee' : 'badge-role-student'}">${escHtml(user.role === 'admin' ? 'Admin' : user.role === 'employee' ? 'Employee' : 'Student')}</span></td>
-          <td>${escHtml(user.department || '—')}</td>
           <td>${escHtml(formatDate(user.createdAt))}</td>
           <td><button type="button" class="action-btn action-btn-delete user-delete-button" data-user-id="${escHtml(user.id)}" data-user-name="${escHtml(user.fullName || user.email)}"${user.id === window.currentAdminUserId ? ' disabled' : ''}>Delete</button></td>
         </tr>`).join('');

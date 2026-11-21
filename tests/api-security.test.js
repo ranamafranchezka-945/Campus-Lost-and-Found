@@ -272,8 +272,17 @@ function registrationBody(overrides = {}) {
   return JSON.stringify({
     fullName: 'New Student',
     email: 'new.student@my.cspc.edu.ph',
-    password: 'StudentPass1!',
     ...overrides
+  });
+}
+
+// Finishes sign-up on a specific session: sets the password /complete-registration
+// collects only after /verify-code has confirmed that session controls the inbox.
+function completeRegistration(cookie, password = studentPassword) {
+  return fetch(`${baseUrl}/api/auth/complete-registration`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: cookie },
+    body: JSON.stringify({ password })
   });
 }
 
@@ -297,7 +306,7 @@ test('registration accepts only @my.cspc.edu.ph student addresses', async () => 
   assert.equal(loginResponse.status, 400);
 });
 
-test('new accounts are confirmed with the emailed code before they can sign in', async t => {
+test('new accounts are confirmed with the emailed code, then create a password, before they can sign in', async t => {
   const smtp = await startSmtpCaptureServer();
   const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map(key => [key, process.env[key]]));
   t.after(async () => {
@@ -316,7 +325,7 @@ test('new accounts are confirmed with the emailed code before they can sign in',
   delete process.env.SMTP_PASS;
 
   // Someone without access to the inbox registers the address first.
-  const squatterResponse = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ password: 'Squatter1!pass' }));
+  const squatterResponse = await postJson(`${baseUrl}/api/auth/register`, registrationBody());
   assert.equal(squatterResponse.status, 201);
   assert.equal((await squatterResponse.json()).otpRequired, true);
   const squatterCookie = squatterResponse.headers.get('set-cookie').split(';')[0];
@@ -337,6 +346,7 @@ test('new accounts are confirmed with the emailed code before they can sign in',
   const pending = users.filter(user => user.email === 'new.student@my.cspc.edu.ph');
   assert.equal(pending.length, 1);
   assert.equal(pending[0].emailVerified, false);
+  assert.equal(pending[0].passwordHash, undefined, 'no password is collected until the code is verified');
   assert.equal(pending[0].department, '');
   assert.equal(pending[0].studentId, 'N/A');
   assert.equal(pending[0].verificationTokenHash, undefined, 'no confirmation link is issued any more');
@@ -346,7 +356,7 @@ test('new accounts are confirmed with the emailed code before they can sign in',
   const emailContent = latestEmail.content.replace(/=\r\n/g, '').replace(/=3D/g, '=');
   assert.match(emailContent, new RegExp(`Back2You Email Verification Code: ${TEST_OTP}`));
 
-  // The squatter's session code died when the real owner registered with a new password.
+  // The squatter's pending code died when the real owner re-registered the address.
   const squatterVerify = await verifyCode(squatterCookie);
   assert.equal(squatterVerify.status, 400);
   assert.equal((await squatterVerify.json()).code, 'OTP_MISSING');
@@ -362,20 +372,44 @@ test('new accounts are confirmed with the emailed code before they can sign in',
   const verified = await verifyCode(pendingCookie);
   assert.equal(verified.status, 200);
   const verifiedBody = await verified.json();
-  assert.equal(verifiedBody.user.email, 'new.student@my.cspc.edu.ph');
-  const signedInCookie = verified.headers.get('set-cookie').split(';')[0];
-  const session = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: signedInCookie } });
-  assert.equal((await session.json()).authenticated, true);
+  assert.equal(verifiedBody.passwordRequired, true);
+  assert.equal(verifiedBody.email, 'new.student@my.cspc.edu.ph');
+  assert.equal(verifiedBody.user, undefined, 'the code alone does not sign anyone in any more');
+  const notYetSignedIn = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: pendingCookie } });
+  assert.equal((await notYetSignedIn.json()).authenticated, false);
   assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'))
-    .find(user => user.email === 'new.student@my.cspc.edu.ph').emailVerified, true);
+    .find(user => user.email === 'new.student@my.cspc.edu.ph').emailVerified, false, 'still unverified until a password is created');
 
   // The code is spent: the old pending session cannot use it again.
   const reused = await verifyCode(pendingCookie);
   assert.equal(reused.status, 400);
 
-  const squatterLogin = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'new.student@my.cspc.edu.ph', password: 'Squatter1!pass' }));
-  assert.equal(squatterLogin.status, 401);
-  await login('new.student@my.cspc.edu.ph', 'StudentPass1!');
+  // No one can set a password on this account without first verifying the code in their session.
+  const completeNoSession = await fetch(`${baseUrl}/api/auth/complete-registration`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: studentPassword })
+  });
+  assert.equal(completeNoSession.status, 400);
+  assert.equal((await completeNoSession.json()).code, 'PENDING_MISSING');
+
+  // A weak password is rejected before anything is saved.
+  const weak = await completeRegistration(pendingCookie, 'weak');
+  assert.equal(weak.status, 400);
+  assert.ok((await weak.json()).errors.length > 0);
+
+  const completed = await completeRegistration(pendingCookie);
+  assert.equal(completed.status, 200);
+  assert.equal((await completed.json()).user.email, 'new.student@my.cspc.edu.ph');
+  const signedInCookie = completed.headers.get('set-cookie').split(';')[0];
+  const session = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: signedInCookie } });
+  assert.equal((await session.json()).authenticated, true);
+  assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'))
+    .find(user => user.email === 'new.student@my.cspc.edu.ph').emailVerified, true);
+
+  // The verified session is spent: it cannot be used to set a second password.
+  const completedAgain = await completeRegistration(pendingCookie);
+  assert.equal(completedAgain.status, 400);
+
+  await login('new.student@my.cspc.edu.ph', studentPassword);
 
   const itemsResponse = await fetch(`${baseUrl}/api/items`);
   assert.equal((await itemsResponse.json()).items.length, 5);
@@ -386,21 +420,24 @@ test('new accounts are confirmed with the emailed code before they can sign in',
     .filter(user => user.email === 'new.student@my.cspc.edu.ph').length, 1);
 });
 
-test('unconfirmed accounts get a sign-up code when they try to sign in', async () => {
+test('a pending sign-up cannot sign in with any password until the code is verified and a password is created', async () => {
   const register = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ email: 'late.confirmer@my.cspc.edu.ph' }));
   assert.equal(register.status, 201);
+  // Read the whole response: the session is saved before the response finishes.
+  assert.equal((await register.json()).otpRequired, true);
+  const cookie = register.headers.get('set-cookie').split(';')[0];
 
-  const blockedLogin = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'late.confirmer@my.cspc.edu.ph', password: 'StudentPass1!' }));
-  assert.equal(blockedLogin.status, 403);
-  const blocked = await blockedLogin.json();
-  assert.equal(blocked.code, 'EMAIL_NOT_VERIFIED');
-  assert.equal(blocked.otpRequired, true);
-  assert.equal(blocked.purpose, 'signup');
+  // No password has ever been set on this account, so any guess is just a wrong password.
+  const blockedLogin = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'late.confirmer@my.cspc.edu.ph', password: studentPassword }));
+  assert.equal(blockedLogin.status, 401);
 
-  const cookie = blockedLogin.headers.get('set-cookie').split(';')[0];
   const verified = await verifyCode(cookie);
   assert.equal(verified.status, 200);
-  assert.equal((await verified.json()).user.email, 'late.confirmer@my.cspc.edu.ph');
+  assert.equal((await verified.json()).passwordRequired, true);
+
+  const completed = await completeRegistration(cookie);
+  assert.equal(completed.status, 200);
+  assert.equal((await completed.json()).user.email, 'late.confirmer@my.cspc.edu.ph');
 });
 
 test('sign-up codes allow five tries, expire with the session and resend at most once a minute', async () => {

@@ -172,27 +172,9 @@
           <label>CSPC Email *</label>
           <input type="email" id="regEmail" placeholder="e.g., student@my.cspc.edu.ph" pattern="[A-Za-z0-9._%+\-]+@my\.cspc\.edu\.ph" title="Use your CSPC email address ending in @my.cspc.edu.ph" required />
         </div>
-        <div class="form-group">
-          <label for="regPassword">Password *</label>
-          <div class="password-wrap">
-            <input type="password" id="regPassword" placeholder="Create a secure password" minlength="8" required aria-describedby="passwordRequirements" />
-            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["regPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
-              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-          </div>
-          <ul class="password-requirements" id="passwordRequirements" aria-live="polite" hidden>
-            <li data-requirement="length">At least 8 characters</li>
-            <li data-requirement="uppercase">One uppercase letter (A-Z)</li>
-            <li data-requirement="lowercase">One lowercase letter (a-z)</li>
-            <li data-requirement="number">One number (0-9)</li>
-            <li data-requirement="special">One special symbol (!, @, #, $, %, ?, &, *)</li>
-          </ul>
-        </div>
-        <button type="submit" id="registerSubmit" class="btn btn-primary" style="width: 100%; border: none; cursor: pointer; margin-top: 0.5rem;" disabled>
-          Create Student Account
+        <p class="auth-form-hint">We'll email a 6-digit code to confirm this address before you create a password.</p>
+        <button type="submit" id="registerSubmit" class="btn btn-primary" style="width: 100%; border: none; cursor: pointer; margin-top: 0.5rem;">
+          Continue as Student
         </button>
         <div id="googleSignUpContainer" class="google-signin-container" hidden>
           <div class="auth-divider"><span>or</span></div>
@@ -248,6 +230,38 @@
           <span>Didn't get the code?</span>
           <button type="button" id="otpResend" class="auth-link-btn otp-resend-btn" data-action="resendCode">Resend code</button>
         </p>
+      </form>
+
+      <!-- CREATE PASSWORD FORM: final sign-up step, shown only after the emailed code
+           above confirms the CSPC inbox really belongs to whoever is registering. -->
+      <form id="createPasswordForm" style="display: none;" data-submit="handleCompleteRegistration">
+        <p class="auth-form-intro">Your CSPC email is confirmed. Create a password to finish setting up your account.</p>
+        <div class="form-group">
+          <label for="createPassword">Password *</label>
+          <div class="password-wrap">
+            <input type="password" id="createPassword" placeholder="Create a secure password" minlength="8" maxlength="128" autocomplete="new-password" required aria-describedby="createPasswordRequirements" />
+            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["createPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+            </button>
+          </div>
+          <ul class="password-requirements" id="createPasswordRequirements" aria-live="polite" hidden>
+            <li data-requirement="length">At least 8 characters</li>
+            <li data-requirement="uppercase">One uppercase letter (A-Z)</li>
+            <li data-requirement="lowercase">One lowercase letter (a-z)</li>
+            <li data-requirement="number">One number (0-9)</li>
+            <li data-requirement="special">One special symbol (!, @, #, $, %, ?, &, *)</li>
+          </ul>
+        </div>
+        <div class="form-group">
+          <label for="createPasswordConfirm">Confirm Password *</label>
+          <input type="password" id="createPasswordConfirm" placeholder="Type the password again" autocomplete="new-password" required />
+        </div>
+        <button type="submit" id="createPasswordSubmit" class="btn btn-primary" style="width: 100%; border: none; cursor: pointer; margin-top: 0.5rem;" disabled>
+          Finish Creating Account
+        </button>
       </form>
 
     </div>
