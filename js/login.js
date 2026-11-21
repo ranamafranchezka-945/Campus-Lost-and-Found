@@ -673,7 +673,11 @@
           body: JSON.stringify({ credential: response.credential })
         });
         const data = await res.json();
-        if (data.success) {
+        if (data.otpRequired) {
+          // First time signing up with this Google account: still confirm the inbox
+          // with our own code, then create a password, before the account is usable.
+          showOtpStep(data, 'registerForm');
+        } else if (data.success && data.user) {
           window.location.replace(getPostLoginUrl(data.user));
         } else {
           showError(data.message || 'Google sign-in failed.');

@@ -359,10 +359,13 @@ router.get('/google-client-id', (req, res) => {
   res.json({ clientId: process.env.GOOGLE_CLIENT_ID || null });
 });
 
-// POST /api/auth/google - Sign in (or self-register) with a verified Google Workspace
-// account. Skips the emailed code a password sign-in needs, since Google already proved
-// the inbox; student vs employee is the same @my.cspc.edu.ph / @cspc.edu.ph split as
-// manual registration, read from Google's own verified email instead of a form field.
+// POST /api/auth/google - Sign in with an existing account, or start one, using a
+// verified Google Workspace credential. An existing (fully registered) account signs in
+// immediately - Google already proved the inbox. A first-time sign-up still goes through
+// our own emailed code and password-creation step before the account is usable, the same
+// as manual registration: Google's verified email lets someone skip typing their address,
+// not the confirmation step itself. Student vs employee is read from Google's own verified
+// email instead of a form field.
 router.post('/google', async (req, res) => {
   if (!googleClient) {
     return res.status(503).json({ success: false, message: 'Google sign-in is not configured on this server.' });
@@ -399,28 +402,46 @@ router.post('/google', async (req, res) => {
     return res.status(403).json({ success: false, message: 'Sign-in is currently restricted. Contact the administrator for access.' });
   }
 
-  if (!user) {
-    user = {
-      id: 'usr-' + Date.now(),
-      email,
-      // No password is ever checked for a Google-created account; a long random hash
-      // means nothing a user could type at the sign-in form will ever match it.
-      passwordHash: bcrypt.hashSync(crypto.randomBytes(48).toString('hex'), 10),
-      fullName: sanitizeString(payload.name) || (role === 'employee' ? 'CSPC Employee' : 'CSPC Student'),
-      studentId: 'N/A',
-      role,
-      department: '',
-      emailVerified: true,
-      authProvider: 'google',
-      createdAt: new Date().toISOString()
-    };
-    users.push(user);
-    saveUsers(users);
+  // An account that already has a password is already fully registered: Google proved
+  // the inbox, so sign in immediately, same as before.
+  if (user && user.passwordHash) {
+    const sessionUser = sessionUserFor(user);
+    await authenticateSession(req, sessionUser);
+    return res.json({ success: true, message: 'Login successful.', user: sessionUser });
   }
 
-  const sessionUser = sessionUserFor(user);
-  await authenticateSession(req, sessionUser);
-  res.json({ success: true, message: 'Login successful.', user: sessionUser });
+  // First time with this email (or an earlier sign-up that was never finished): start -
+  // or restart - the same emailed-code-then-password flow manual registration uses.
+  if (isRateLimited(registrationAttempts, req.ip, REGISTRATION_LIMIT)) {
+    return res.status(429).json({
+      success: false,
+      message: 'Too many registrations from this network. Please try again later.'
+    });
+  }
+
+  const newUser = {
+    id: user ? user.id : 'usr-' + Date.now(),
+    email,
+    fullName: sanitizeString(payload.name) || (role === 'employee' ? 'CSPC Employee' : 'CSPC Student'),
+    studentId: 'N/A',
+    role,
+    department: '',
+    emailVerified: false,
+    authProvider: 'google',
+    registrationNonce: crypto.randomBytes(16).toString('hex'),
+    createdAt: new Date().toISOString()
+  };
+  if (user) users[users.indexOf(user)] = newUser;
+  else users.push(newUser);
+  saveUsers(users);
+  recordAttempt(registrationAttempts, req.ip, REGISTRATION_LIMIT);
+
+  const emailSent = await startOtp(req, newUser, 'signup');
+  res.status(201).json({
+    success: true,
+    verificationRequired: true,
+    ...otpResponse(newUser, 'signup', emailSent)
+  });
 });
 
 // GET /api/auth/verify-email?token=... - Confirmation links emailed before sign-up
