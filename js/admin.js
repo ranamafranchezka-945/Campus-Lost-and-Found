@@ -14,6 +14,48 @@ let allowedEmails = [];
     let actionConfirmResolver = null;
     let cachedServerItems = [];
     const selectedItemIds = new Set();
+    const BROADCAST_TEMPLATES = [
+      {
+        id: 'unclaimed',
+        command: '/unclaimed',
+        title: 'Unclaimed Items Notice',
+        description: 'Remind students to claim a recovered item.',
+        subject: 'Unclaimed [Item Name] Available for Claim',
+        message: 'An item matching [Item Name] was found at [Location] on [Date]. If it belongs to you, please visit [Office/Room] to claim it. Please bring a valid ID and share details that confirm ownership.'
+      },
+      {
+        id: 'urgent',
+        command: '/urgent',
+        title: 'Urgent High-Value / ID Found',
+        description: 'Share a timely notice about a high-value item or ID.',
+        subject: 'Urgent: [Item Name] Found',
+        message: 'A high-value item or ID, [Item Name], was found at [Location] on [Date]. Please contact [Office/Room] as soon as convenient so ownership can be verified and collection arranged. Bring a valid ID and details that confirm the item is yours.'
+      },
+      {
+        id: 'hours',
+        command: '/hours',
+        title: 'Claiming Office Hours Update',
+        description: 'Announce updated claiming hours and location.',
+        subject: 'Claiming Office Hours - [Date]',
+        message: 'The Lost & Found claiming office will be open [Office Hours] on [Date] at [Office/Room]. Please bring a valid ID and the details needed to verify your claim. For questions, contact [Contact Details].'
+      },
+      {
+        id: 'event',
+        command: '/event',
+        title: 'Post-Event Lost & Found Sweep',
+        description: 'Report items collected after a campus event.',
+        subject: 'Post-Event Lost & Found Sweep - [Event Name]',
+        message: 'Following [Event Name] on [Date], our team collected items from [Location]. If you are missing something, please visit [Office/Room] and provide a description to help identify it.'
+      },
+      {
+        id: 'policy',
+        command: '/policy',
+        title: 'Claim Verification Requirements',
+        description: 'Explain what claimants should bring to verify ownership.',
+        subject: 'Claim Verification Requirements - [Item Name]',
+        message: 'To claim [Item Name], found at [Location] on [Date], please visit [Office/Room]. Bring a valid ID and be ready to describe identifying details not included in the public notice. Staff will verify ownership before releasing an item.'
+      }
+    ];
     let visibleAdminItems = [];
     let adminSort = { key: 'date', direction: 'desc' };
     let adminTypeFilter = '';
@@ -110,6 +152,7 @@ let allowedEmails = [];
       document.getElementById('bulkArchiveBtn').addEventListener('click', () => runBulkAction('archive'));
       document.getElementById('bulkDeleteBtn').addEventListener('click', () => runBulkAction('delete'));
       document.getElementById('exportSelectedBtn').addEventListener('click', () => exportCSV([...selectedItemIds]));
+      setupBroadcastTemplates();
       document.getElementById('sendBroadcastBtn').addEventListener('click', sendBroadcast);
       document.getElementById('cancelActionConfirm').addEventListener('click', closeActionConfirm);
       document.getElementById('openCreateUserBtn').addEventListener('click', () => { document.getElementById('userFormPanel').hidden = false; });
@@ -1688,6 +1731,177 @@ let allowedEmails = [];
         await refreshAdminClaims();
         showToast(`${data.affected} item(s) updated.`);
       } catch (error) { showToast(error.message, 'error'); }
+    }
+
+    function setupBroadcastTemplates() {
+      const subject = document.getElementById('broadcastSubject');
+      const message = document.getElementById('broadcastMessage');
+      const fields = document.getElementById('broadcastFields');
+      const menu = document.getElementById('broadcastCommandMenu');
+      let activeField = null;
+      let matches = [];
+      let selectedIndex = 0;
+
+      function closeMenu() {
+        menu.hidden = true;
+        menu.replaceChildren();
+        subject.setAttribute('aria-expanded', 'false');
+        message.setAttribute('aria-expanded', 'false');
+        subject.removeAttribute('aria-activedescendant');
+        message.removeAttribute('aria-activedescendant');
+        activeField = null;
+        matches = [];
+        selectedIndex = 0;
+      }
+
+      function positionMenu(field) {
+        const fieldRect = field.getBoundingClientRect();
+        const fieldsRect = fields.getBoundingClientRect();
+        const menuHeight = menu.offsetHeight;
+        const belowSpace = window.innerHeight - fieldRect.bottom - 12;
+        let top = fieldRect.bottom - fieldsRect.top + 6;
+        if (belowSpace < menuHeight && fieldRect.top - fieldsRect.top > menuHeight + 8) {
+          top = fieldRect.top - fieldsRect.top - menuHeight - 6;
+        }
+        menu.style.top = `${Math.max(0, top)}px`;
+      }
+
+      function selectOption(index) {
+        if (!matches.length) return;
+        selectedIndex = (index + matches.length) % matches.length;
+        const options = menu.querySelectorAll('[role="option"]');
+        options.forEach((option, optionIndex) => {
+          const selected = optionIndex === selectedIndex;
+          option.classList.toggle('is-active', selected);
+          option.setAttribute('aria-selected', String(selected));
+        });
+        const activeOption = options[selectedIndex];
+        if (activeOption && activeField) {
+          activeField.setAttribute('aria-activedescendant', activeOption.id);
+          activeOption.scrollIntoView({ block: 'nearest' });
+        }
+      }
+
+      function insertTemplate(template) {
+        if (!template) return;
+        subject.value = template.subject;
+        message.value = template.message;
+        closeMenu();
+
+        const subjectPlaceholder = /\[[^\]]+\]/.exec(subject.value);
+        const messagePlaceholder = /\[[^\]]+\]/.exec(message.value);
+        const target = subjectPlaceholder ? subject : message;
+        const placeholder = subjectPlaceholder || messagePlaceholder;
+        target.focus();
+        if (placeholder) target.setSelectionRange(placeholder.index, placeholder.index + placeholder[0].length);
+      }
+
+      function updateMenu(field) {
+        const cursor = field.selectionStart;
+        if (cursor === null || field.selectionEnd !== cursor) {
+          closeMenu();
+          return;
+        }
+        const precedingText = field.value.slice(0, cursor);
+        const commandText = field === subject
+          ? precedingText
+          : precedingText.slice(precedingText.lastIndexOf('\n') + 1);
+        const commandMatch = commandText.match(/^\/([a-z0-9-]*)$/i);
+        if (!commandMatch) {
+          closeMenu();
+          return;
+        }
+
+        const query = commandMatch[1].toLowerCase();
+        matches = BROADCAST_TEMPLATES.filter(template => template.command.slice(1).startsWith(query));
+        if (!matches.length) {
+          closeMenu();
+          return;
+        }
+        activeField = field;
+        selectedIndex = 0;
+        menu.replaceChildren();
+        matches.forEach((template, index) => {
+          const option = document.createElement('button');
+          option.type = 'button';
+          option.id = `broadcast-command-${template.id}`;
+          option.className = 'broadcast-command-option';
+          option.setAttribute('role', 'option');
+          option.setAttribute('aria-selected', String(index === selectedIndex));
+
+          const heading = document.createElement('span');
+          heading.className = 'broadcast-command-option-heading';
+          const command = document.createElement('kbd');
+          command.textContent = template.command;
+          const title = document.createElement('strong');
+          title.textContent = template.title;
+          heading.append(command, title);
+
+          const description = document.createElement('small');
+          description.textContent = template.description;
+          option.append(heading, description);
+          option.addEventListener('mouseenter', () => selectOption(index));
+          option.addEventListener('click', () => insertTemplate(template));
+          menu.append(option);
+        });
+
+        menu.hidden = false;
+        subject.setAttribute('aria-expanded', String(field === subject));
+        message.setAttribute('aria-expanded', String(field === message));
+        positionMenu(field);
+        selectOption(0);
+      }
+
+      function handleMenuKeydown(event) {
+        if (menu.hidden) return;
+        if (event.key === 'ArrowDown') {
+          event.preventDefault();
+          selectOption(selectedIndex + 1);
+        } else if (event.key === 'ArrowUp') {
+          event.preventDefault();
+          selectOption(selectedIndex - 1);
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          insertTemplate(matches[selectedIndex]);
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          closeMenu();
+        } else if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+          closeMenu();
+        }
+      }
+
+      [subject, message].forEach(field => {
+        field.addEventListener('input', () => updateMenu(field));
+        field.addEventListener('keydown', handleMenuKeydown);
+      });
+      menu.addEventListener('keydown', handleMenuKeydown);
+      document.querySelectorAll('.broadcast-template-pill').forEach(button => {
+        button.addEventListener('click', () => {
+          insertTemplate(BROADCAST_TEMPLATES.find(template => template.id === button.dataset.broadcastTemplate));
+        });
+      });
+      document.getElementById('clearBroadcastBtn').addEventListener('click', () => {
+        subject.value = '';
+        message.value = '';
+        closeMenu();
+        subject.focus();
+      });
+      document.addEventListener('pointerdown', event => {
+        if (menu.hidden || menu.contains(event.target) || event.target === subject || event.target === message) return;
+        closeMenu();
+      });
+      document.addEventListener('focusin', event => {
+        if (menu.hidden || event.target === activeField || menu.contains(event.target)) return;
+        closeMenu();
+      });
+      document.addEventListener('keydown', event => {
+        if (!menu.hidden && event.altKey && !event.ctrlKey && !event.metaKey
+          && (/^[1-8]$/.test(event.key) || event.key.toLowerCase() === 'e')) closeMenu();
+      });
+      window.addEventListener('resize', () => {
+        if (activeField && !menu.hidden) positionMenu(activeField);
+      });
     }
 
     async function sendBroadcast() {
