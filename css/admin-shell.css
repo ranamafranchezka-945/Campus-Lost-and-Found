@@ -136,7 +136,13 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
 }
 .side-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.side-brand-text strong { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
+.side-brand-text strong {
+  align-self: flex-start;
+  width: fit-content;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
 .side-brand-text span { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.72); }
 .side-close { display: none; }
 .side-collapse {
@@ -315,6 +321,61 @@
   text-align: center;
 }
 .bell-count[hidden] { display: none; }
+.keyboard-shortcuts-backdrop { z-index: 2100; background: rgba(2, 6, 23, 0.82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.keyboard-shortcuts-backdrop[hidden] { display: none; }
+.keyboard-shortcuts-dialog {
+  box-sizing: border-box;
+  width: min(100%, 38rem);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 16px;
+  background: #111827;
+  color: #e2e8f0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+  text-align: left;
+}
+.keyboard-shortcuts-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 0.75rem; }
+.keyboard-shortcuts-header h2 { margin: 0; color: #f8fafc; font-size: 1.2rem; font-weight: 700; }
+.keyboard-shortcuts-header p { margin: 0.35rem 0 0; color: #94a3b8; font-size: 0.875rem; }
+.keyboard-shortcuts-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 8px;
+  background: #1f2937;
+  color: #cbd5e1;
+  cursor: pointer;
+}
+.keyboard-shortcuts-close .ico { width: 1rem; height: 1rem; }
+.keyboard-shortcuts-close:hover { border-color: #60a5fa; color: #f8fafc; }
+.keyboard-shortcuts-list { border-top: 1px solid rgba(148, 163, 184, 0.16); }
+.keyboard-shortcuts-row {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 0.1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  font-size: 0.875rem;
+}
+.keyboard-shortcuts-row > span:first-child { color: #f1f5f9; }
+.keyboard-shortcuts-row > span:last-child { color: #cbd5e1; }
+.keyboard-shortcuts-row kbd {
+  display: inline-block;
+  padding: 0.15rem 0.35rem;
+  border: 1px solid #475569;
+  border-radius: 5px;
+  background: #1f2937;
+  color: #f8fafc;
+  font: 600 0.75rem/1.3 var(--font-brand);
+  white-space: nowrap;
+}
 .topbar-user { display: flex; align-items: center; gap: 0.6rem; padding-left: 0.5rem; }
 .topbar-user-text { display: flex; flex-direction: column; line-height: 1.25; }
 .topbar-user-text strong { font-size: 0.9375rem; color: var(--text-main); }
@@ -835,7 +896,11 @@
   font-weight: 700;
 }
 .topbar-search:focus-within .kbd { display: none; }
-@media (hover: none), (max-width: 1023px) { .kbd { display: none; } }
+@media (max-width: 1024px), (pointer: coarse), (hover: none) {
+  .admin-topbar .topbar-search .kbd,
+  .admin-topbar .topbar-actions .keyboard-shortcuts-trigger,
+  .admin-sidebar .side-link .side-shortcut { display: none !important; }
+}
 
 /* Rows light up under the pointer. */
 :root .admin-app #adminItemsTable tbody tr:hover,
@@ -1081,6 +1146,8 @@
 @media (max-width: 560px) {
   .pop,
   .pop--menu { position: fixed; top: 4.25rem; left: 0.75rem; right: 0.75rem; width: auto; }
+  .keyboard-shortcuts-dialog { padding: 1.1rem; }
+  .keyboard-shortcuts-row { grid-template-columns: 1fr; gap: 0.3rem; padding-block: 0.7rem; }
 }
 
 /* ── Royal blue ─────────────────────────────────────────────────────────────

@@ -33,6 +33,7 @@
     <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="m16 8 4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M10 9h.01M13 9h.01M16 9h.01M7 12h.01M10 12h.01M13 12h.01M16 12h.01M8 15h8"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -88,6 +89,9 @@
           <button type="button" class="topbar-btn theme-circle" id="themePill" role="switch" aria-checked="true" aria-label="Dark mode" title="Switch between light and dark">
             <svg class="ico theme-sun" aria-hidden="true"><use href="#i-sun"/></svg>
             <svg class="ico theme-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+          </button>
+          <button type="button" class="topbar-btn" id="keyboardShortcutsButton" aria-label="Keyboard shortcuts" title="Keyboard shortcuts" aria-haspopup="dialog" aria-controls="keyboardShortcutsModal">
+            <svg class="ico" aria-hidden="true"><use href="#i-keyboard"/></svg>
           </button>
           <button type="button" class="topbar-btn topbar-broadcast" data-action="showAdminView" data-args='["broadcast"]' aria-label="Broadcast a message to students" title="Broadcast a message"><svg class="ico"><use href="#i-message"/></svg></button>
           <div class="pop-wrap">
@@ -424,8 +428,37 @@
     </div>
   </div>
 
+  <div class="del-modal-backdrop keyboard-shortcuts-backdrop" id="keyboardShortcutsModal" role="dialog" aria-modal="true" aria-labelledby="keyboardShortcutsTitle" data-close="closeKeyboardShortcuts" hidden>
+    <div class="keyboard-shortcuts-dialog">
+      <div class="keyboard-shortcuts-header">
+        <div>
+          <h2 id="keyboardShortcutsTitle">Keyboard Shortcuts</h2>
+          <p>Navigate the admin dashboard and run common actions faster.</p>
+        </div>
+        <button type="button" class="keyboard-shortcuts-close" data-action="closeKeyboardShortcuts" aria-label="Close keyboard shortcuts">
+          <svg class="ico" aria-hidden="true"><use href="#i-close"/></svg>
+        </button>
+      </div>
+      <div class="keyboard-shortcuts-list">
+        <div class="keyboard-shortcuts-row"><span><kbd>/</kbd> or <kbd>Ctrl</kbd>+<kbd>K</kbd> / <kbd>Cmd</kbd>+<kbd>K</kbd></span><span>Focus Search reports…</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Esc</kbd></span><span>Blur search or close the open dialog</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>1</kbd></span><span>Dashboard</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>2</kbd></span><span>Lost items</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>3</kbd></span><span>Found items</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>4</kbd></span><span>All items</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>5</kbd></span><span>Claim verification</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>6</kbd></span><span>Broadcast message</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>7</kbd></span><span>User management</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>8</kbd></span><span>Students' belongings</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>E</kbd></span><span>Export CSV (Dashboard only)</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>[</kbd></span><span>Collapse or expand the sidebar</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>?</kbd> (<kbd>Shift</kbd>+<kbd>/</kbd>)</span><span>Open this shortcuts guide</span></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Delete Confirm Modal -->
-  <div class="del-modal-backdrop" id="deleteModal">
+  <div class="del-modal-backdrop" id="deleteModal" data-close="closeDeleteModal">
     <div class="del-modal">
       <h3>Confirm Delete</h3>
       <p id="deleteMsg">Are you sure you want to permanently delete this item? This action cannot be undone.</p>
@@ -437,7 +470,7 @@
   </div>
 
   <!-- Restore Confirm Modal -->
-  <div class="del-modal-backdrop" id="restoreModal">
+  <div class="del-modal-backdrop" id="restoreModal" data-close="closeRestoreModal">
     <div class="del-modal restore-modal">
       <h3>Confirm Restore</h3>
       <p id="restoreMsg">Are you sure you want to restore this item?</p>
@@ -448,7 +481,7 @@
     </div>
   </div>
 
-  <div class="del-modal-backdrop" id="actionConfirmModal">
+  <div class="del-modal-backdrop" id="actionConfirmModal" data-close="closeActionConfirm">
     <div class="del-modal">
       <h3 id="actionConfirmTitle">Confirm Action</h3>
       <p id="actionConfirmMsg">Are you sure?</p>
@@ -459,7 +492,7 @@
     </div>
   </div>
 
-  <div class="del-modal-backdrop" id="deleteUserModal">
+  <div class="del-modal-backdrop" id="deleteUserModal" data-close="closeDeleteUserModal">
     <div class="del-modal"><h3>Delete User</h3><p id="deleteUserMsg">Are you sure you want to permanently delete this user?</p><div style="display:flex;gap:.75rem;justify-content:center;"><button class="btn btn-outline" id="cancelDeleteUser" type="button">Cancel</button><button class="action-btn action-btn-delete" id="confirmDeleteUser" type="button">Delete</button></div></div>
   </div>
 
