@@ -136,7 +136,13 @@
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16);
 }
 .side-brand-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
-.side-brand-text strong { font-size: 1.125rem; font-weight: 800; letter-spacing: -0.01em; }
+.side-brand-text strong {
+  align-self: flex-start;
+  width: fit-content;
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
 .side-brand-text span { font-size: 0.8125rem; color: rgba(255, 255, 255, 0.72); }
 .side-close { display: none; }
 .side-collapse {
