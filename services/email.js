@@ -233,24 +233,6 @@ async function sendFinderNotificationEmail(user, item, notification) {
   });
 }
 
-// Shares one side's direct contact details with the other once a claim is self-confirmed,
-// so the owner and finder can arrange pickup between themselves without an admin step.
-async function sendContactShareEmail(user, item, counterpart, context) {
-  const transport = createTransport();
-  const name = user.fullName || 'there';
-  const safeName = escapeHtml(name);
-  const signInUrl = getAppUrl('/login');
-  const contactLines = [
-    counterpart.email ? `Email: ${counterpart.email}` : null,
-    counterpart.contact ? `Contact number: ${counterpart.contact}` : null
-  ].filter(Boolean);
-  if (!contactLines.length) contactLines.push('No contact details were provided — reply through Back2You instead.');
-  const subject = `Back2You: contact details for "${item.title}"`;
-  const text = `Hi ${name},\n\n${context}\n\n${counterpart.name || 'They'} can be reached at:\n${contactLines.join('\n')}\n\nSign in to Back2You: ${signInUrl}\n\nBack2You – CSPC Lost & Found`;
-  const html = `<p>Hi ${safeName},</p><p>${escapeHtml(context)}</p><p><strong>${escapeHtml(counterpart.name || 'They')}</strong> can be reached at:</p><ul>${contactLines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}</ul><p><a href="${escapeHtml(signInUrl)}">Sign in to Back2You</a></p><p>Back2You – CSPC Lost &amp; Found</p>`;
-  await transport.sendMail({ from: process.env.SMTP_FROM, to: user.email, subject, text, html });
-}
-
 async function sendMatchFinderNotificationEmail(user, item, notification) {
   const transport = createTransport();
   const name = user.fullName || 'there';
@@ -289,7 +271,6 @@ module.exports = {
   sendClaimRequestEmail,
   sendFinderNotificationEmail,
   sendMatchFinderNotificationEmail,
-  sendContactShareEmail,
   sendBroadcastEmail,
   sendMeetupRequestEmail
 };
