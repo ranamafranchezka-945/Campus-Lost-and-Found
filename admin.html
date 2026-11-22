@@ -33,6 +33,7 @@
     <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></symbol>
     <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
     <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 4H5a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h4"/><path d="m16 8 4 4-4 4M20 12H9"/></symbol>
+    <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h.01M10 9h.01M13 9h.01M16 9h.01M7 12h.01M10 12h.01M13 12h.01M16 12h.01M8 15h8"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M5 20h14"/></symbol>
     <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
     <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
@@ -59,18 +60,18 @@
 
       <nav class="side-nav">
         <p class="side-group">Main</p>
-        <button type="button" class="side-link active" data-view="dashboard"><svg class="ico"><use href="#i-dashboard"/></svg><span>Dashboard</span><kbd class="side-shortcut" aria-hidden="true">Alt + 1</kbd></button>
+        <button type="button" class="side-link active" data-view="dashboard"><svg class="ico"><use href="#i-dashboard"/></svg><span>Dashboard</span></button>
 
         <p class="side-group">Items</p>
-        <button type="button" class="side-link" data-view="items" data-admin-filter="lost"><svg class="ico"><use href="#i-search"/></svg><span>Lost items</span><span class="side-count" id="countLost" hidden></span><kbd class="side-shortcut" aria-hidden="true">Alt + 2</kbd></button>
-        <button type="button" class="side-link" data-view="items" data-admin-filter="found"><svg class="ico"><use href="#i-found"/></svg><span>Found items</span><span class="side-count" id="countFound" hidden></span><kbd class="side-shortcut" aria-hidden="true">Alt + 3</kbd></button>
-        <button type="button" class="side-link" data-view="items" data-admin-filter=""><svg class="ico"><use href="#i-list"/></svg><span>All items</span><kbd class="side-shortcut" aria-hidden="true">Alt + 4</kbd></button>
-        <button type="button" class="side-link" data-view="claims"><svg class="ico"><use href="#i-shield"/></svg><span>Claim verification</span><span class="side-count side-count--alert" id="countClaims" hidden></span><kbd class="side-shortcut" aria-hidden="true">Alt + 5</kbd></button>
-        <button type="button" class="side-link" data-view="broadcast"><svg class="ico"><use href="#i-megaphone"/></svg><span>Broadcast message</span><kbd class="side-shortcut" aria-hidden="true">Alt + 6</kbd></button>
+        <button type="button" class="side-link" data-view="items" data-admin-filter="lost"><svg class="ico"><use href="#i-search"/></svg><span>Lost items</span><span class="side-count" id="countLost" hidden></span></button>
+        <button type="button" class="side-link" data-view="items" data-admin-filter="found"><svg class="ico"><use href="#i-found"/></svg><span>Found items</span><span class="side-count" id="countFound" hidden></span></button>
+        <button type="button" class="side-link" data-view="items" data-admin-filter=""><svg class="ico"><use href="#i-list"/></svg><span>All items</span></button>
+        <button type="button" class="side-link" data-view="claims"><svg class="ico"><use href="#i-shield"/></svg><span>Claim verification</span><span class="side-count side-count--alert" id="countClaims" hidden></span></button>
+        <button type="button" class="side-link" data-view="broadcast"><svg class="ico"><use href="#i-megaphone"/></svg><span>Broadcast message</span></button>
 
         <p class="side-group">Administrator</p>
-        <button type="button" class="side-link" data-view="users"><svg class="ico"><use href="#i-users"/></svg><span>User management</span><kbd class="side-shortcut" aria-hidden="true">Alt + 7</kbd></button>
-        <button type="button" class="side-link" data-view="belongings"><svg class="ico"><use href="#i-lock"/></svg><span>Students' belongings</span><kbd class="side-shortcut" aria-hidden="true">Alt + 8</kbd></button>
+        <button type="button" class="side-link" data-view="users"><svg class="ico"><use href="#i-users"/></svg><span>User management</span></button>
+        <button type="button" class="side-link" data-view="belongings"><svg class="ico"><use href="#i-lock"/></svg><span>Students' belongings</span></button>
       </nav>
     </aside>
     <div class="side-backdrop" id="sideBackdrop"></div>
@@ -89,7 +90,9 @@
             <svg class="ico theme-sun" aria-hidden="true"><use href="#i-sun"/></svg>
             <svg class="ico theme-moon" aria-hidden="true"><use href="#i-moon"/></svg>
           </button>
-          <button type="button" class="topbar-btn keyboard-shortcuts-trigger" id="keyboardShortcutsButton" aria-label="Keyboard shortcuts" title="Keyboard shortcuts" aria-haspopup="dialog" aria-controls="keyboardShortcutsModal">?</button>
+          <button type="button" class="topbar-btn" id="keyboardShortcutsButton" aria-label="Keyboard shortcuts" title="Keyboard shortcuts" aria-haspopup="dialog" aria-controls="keyboardShortcutsModal">
+            <svg class="ico" aria-hidden="true"><use href="#i-keyboard"/></svg>
+          </button>
           <button type="button" class="topbar-btn topbar-broadcast" data-action="showAdminView" data-args='["broadcast"]' aria-label="Broadcast a message to students" title="Broadcast a message"><svg class="ico"><use href="#i-message"/></svg></button>
           <div class="pop-wrap">
             <button type="button" class="topbar-btn topbar-bell" id="adminBell" aria-haspopup="true" aria-expanded="false" aria-controls="notifPanel" aria-label="Notifications" title="Notifications">
