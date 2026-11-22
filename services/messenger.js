@@ -26,7 +26,11 @@ async function sendMessengerText(psid, text) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data?.error?.message || `Messenger API request failed with status ${response.status}`);
+    const apiError = data?.error;
+    const detail = apiError
+      ? `${apiError.message} (type=${apiError.type || 'unknown'}, code=${apiError.code ?? 'n/a'}, subcode=${apiError.error_subcode ?? 'n/a'}, fbtrace_id=${apiError.fbtrace_id || 'n/a'})`
+      : `Messenger API request failed with status ${response.status}`;
+    throw new Error(detail);
   }
   return data;
 }
