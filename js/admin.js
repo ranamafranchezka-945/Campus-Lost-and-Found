@@ -1861,19 +1861,39 @@ let allowedEmails = [];
 
       function selectNextPlaceholder(field) {
         const pattern = /\[[^\]]+\]/g;
-        const start = field.selectionEnd;
-        pattern.lastIndex = start;
-        let match = pattern.exec(field.value);
-        let target = match ? { field, match } : null;
-        if (!target && field === subject) {
-          match = /\[[^\]]+\]/.exec(message.value);
-          if (match) target = { field: message, match };
+        function findNext(targetField, start) {
+          pattern.lastIndex = start;
+          const match = pattern.exec(targetField.value);
+          return match ? { field: targetField, match } : null;
         }
-        return target;
+
+        const target = findNext(field, field.selectionEnd);
+        if (target) return target;
+        if (field === subject) {
+          return findNext(message, 0) || findNext(subject, 0);
+        }
+        return findNext(subject, 0) || findNext(message, 0);
+      }
+
+      function selectPlaceholderAtClick(event) {
+        const field = event.currentTarget;
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const pattern = /\[[^\]]+\]/g;
+        let match;
+        while ((match = pattern.exec(field.value)) !== null) {
+          const tokenEnd = match.index + match[0].length;
+          const caretInside = start === end && start >= match.index && start < tokenEnd;
+          const selectionInside = start < end && start >= match.index && end <= tokenEnd;
+          if (caretInside || selectionInside) {
+            field.setSelectionRange(match.index, tokenEnd);
+            return;
+          }
+        }
       }
 
       function handlePlaceholderTab(event) {
-        if (event.key !== 'Tab' || event.shiftKey || menu.hidden || !activeTemplate) return;
+        if (event.key !== 'Tab' || event.shiftKey) return;
         const target = selectNextPlaceholder(event.currentTarget);
         if (!target) return;
         event.preventDefault();
@@ -1981,6 +2001,7 @@ let allowedEmails = [];
           syncEditedPlaceholder(field);
           updateMenu(field);
         });
+        field.addEventListener('click', selectPlaceholderAtClick);
         field.addEventListener('keydown', handlePlaceholderTab);
         field.addEventListener('keydown', handleMenuKeydown);
       });
@@ -2075,8 +2096,24 @@ let allowedEmails = [];
     }
 
     async function sendBroadcast() {
-      const subject = document.getElementById('broadcastSubject').value.trim();
-      const message = document.getElementById('broadcastMessage').value.trim();
+      const subjectField = document.getElementById('broadcastSubject');
+      const messageField = document.getElementById('broadcastMessage');
+      const subject = subjectField.value.trim();
+      const message = messageField.value.trim();
+      const subjectPlaceholder = /\[[^\]]+\]/.exec(subjectField.value);
+      const messagePlaceholder = /\[[^\]]+\]/.exec(messageField.value);
+      const remainingPlaceholder = subjectPlaceholder
+        ? { field: subjectField, match: subjectPlaceholder }
+        : messagePlaceholder ? { field: messageField, match: messagePlaceholder } : null;
+      if (remainingPlaceholder) {
+        remainingPlaceholder.field.focus();
+        remainingPlaceholder.field.setSelectionRange(
+          remainingPlaceholder.match.index,
+          remainingPlaceholder.match.index + remainingPlaceholder.match[0].length
+        );
+        showToast('Fill in all bracketed placeholders before sending.', 'error');
+        return;
+      }
       if (subject.length < 3 || message.length < 5) return showToast('Enter a subject and message first.', 'error');
       if (!await openActionConfirm('Confirm Broadcast', 'Send this announcement to all registered students?')) return;
       const button = document.getElementById('sendBroadcastBtn');
