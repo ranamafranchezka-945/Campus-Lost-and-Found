@@ -428,7 +428,8 @@
 :root .nav-logo-full,
 :root .nav-logo-short,
 :root .hero-name,
-:root .footer-name {
+:root .footer-name,
+:root .side-brand-text strong {
   font-family: var(--font-brand);
   font-weight: 900;
   letter-spacing: -0.045em;
@@ -437,21 +438,6 @@
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-:root .side-brand-text strong {
-  color: #22d3ee;
-  background-color: transparent;
-  background-image: linear-gradient(90deg, #f8fafc, #22d3ee);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-:root[data-theme='light'] .side-brand-text strong {
-  color: #2563eb;
-  background-color: transparent;
-  background-image: linear-gradient(90deg, #0f172a, #2563eb);
 }
 
 :root .hero-section .hero-name {
