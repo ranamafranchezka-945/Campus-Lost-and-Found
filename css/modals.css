@@ -482,36 +482,181 @@
   resize: none;
 }
 
-.finder-item-label {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-}
-.finder-item-title {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--blue-main);
-}
-.finder-item-ref {
-  font-family: monospace;
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-}
-.modal-green-badge {
-  font-size: 0.8125rem;
-  font-weight: 800;
-  text-transform: uppercase;
-}
-.modal-item-preview { padding: 0.85rem; margin-bottom: 1rem; border-radius: 10px; }
-.modal-item-preview .preview-instructions { margin-top: 0.4rem; font-size: 0.8125rem; }
 .modal-green-notice {
   margin-bottom: 1.1rem;
   padding: 0.7rem;
   border-radius: 8px;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
   font-size: 0.8125rem;
   line-height: 1.45;
 }
+
+/* ── Connect & Notify screen: finder messages the owner and can opt to share
+   contact details, styled as a two-person exchange rather than a plain form ──── */
+.connect-card {
+  position: relative;
+  padding-top: 2.5rem;
+  text-align: center;
+}
+.connect-card-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  padding: 0.1rem 0.4rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.connect-card-close:hover,
+.connect-card-close:focus-visible { color: var(--text-main); }
+
+.connect-people {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.65rem;
+}
+.connect-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  background: var(--surface-subtle);
+  border: 1.5px solid var(--surface-subtle-border);
+}
+.connect-avatar--you { border-color: rgba(59, 130, 246, 0.45); background: rgba(59, 130, 246, 0.1); }
+.connect-avatar--owner { border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.1); }
+.connect-people-link { font-size: 1.1rem; color: var(--text-muted); }
+
+.connect-eyebrow {
+  margin: 0 0 0.15rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--blue-main);
+}
+.connect-title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+.connect-ref {
+  margin: 0.1rem 0 0;
+  font-family: monospace;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.connect-instructions {
+  margin: 0.4rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+.connect-instructions:empty { display: none; }
+
+.connect-form { margin-top: 1.25rem; text-align: left; }
+
+.connect-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border: 1.5px solid var(--surface-subtle-border);
+  border-radius: 12px;
+  background: var(--surface-subtle);
+}
+.connect-field-icon { flex-shrink: 0; font-size: 1.1rem; line-height: 1.6; }
+.connect-field-body { flex: 1; min-width: 0; }
+.connect-field-body label {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.connect-field-body input,
+.connect-field-body textarea {
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--field-bg);
+  color: var(--text-main);
+  font-size: 0.9rem;
+}
+.connect-field-body textarea { resize: none; }
+.connect-field--message { border-color: rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.06); }
+.connect-field--contact { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.08); }
+
+.connect-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-bottom: 0.9rem;
+  padding: 0.65rem 0.8rem;
+  border: 1.5px dashed var(--surface-subtle-border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+.connect-toggle input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.connect-toggle-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  border: 1px solid var(--surface-subtle-border);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.connect-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+.connect-toggle input:checked + .connect-toggle-switch {
+  background: var(--tone-success-strong);
+  border-color: var(--tone-success-strong);
+}
+.connect-toggle input:checked + .connect-toggle-switch .connect-toggle-knob {
+  transform: translateX(1.05rem);
+}
+.connect-toggle input:focus-visible + .connect-toggle-switch {
+  outline: 2px solid var(--blue-main);
+  outline-offset: 2px;
+}
+.connect-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.8125rem;
+  color: var(--text-main);
+}
+.connect-toggle-text small { color: var(--text-muted); font-weight: 400; }
 
 .notifications-list {
   display: flex;

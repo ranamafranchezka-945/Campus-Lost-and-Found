@@ -855,55 +855,62 @@
     </div>
   </div>
 
-  <!-- ANONYMOUS FINDER RECOVERY SCREEN MODAL -->
+  <!-- CONNECT & NOTIFY SCREEN MODAL: message the owner, and optionally exchange direct contact -->
   <div class="slip-overlay" id="anonymousFinderModal" data-close="closeAnonymousFinderModal">
-    <div class="modal-card modal-card--success">
-      <div class="modal-header modal-header--center modal-header--success">
-        <div class="modal-header-group">
-          <img src="cspc-logo.png" alt="CSPC Logo" class="modal-header-logo" />
-          <div>
-            <span class="modal-green-badge">Anonymous Recovery Portal</span>
-            <h3 class="modal-title modal-heading modal-heading--xs">Found Item Notification</h3>
-          </div>
-        </div>
-        <button type="button" class="modal-close" data-action="closeAnonymousFinderModal" aria-label="Close">&times;</button>
-      </div>
+    <div class="modal-card connect-card">
+      <button type="button" class="connect-card-close" data-action="closeAnonymousFinderModal" aria-label="Close">&times;</button>
 
-      <!-- Item Card for Finder -->
-      <div class="modal-item-preview">
-        <div class="finder-item-label">You Found:</div>
-        <div class="finder-item-title" id="finderScreenItemTitle">MacBook Air M2</div>
-        <div class="finder-item-ref" id="finderScreenRefCode">CSPC-REG-QR-001</div>
-        <div class="preview-instructions" id="finderScreenInstructions">Please leave with the library front desk.</div>
+      <div class="connect-people" aria-hidden="true">
+        <span class="connect-avatar connect-avatar--you">🙋</span>
+        <span class="connect-people-link">💬</span>
+        <span class="connect-avatar connect-avatar--owner">🎒</span>
       </div>
+      <p class="connect-eyebrow">You Found — Connect with the Owner</p>
+      <h3 class="connect-title" id="finderScreenItemTitle">MacBook Air M2</h3>
+      <p class="connect-ref" id="finderScreenRefCode">CSPC-REG-QR-001</p>
+      <p class="connect-instructions" id="finderScreenInstructions"></p>
 
-      <!-- Privacy Notice -->
-      <div class="modal-green-notice">
-        🛡️ <strong>Your choice:</strong> Stay anonymous, or add your contact number/email below so the owner can reach you directly to arrange pickup. Either way, your message is routed straight to their CSPC account dashboard.
-      </div>
-
-      <form id="anonymousFinderForm" data-submit="handleAnonymousFinderSubmit">
+      <form id="anonymousFinderForm" class="connect-form" data-submit="handleAnonymousFinderSubmit">
         <input type="hidden" id="finderRefCodeInput" />
         <input type="hidden" id="finderMatchTokenInput" />
         <input type="hidden" id="finderSubmissionKeyInput" />
-        <div class="input-field modal-field">
-          <label for="finderLocationInput">Where is the item right now? <span class="required">*</span></label>
-          <input type="text" id="finderLocationInput" placeholder="e.g. Left with Ms. Santos at Library 2nd floor desk" required />
+
+        <div class="connect-field">
+          <span class="connect-field-icon" aria-hidden="true">📍</span>
+          <div class="connect-field-body">
+            <label for="finderLocationInput">Where is it right now? <span class="required">*</span></label>
+            <input type="text" id="finderLocationInput" placeholder="e.g. Left with Ms. Santos at Library 2nd floor desk" required />
+          </div>
         </div>
 
-        <div class="input-field modal-field">
-          <label for="finderMessageInput">Message for the Owner <span class="required">*</span></label>
-          <textarea id="finderMessageInput" rows="3" required placeholder="e.g. Hi! Found your item near table 5. Handed it over to campus security desk."></textarea>
+        <div class="connect-field connect-field--message">
+          <span class="connect-field-icon" aria-hidden="true">💬</span>
+          <div class="connect-field-body">
+            <label for="finderMessageInput">Your message to the owner <span class="required">*</span></label>
+            <textarea id="finderMessageInput" rows="3" required placeholder="Hi! Found your item near table 5. Handed it over to campus security desk."></textarea>
+          </div>
         </div>
 
-        <div class="input-field modal-field modal-field--last">
-          <label for="finderContactInput">Your Contact Number or Email (Optional - share so the owner can reach you directly)</label>
-          <input type="text" id="finderContactInput" placeholder="e.g. 09XX-XXX-XXXX or juan@cspc.edu.ph" />
+        <label class="connect-toggle" for="finderShareContactToggle">
+          <input type="checkbox" id="finderShareContactToggle" data-change="toggleFinderContactField" data-args='["$checked"]' />
+          <span class="connect-toggle-switch"><span class="connect-toggle-knob"></span></span>
+          <span class="connect-toggle-text">
+            <strong>Let the owner contact me directly</strong>
+            <small>Off by default — your message still reaches their dashboard either way.</small>
+          </span>
+        </label>
+
+        <div class="connect-field connect-field--contact" id="finderContactField" hidden>
+          <span class="connect-field-icon" aria-hidden="true">☎️</span>
+          <div class="connect-field-body">
+            <label for="finderContactInput">Your phone number or email</label>
+            <input type="text" id="finderContactInput" placeholder="e.g. 09XX-XXX-XXXX or juan@cspc.edu.ph" />
+          </div>
         </div>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeAnonymousFinderModal">Cancel</button>
-          <button type="submit" class="btn btn-success" id="finderSendBtn">🚀 Send Alert to Owner</button>
+          <button type="submit" class="btn btn-success" id="finderSendBtn">🚀 Send to Owner</button>
         </div>
       </form>
     </div>

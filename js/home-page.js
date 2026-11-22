@@ -1242,12 +1242,21 @@ function showAnonymousFinderForItem(item, matchToken = '') {
   document.getElementById('finderMessageInput').value = '';
   document.getElementById('finderLocationInput').value = '';
   document.getElementById('finderContactInput').value = '';
+  document.getElementById('finderShareContactToggle').checked = false;
+  document.getElementById('finderContactField').hidden = true;
   const form = document.getElementById('anonymousFinderForm');
   form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(field => { field.disabled = false; });
   const sendButton = document.getElementById('finderSendBtn');
   sendButton.disabled = false;
-  sendButton.textContent = '🚀 Send Alert to Owner';
+  sendButton.textContent = '🚀 Send to Owner';
   document.getElementById('anonymousFinderModal').classList.add('open');
+}
+
+// Reveals the contact field only once the finder opts in to sharing it.
+function toggleFinderContactField(checked) {
+  const field = document.getElementById('finderContactField');
+  field.hidden = !checked;
+  if (!checked) document.getElementById('finderContactInput').value = '';
 }
 
 async function openAnonymousFinderModal(refCode) {
@@ -1307,12 +1316,12 @@ async function handleAnonymousFinderSubmit(e) {
         .forEach(field => { field.disabled = true; });
     } else {
       sendButton.disabled = false;
-      sendButton.textContent = '🚀 Send Alert to Owner';
+      sendButton.textContent = '🚀 Send to Owner';
       showToast(data.message || 'Failed to send notification.', 'error');
     }
   } catch (err) {
     sendButton.disabled = false;
-    sendButton.textContent = '🚀 Send Alert to Owner';
+    sendButton.textContent = '🚀 Send to Owner';
     showToast('Server error. Please try again.', 'error');
   }
 }
