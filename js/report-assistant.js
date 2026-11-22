@@ -218,14 +218,13 @@
     }
 
     if (changed.includes('location') && state.draft.location) {
-      const select = el('itemLocation');
-      if (select) {
-        const option = [...select.options].find(entry => entry.value === state.draft.location);
+      const input = el('itemLocation');
+      const datalist = el('itemLocationOptions');
+      if (input && datalist) {
+        const option = [...datalist.options].find(entry => entry.value === state.draft.location);
         if (option) {
-          select.value = option.value;
-          // The form renders this select through a styled button; keep the two in sync.
-          select.dispatchEvent(new Event('change', { bubbles: true }));
-          flash(select);
+          input.value = option.value;
+          flash(input);
           applied.push('location');
         }
       }

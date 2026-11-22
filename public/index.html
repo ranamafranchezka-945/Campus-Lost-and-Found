@@ -275,69 +275,60 @@
         <div class="form-row">
           <div class="input-field">
             <label for="itemLocation">CSPC Office / Campus Location *</label>
-            <select id="itemLocation" required>
-              <option value="">Select CSPC Office / Location...</option>
-              <optgroup label="Academic Colleges & Schools">
-                <option value="College of Computer Studies (CCS)">College of Computer Studies (CCS)</option>
-                <option value="College of Engineering and Architecture (CEA)">College of Engineering and Architecture (CEA)</option>
-                <option value="College of Health Sciences (CHS)">College of Health Sciences (CHS)</option>
-                <option value="College of Tourism, Hospitality and Business Management (CTHBM)">College of Tourism, Hospitality and Business Management (CTHBM)</option>
-                <option value="College of Technological and Developmental Education (CTDE)">College of Technological and Developmental Education (CTDE)</option>
-                <option value="College of Arts and Sciences (CAS)">College of Arts and Sciences (CAS)</option>
-                <option value="Graduate School">Graduate School</option>
-                <option value="Buhi Campus">Buhi Campus</option>
-              </optgroup>
-              <optgroup label="Student & Academic Support Offices">
-                <option value="Student Affairs and Services (SAS)">Student Affairs and Services (SAS)</option>
-                <option value="Learning Resources and Development (Library)">Learning Resources and Development (Library)</option>
-                <option value="Student Registration and Records (Registrar)">Student Registration and Records (Registrar)</option>
-                <option value="Student Testing and Admission">Student Testing and Admission</option>
-                <option value="Guidance and Counseling Unit">Guidance and Counseling Unit</option>
-                <option value="Sports Development Unit (Gymnasium)">Sports Development Unit (Gymnasium)</option>
-                <option value="Cultural Affairs Unit">Cultural Affairs Unit</option>
-                <option value="National Service Training Program (NSTP)">National Service Training Program (NSTP)</option>
-                <option value="Academic Center for Continuing Enrichment for Students">Academic Center for Continuing Enrichment for Students</option>
-                <option value="Training and Assessment Center">Training and Assessment Center</option>
-              </optgroup>
-              <optgroup label="Administration & Finance">
-                <option value="Office of the President">Office of the President</option>
-                <option value="Vice President for Administration and Finance">Vice President for Administration and Finance</option>
-                <option value="Vice President for Academic Affairs">Vice President for Academic Affairs</option>
-                <option value="VP for Research, Innovation and Collaboration">VP for Research, Innovation and Collaboration</option>
-                <option value="Health Services Unit (Campus Clinic)">Health Services Unit (Campus Clinic)</option>
-                <option value="General Services Unit (GSU / Security Desk)">General Services Unit (GSU / Security Desk)</option>
-                <option value="Information and Communications Technology Unit (ICTU)">Information and Communications Technology Unit (ICTU)</option>
-                <option value="Cash Unit">Cash Unit</option>
-                <option value="Accounting Unit">Accounting Unit</option>
-                <option value="Budget Unit">Budget Unit</option>
-                <option value="Supply and Property Management Unit">Supply and Property Management Unit</option>
-                <option value="Procurement Unit / Bids and Awards Committee">Procurement Unit / Bids and Awards Committee</option>
-                <option value="Human Resource Management and Development Unit">Human Resource Management and Development Unit</option>
-                <option value="Records and Freedom of Information Unit">Records and Freedom of Information Unit</option>
-                <option value="Project Management Unit">Project Management Unit</option>
-                <option value="Institutional Planning and Development Unit">Institutional Planning and Development Unit</option>
-                <option value="Internal Audit Unit">Internal Audit Unit</option>
-                <option value="Legal Affairs Unit">Legal Affairs Unit</option>
-                <option value="Center for International Relations and Linkages">Center for International Relations and Linkages</option>
-              </optgroup>
-              <optgroup label="Research, Innovation & Centers (RIC)">
-                <option value="Research Development Services Office">Research Development Services Office</option>
-                <option value="Extension and Community Services Office">Extension and Community Services Office</option>
-                <option value="Production and Auxiliary Services (Canteen / Commercial)">Production and Auxiliary Services (Canteen / Commercial)</option>
-                <option value="Technology Transfer Office">Technology Transfer Office</option>
-                <option value="AI Research Center for Community Development">AI Research Center for Community Development</option>
-                <option value="Center for Futures Energy and Sustainable Technology">Center for Futures Energy and Sustainable Technology</option>
-                <option value="Center for Rinconada Culture and the Arts">Center for Rinconada Culture and the Arts</option>
-                <option value="Rinconada Center for Environmental Sustainability">Rinconada Center for Environmental Sustainability</option>
-                <option value="Center for Human Rights Education">Center for Human Rights Education</option>
-                <option value="Center for Gender and Development">Center for Gender and Development</option>
-              </optgroup>
-              <optgroup label="Other Campus Grounds">
-                <option value="Campus Main Grounds / Quadrangle">Campus Main Grounds / Quadrangle</option>
-                <option value="Campus Main Gate / Entrance">Campus Main Gate / Entrance</option>
-                <option value="Campus Parking Area">Campus Parking Area</option>
-              </optgroup>
-            </select>
+            <input type="text" id="itemLocation" list="itemLocationOptions" required
+                   placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+            <datalist id="itemLocationOptions">
+              <option value="College of Computer Studies (CCS)"></option>
+              <option value="College of Engineering and Architecture (CEA)"></option>
+              <option value="College of Health Sciences (CHS)"></option>
+              <option value="College of Tourism, Hospitality and Business Management (CTHBM)"></option>
+              <option value="College of Technological and Developmental Education (CTDE)"></option>
+              <option value="College of Arts and Sciences (CAS)"></option>
+              <option value="Graduate School"></option>
+              <option value="Buhi Campus"></option>
+              <option value="Student Affairs and Services (SAS)"></option>
+              <option value="Learning Resources and Development (Library)"></option>
+              <option value="Student Registration and Records (Registrar)"></option>
+              <option value="Student Testing and Admission"></option>
+              <option value="Guidance and Counseling Unit"></option>
+              <option value="Sports Development Unit (Gymnasium)"></option>
+              <option value="Cultural Affairs Unit"></option>
+              <option value="National Service Training Program (NSTP)"></option>
+              <option value="Academic Center for Continuing Enrichment for Students"></option>
+              <option value="Training and Assessment Center"></option>
+              <option value="Office of the President"></option>
+              <option value="Vice President for Administration and Finance"></option>
+              <option value="Vice President for Academic Affairs"></option>
+              <option value="VP for Research, Innovation and Collaboration"></option>
+              <option value="Health Services Unit (Campus Clinic)"></option>
+              <option value="General Services Unit (GSU / Security Desk)"></option>
+              <option value="Information and Communications Technology Unit (ICTU)"></option>
+              <option value="Cash Unit"></option>
+              <option value="Accounting Unit"></option>
+              <option value="Budget Unit"></option>
+              <option value="Supply and Property Management Unit"></option>
+              <option value="Procurement Unit / Bids and Awards Committee"></option>
+              <option value="Human Resource Management and Development Unit"></option>
+              <option value="Records and Freedom of Information Unit"></option>
+              <option value="Project Management Unit"></option>
+              <option value="Institutional Planning and Development Unit"></option>
+              <option value="Internal Audit Unit"></option>
+              <option value="Legal Affairs Unit"></option>
+              <option value="Center for International Relations and Linkages"></option>
+              <option value="Research Development Services Office"></option>
+              <option value="Extension and Community Services Office"></option>
+              <option value="Production and Auxiliary Services (Canteen / Commercial)"></option>
+              <option value="Technology Transfer Office"></option>
+              <option value="AI Research Center for Community Development"></option>
+              <option value="Center for Futures Energy and Sustainable Technology"></option>
+              <option value="Center for Rinconada Culture and the Arts"></option>
+              <option value="Rinconada Center for Environmental Sustainability"></option>
+              <option value="Center for Human Rights Education"></option>
+              <option value="Center for Gender and Development"></option>
+              <option value="Campus Main Grounds / Quadrangle"></option>
+              <option value="Campus Main Gate / Entrance"></option>
+              <option value="Campus Parking Area"></option>
+            </datalist>
           </div>
         </div>
 
