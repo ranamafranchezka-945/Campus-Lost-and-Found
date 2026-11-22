@@ -31,7 +31,7 @@ function formatGraphError(data, status) {
 // Read/written directly (not through the per-request transaction context used elsewhere in
 // this app): Messenger sends fire after a request's own transaction has already committed
 // and closed, so by the time the token is needed there is no transaction left to read from.
-async function getStoredConfig() {
+async function fetchStoredConfig() {
   if (postgresStore.isConfigured()) return postgresStore.getMessengerConfigDirect();
   try {
     return JSON.parse(fs.readFileSync(MESSENGER_CONFIG_FILE, 'utf8'));
@@ -41,19 +41,40 @@ async function getStoredConfig() {
   }
 }
 
+// isConfigured()/getActiveToken() are called on routes that are themselves already inside a
+// per-request database transaction (see postgresStore's requestMiddleware). Hitting Supabase
+// again on every single call stacks another round-trip - and on a connection blip, another
+// retrying one - onto a request that's already waiting on one, risking the whole request
+// outliving its transaction. A short cache keeps the common case fully in memory.
+const CONFIG_CACHE_TTL_MS = 30_000;
+let cachedConfig = { value: null, expiresAt: 0 };
+
+async function getStoredConfig() {
+  if (cachedConfig.expiresAt > Date.now()) return cachedConfig.value;
+  const value = await fetchStoredConfig();
+  cachedConfig = { value, expiresAt: Date.now() + CONFIG_CACHE_TTL_MS };
+  return value;
+}
+
 async function saveStoredConfig(config) {
-  if (postgresStore.isConfigured()) return postgresStore.saveMessengerConfigDirect(config);
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-  fs.writeFileSync(MESSENGER_CONFIG_FILE, JSON.stringify(config, null, 2), { encoding: 'utf8', mode: 0o600 });
+  if (postgresStore.isConfigured()) await postgresStore.saveMessengerConfigDirect(config);
+  else {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    fs.writeFileSync(MESSENGER_CONFIG_FILE, JSON.stringify(config, null, 2), { encoding: 'utf8', mode: 0o600 });
+  }
+  cachedConfig = { value: config, expiresAt: Date.now() + CONFIG_CACHE_TTL_MS };
 }
 
 async function clearStoredConfig() {
-  if (postgresStore.isConfigured()) return postgresStore.deleteMessengerConfigDirect();
-  try {
-    fs.unlinkSync(MESSENGER_CONFIG_FILE);
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
+  if (postgresStore.isConfigured()) await postgresStore.deleteMessengerConfigDirect();
+  else {
+    try {
+      fs.unlinkSync(MESSENGER_CONFIG_FILE);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
   }
+  cachedConfig = { value: null, expiresAt: Date.now() + CONFIG_CACHE_TTL_MS };
 }
 
 // The Page token actually in effect: one connected through the admin OAuth flow, falling
