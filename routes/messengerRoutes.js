@@ -10,7 +10,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const path = require('path');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireRole } = require('../middleware/auth');
 const messenger = require('../services/messenger');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
@@ -135,6 +135,14 @@ router.post('/unlink', requireAuth, (req, res) => {
     saveUsers(users);
   }
   res.json({ success: true });
+});
+
+// GET /api/messenger/diagnostics - Admin-only: checks the Page token and webhook
+// subscription directly against Meta, so a "no reply" report can be diagnosed without
+// digging through server logs.
+router.get('/diagnostics', requireRole('admin'), async (req, res) => {
+  const result = await messenger.diagnose();
+  res.json({ success: true, ...result });
 });
 
 module.exports = router;
