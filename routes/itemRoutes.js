@@ -15,6 +15,7 @@ const {
   sendClaimRequestEmail,
   sendFinderNotificationEmail,
   sendMatchFinderNotificationEmail,
+  sendContactShareEmail,
   sendBroadcastEmail,
   sendMeetupRequestEmail
 } = require('../services/email');
@@ -551,13 +552,16 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
   const claims = getClaims();
   const claim = claims.find(entry => entry.id === req.params.claimId);
   if (!claim) return res.status(404).json({ success: false, message: 'Claim request not found.' });
-  if (claim.status !== 'pending') {
+  // Claims normally self-confirm with no admin step (see POST /:id/claim-requests). This stays
+  // open as an override so an admin can still reject a fraudulent self-confirmed claim and
+  // restore the item, but a claim that already reached its final state can't be replayed.
+  if (claim.status === 'rejected' || claim.status === status) {
     return res.status(409).json({ success: false, message: 'This claim request has already been reviewed.' });
   }
 
   const items = getItems();
   const item = items.find(entry => String(entry.id) === String(claim.itemId));
-  if (!item || item.claimed) {
+  if (!item || (item.claimed && status === 'approved')) {
     return res.status(409).json({ success: false, message: 'The item is no longer available.' });
   }
 
@@ -1174,6 +1178,17 @@ router.get('/my-notifications', requireAuth, (req, res) => {
       refCode: claim.itemRefCode
     });
   });
+  claims.filter(claim => claim.finderNotification && userItems.some(i => String(i.id) === String(claim.itemId)))
+    .forEach(claim => {
+      notifications.push({
+        ...claim.finderNotification,
+        notificationType: 'claim',
+        claimId: claim.id,
+        itemId: claim.itemId,
+        itemTitle: claim.itemTitle,
+        refCode: claim.itemRefCode
+      });
+    });
 
   // Handover meetup (location sharing) for approved claims this user is part of.
   const users = readJsonArray(USERS_FILE);
@@ -1479,16 +1494,11 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     return res.status(403).json({ success: false, message: 'Only the original reporter of the matching lost item can submit this claim request.' });
   }
 
+  // The reporter of the matching lost item already has the right to confirm the claim
+  // themselves (checked above) - no admin review gate. Confirming immediately unlocks
+  // the handover meetup (location sharing) and exchanges direct contact details.
   const claims = getClaims();
-  const duplicate = claims.some(claim =>
-    String(claim.itemId) === String(item.id) &&
-    claim.claimantId === req.session.user.id &&
-    claim.status === 'pending'
-  );
-  if (duplicate) {
-    return res.status(409).json({ success: false, message: 'You already have a pending claim for this item.' });
-  }
-
+  const now = new Date().toISOString();
   const claim = {
     id: `claim-${crypto.randomUUID()}`,
     itemId: item.id,
@@ -1505,30 +1515,83 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     claimantCourseYear: courseYear,
     claimantDepartment: req.session.user.department || '',
     proof,
-    status: 'pending',
-    createdAt: new Date().toISOString()
+    status: 'approved',
+    selfConfirmed: true,
+    createdAt: now,
+    reviewedAt: now,
+    reviewedBy: req.session.user.id,
+    pickupInstructions: '',
+    handover: {
+      acknowledged: true,
+      acknowledgedAt: now,
+      acknowledgedBy: req.session.user.id,
+      acknowledgedByName: req.session.user.fullName,
+      signature: `${req.session.user.fullName || 'Claimant'} (self-confirmed, no admin review)`
+    }
   };
+
+  const users = readJsonArray(USERS_FILE);
+  const finder = users.find(user => String(user.id) === String(item.reportedBy));
+  const claimant = { fullName: claim.claimantName, email: claim.claimantEmail };
+
+  claim.notification = {
+    id: `claim-notif-${crypto.randomUUID()}`,
+    timestamp: now,
+    read: false,
+    message: `Your claim for ${item.title} is confirmed.${finder?.email ? ` Contact the finder directly at ${finder.email}.` : ''}`
+  };
+  claim.finderNotification = {
+    id: `claim-notif-${crypto.randomUUID()}`,
+    timestamp: now,
+    read: false,
+    message: `${claim.claimantName} confirmed they own "${item.title}" and would like to arrange pickup. Contact them at ${claim.claimantContact || claim.claimantEmail}.`
+  };
+
   claims.unshift(claim);
+
+  item.claimed = true;
+  item.status = 'claimed';
+  item.claimedAt = now;
+  item.claimantProof = proof;
+  addItemActivity(item, req, 'Claim confirmed directly by owner', proof);
+  saveItems(items);
   saveClaims(claims);
   await postgresStore.commitRequest();
 
-  const users = readJsonArray(USERS_FILE);
-  const recipients = users.filter(user =>
-    user.email && (
-      user.role === 'admin' ||
-      String(user.id) === String(item.reportedBy) ||
-      String(user.id) === String(req.session.user.id)
-    )
-  );
-  for (const recipient of recipients) {
+  if (finder?.email) {
     try {
-      await sendClaimRequestEmail(recipient, item, claim, 'submitted');
+      await sendContactShareEmail(
+        finder, item,
+        { name: claim.claimantName, email: claim.claimantEmail, contact: claim.claimantContact },
+        `${claim.claimantName} confirmed they own "${item.title}" and would like to arrange pickup directly with you.`
+      );
     } catch (error) {
-      console.error('Claim request email could not be sent:', error.message);
+      console.error('Finder contact email could not be sent:', error.message);
+    }
+  }
+  try {
+    await sendContactShareEmail(
+      claimant, item,
+      { name: finder?.fullName, email: finder?.email },
+      `Your claim for "${item.title}" is confirmed. Reach out to the finder directly to arrange pickup.`
+    );
+  } catch (error) {
+    console.error('Claimant contact email could not be sent:', error.message);
+  }
+  for (const admin of users.filter(user => user.email && user.role === 'admin')) {
+    try {
+      await sendClaimRequestEmail(admin, item, claim, 'approved');
+    } catch (error) {
+      console.error('Claim confirmation admin email could not be sent:', error.message);
     }
   }
 
-  res.status(201).json({ success: true, message: 'Claim request submitted for moderator review.', claim: { id: claim.id, status: claim.status } });
+  res.status(201).json({
+    success: true,
+    message: 'Claim confirmed. Contact the finder directly to arrange pickup.',
+    claim: { id: claim.id, status: claim.status },
+    finderContact: finder ? { name: finder.fullName, email: finder.email } : null
+  });
 });
 
 // POST /api/items - Create item report

@@ -879,7 +879,7 @@
 
       <!-- Privacy Notice -->
       <div class="modal-green-notice">
-        🛡️ <strong>Student Privacy Protected:</strong> The owner's phone number, email, and social media are completely private. Your message below will be routed straight to their CSPC account dashboard.
+        🛡️ <strong>Your choice:</strong> Stay anonymous, or add your contact number/email below so the owner can reach you directly to arrange pickup. Either way, your message is routed straight to their CSPC account dashboard.
       </div>
 
       <form id="anonymousFinderForm" data-submit="handleAnonymousFinderSubmit">
@@ -897,8 +897,8 @@
         </div>
 
         <div class="input-field modal-field modal-field--last">
-          <label for="finderContactInput">Your Name or Department (Optional - leave blank for 100% anonymity)</label>
-          <input type="text" id="finderContactInput" placeholder="e.g. BSIT student / Security Post 2" />
+          <label for="finderContactInput">Your Contact Number or Email (Optional - share so the owner can reach you directly)</label>
+          <input type="text" id="finderContactInput" placeholder="e.g. 09XX-XXX-XXXX or juan@cspc.edu.ph" />
         </div>
 
         <div class="modal-actions">
@@ -985,13 +985,13 @@
     </div>
   </div>
 
-  <!-- CLAIM REQUEST MODAL: submit ownership proof for a matched found item -->
+  <!-- CLAIM REQUEST MODAL: confirm ownership and exchange contact details with the finder -->
   <div class="slip-overlay" id="claimRequestModal" data-close="closeClaimRequestModal">
     <div class="modal-card modal-card--sm">
       <div class="modal-header">
         <div>
-          <h2 class="modal-title modal-heading modal-heading--flush">Contact Finder</h2>
-          <p class="modal-subtitle">Submit proof this is your item. An administrator reviews it before you can arrange a handover with the finder.</p>
+          <h2 class="modal-title modal-heading modal-heading--flush">Confirm &amp; Contact Finder</h2>
+          <p class="modal-subtitle">Confirm this is your item. No admin wait — the finder's contact is shared with you immediately so you can arrange pickup directly.</p>
         </div>
         <button type="button" class="modal-close" data-action="closeClaimRequestModal" aria-label="Close">&times;</button>
       </div>
@@ -1001,15 +1001,22 @@
           <textarea id="claimRequestProof" rows="3" minlength="5" maxlength="500" placeholder="e.g. There's a small scratch near the charging port, and a blue sticker inside the lid." required></textarea>
         </div>
         <div class="input-field modal-field">
-          <label for="claimRequestContact">Contact number (optional)</label>
+          <label for="claimRequestContact">Your contact number (so the finder can reach you)</label>
           <input type="text" id="claimRequestContact" maxlength="50" placeholder="e.g. 09XX-XXX-XXXX" />
         </div>
         <p id="claimRequestError" class="modal-error" role="alert" style="display: none;"></p>
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeClaimRequestModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="claimRequestSubmit">Submit Claim</button>
+          <button type="submit" class="btn btn-primary" id="claimRequestSubmit">Confirm &amp; Get Finder's Contact</button>
         </div>
       </form>
+      <div id="claimRequestResult" class="modal-green-notice" hidden>
+        <p>✅ <strong>Claim confirmed.</strong> You and the finder now have each other's contact details to arrange pickup directly.</p>
+        <p id="claimRequestFinderContact"></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary" data-action="closeClaimRequestModal">Done</button>
+        </div>
+      </div>
     </div>
   </div>
 

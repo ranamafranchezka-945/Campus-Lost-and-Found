@@ -913,7 +913,7 @@ test('only admins can change claim status', async () => {
   assert.equal((await adminResponse.json()).item.claimed, true);
 });
 
-test('claim requests are private and require moderator review', async () => {
+test('claim requests self-confirm immediately and exchange contact details', async () => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const requestResponse = await fetch(`${baseUrl}/api/items/13/claim-requests`, {
     method: 'POST',
@@ -928,13 +928,15 @@ test('claim requests are private and require moderator review', async () => {
   assert.equal(requestResponse.status, 201);
   const requestData = await requestResponse.json();
   assert.equal(Object.hasOwn(requestData.claim, 'proof'), false);
+  assert.equal(requestData.claim.status, 'approved');
 
+  // The item is claimed right away - no admin review gate - so a second claim is refused.
   const duplicateResponse = await fetch(`${baseUrl}/api/items/13/claim-requests`, {
     method: 'POST',
     headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
     body: JSON.stringify({ proof: 'Another private detail about this notebook.', lostId: 17 })
   });
-  assert.equal(duplicateResponse.status, 409);
+  assert.equal(duplicateResponse.status, 404);
 
   const studentClaimsResponse = await fetch(`${baseUrl}/api/items/claims`, { headers: { Cookie: studentCookie } });
   assert.equal(studentClaimsResponse.status, 403);
@@ -944,18 +946,12 @@ test('claim requests are private and require moderator review', async () => {
   assert.equal(adminClaimsResponse.status, 200);
   const { claims } = await adminClaimsResponse.json();
   assert.equal(claims.length, 1);
+  assert.equal(claims[0].status, 'approved');
+  assert.equal(claims[0].selfConfirmed, true);
   assert.match(claims[0].proof, /university logo/);
   assert.equal(claims[0].claimantStudentId, '2026001');
   assert.equal(claims[0].claimantCourseYear, 'BS Information Technology, 3rd Year');
   assert.equal(claims[0].claimantContact, '09171234567');
-
-  const reviewResponse = await fetch(`${baseUrl}/api/items/claims/${encodeURIComponent(claims[0].id)}`, {
-    method: 'PATCH',
-    headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: 'approved', pickupInstructions: 'Present your CSPC Student ID at SAS Office, Room 101.' })
-  });
-  assert.equal(reviewResponse.status, 200);
-  assert.equal((await reviewResponse.json()).claim.pickupInstructions, 'Present your CSPC Student ID at SAS Office, Room 101.');
 
   const itemResponse = await fetch(`${baseUrl}/api/items/13`);
   assert.equal((await itemResponse.json()).item.claimed, true);
@@ -963,7 +959,7 @@ test('claim requests are private and require moderator review', async () => {
   const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: studentCookie } });
   const { notifications } = await notificationsResponse.json();
   assert.equal(notifications[0].notificationType, 'claim');
-  assert.match(notifications[0].message, /Room 101/);
+  assert.match(notifications[0].message, /confirmed/);
 
   const readResponse = await fetch(`${baseUrl}/api/items/notifications/${encodeURIComponent(notifications[0].id)}/read`, {
     method: 'PATCH',
@@ -974,7 +970,7 @@ test('claim requests are private and require moderator review', async () => {
   assert.equal((await readNotificationsResponse.json()).unreadCount, 0);
 });
 
-test('rejected claims restore availability and notify the claimant', async () => {
+test('an admin can still reject a self-confirmed claim to restore availability', async () => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const claimResponse = await fetch(`${baseUrl}/api/items/14/claim-requests`, {
     method: 'POST',
@@ -983,11 +979,15 @@ test('rejected claims restore availability and notify the claimant', async () =>
   });
   assert.equal(claimResponse.status, 201);
 
+  const claimedItemResponse = await fetch(`${baseUrl}/api/items/14`);
+  assert.equal((await claimedItemResponse.json()).item.claimed, true);
+
   const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
   const claimsResponse = await fetch(`${baseUrl}/api/items/claims`, { headers: { Cookie: adminCookie } });
   const { claims } = await claimsResponse.json();
   const claim = claims.find(entry => String(entry.itemId) === '14');
   assert.ok(claim);
+  assert.equal(claim.status, 'approved');
 
   const reviewResponse = await fetch(`${baseUrl}/api/items/claims/${encodeURIComponent(claim.id)}`, {
     method: 'PATCH',
