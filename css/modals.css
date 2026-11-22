@@ -606,7 +606,7 @@
   gap: 0.65rem;
   margin-bottom: 0.9rem;
   padding: 0.65rem 0.8rem;
-  border: 1.5px dashed var(--surface-subtle-border);
+  border: 1.5px dashed rgba(59, 130, 246, 0.35);
   border-radius: 12px;
   cursor: pointer;
 }
@@ -623,19 +623,19 @@
   width: 2.5rem;
   height: 1.45rem;
   border-radius: 999px;
-  background: var(--surface-raised);
-  border: 1px solid var(--surface-subtle-border);
+  background: rgba(59, 130, 246, 0.22);
+  border: 1.5px solid rgba(59, 130, 246, 0.55);
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 .connect-toggle-knob {
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 1px;
+  left: 1px;
   width: 1.15rem;
   height: 1.15rem;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
   transition: transform 0.2s ease;
 }
 .connect-toggle input:checked + .connect-toggle-switch {

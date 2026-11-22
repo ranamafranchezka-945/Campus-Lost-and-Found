@@ -2394,6 +2394,21 @@ select::placeholder,
       color: var(--text-main);
       transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
     }
+
+    /* One-shot highlight for a card scrolled to from a match link or notification. */
+    .item-card--highlight {
+      animation: item-card-highlight-flash 2.2s ease-out;
+    }
+    @keyframes item-card-highlight-flash {
+      0%, 60% { box-shadow: 0 0 0 3px var(--blue-main); }
+      100%    { box-shadow: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .item-card--highlight {
+        animation: none;
+        box-shadow: 0 0 0 3px var(--blue-main);
+      }
+    }
     .item-card:hover {
       border-color: rgba(59,130,246,0.5);
       box-shadow: 0 0 24px rgba(59,130,246,0.12);

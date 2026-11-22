@@ -639,6 +639,35 @@ function showItemsError(grid) {
     </div>`;
 }
 
+// Scrolls to an already-rendered item card and briefly outlines it, so a match link or
+// notification lands the student on the right card instead of just the top of the feed.
+function scrollToAndHighlightItem(id) {
+  const card = document.getElementById(`item-card-${id}`);
+  if (!card) return;
+  card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  card.classList.remove('item-card--highlight');
+  void card.offsetWidth; // restarts the animation if the same card was just highlighted
+  card.classList.add('item-card--highlight');
+  setTimeout(() => card.classList.remove('item-card--highlight'), 2200);
+}
+
+// Called by the Quick Report Assistant's match card "View" link: makes sure the matched
+// item is visible regardless of the current filter/search, then scrolls to and highlights
+// its card - rather than just jumping to the top of the listings.
+window.openItemDetails = function openItemDetails(id) {
+  if (document.getElementById(`item-card-${id}`)) {
+    scrollToAndHighlightItem(id);
+    return;
+  }
+  currentFilter = 'all';
+  currentLocationFilter = '';
+  const search = document.getElementById('searchInput');
+  if (search) search.value = '';
+  updateFilterUi();
+  pendingScrollItemId = id;
+  fetchAndRenderItems();
+};
+
 async function fetchAndRenderItems(options = {}) {
   const requestId = ++itemsRequestId;
   if (!options.keepPage) currentPage = 1;
@@ -676,8 +705,7 @@ async function fetchAndRenderItems(options = {}) {
     renderItemsGrid(loadedItems);
     syncFeedUrl();
     if (pendingScrollItemId) {
-      const matchCard = document.getElementById(`item-card-${pendingScrollItemId}`);
-      if (matchCard) matchCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      scrollToAndHighlightItem(pendingScrollItemId);
       pendingScrollItemId = null;
     }
     fetchStats();
