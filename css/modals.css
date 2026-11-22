@@ -618,6 +618,7 @@
   cursor: pointer;
 }
 .connect-toggle-switch {
+  display: inline-block;
   position: relative;
   flex-shrink: 0;
   width: 3.1rem;
@@ -628,6 +629,7 @@
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 .connect-toggle-knob {
+  display: block;
   position: absolute;
   top: 1px;
   left: 1px;
