@@ -522,19 +522,20 @@
   gap: 0.6rem;
   margin-bottom: 0.65rem;
 }
+/* Same squared icon-tile look as the category picker's buttons, for one consistent icon
+   language across the app instead of circular colored-emoji avatars. */
 .connect-avatar {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 3rem;
   height: 3rem;
-  border-radius: 50%;
+  border-radius: 10px;
   font-size: 1.4rem;
-  background: var(--surface-subtle);
-  border: 1.5px solid var(--surface-subtle-border);
+  background: rgba(59, 130, 246, 0.04);
+  border: 1px solid var(--border);
+  color: var(--blue-light);
 }
-.connect-avatar--you { border-color: rgba(59, 130, 246, 0.45); background: rgba(59, 130, 246, 0.1); }
-.connect-avatar--owner { border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.1); }
 .connect-people-link { font-size: 1.1rem; color: var(--text-muted); }
 
 .connect-eyebrow {
@@ -594,9 +595,10 @@
   background: var(--field-bg);
   color: var(--text-main);
   font-size: 0.9rem;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
 }
 .connect-field-body textarea { resize: none; }
-.connect-field--message { border-color: rgba(59, 130, 246, 0.35); background: rgba(59, 130, 246, 0.06); }
 .connect-field--contact { border-color: rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.08); }
 
 .connect-toggle {
@@ -606,8 +608,9 @@
   gap: 0.65rem;
   margin-bottom: 0.9rem;
   padding: 0.65rem 0.8rem;
-  border: 1.5px dashed rgba(59, 130, 246, 0.35);
+  border: 1.5px solid var(--surface-subtle-border);
   border-radius: 12px;
+  background: var(--surface-subtle);
   cursor: pointer;
 }
 .connect-toggle input {
