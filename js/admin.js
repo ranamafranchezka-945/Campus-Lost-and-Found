@@ -1754,7 +1754,9 @@ let allowedEmails = [];
       const message = document.getElementById('broadcastMessage');
       const fields = document.getElementById('broadcastFields');
       const menu = document.getElementById('broadcastCommandMenu');
+      const placeholderBar = document.getElementById('broadcastPlaceholderInputs');
       let activeField = null;
+      let activeTemplate = null;
       let matches = [];
       let selectedIndex = 0;
 
@@ -1798,11 +1800,91 @@ let allowedEmails = [];
         }
       }
 
+      function getTemplatePlaceholders(template) {
+        const placeholders = new Set();
+        [template.subject, template.message].forEach(text => {
+          const pattern = /\[([^\]]+)\]/g;
+          let match;
+          while ((match = pattern.exec(text)) !== null) placeholders.add(match[1]);
+        });
+        return [...placeholders];
+      }
+
+      function applyPlaceholderValues() {
+        if (!activeTemplate) return;
+        let subjectValue = activeTemplate.subject;
+        let messageValue = activeTemplate.message;
+        placeholderBar.querySelectorAll('[data-placeholder-name]').forEach(input => {
+          if (!input.value) return;
+          const token = `[${input.dataset.placeholderName}]`;
+          subjectValue = subjectValue.split(token).join(input.value);
+          messageValue = messageValue.split(token).join(input.value);
+        });
+        subject.value = subjectValue;
+        message.value = messageValue;
+      }
+
+      function renderPlaceholderInputs(template) {
+        activeTemplate = template;
+        placeholderBar.replaceChildren();
+        const placeholders = getTemplatePlaceholders(template);
+        placeholderBar.hidden = placeholders.length === 0;
+        if (!placeholders.length) return null;
+
+        const inputs = [];
+        placeholders.forEach((name, index) => {
+          const field = document.createElement('label');
+          field.className = 'broadcast-placeholder-field';
+          const label = document.createElement('span');
+          label.textContent = name;
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.id = `broadcast-placeholder-${index}`;
+          input.dataset.placeholderName = name;
+          input.autocomplete = 'off';
+          input.setAttribute('aria-label', name);
+          input.addEventListener('input', applyPlaceholderValues);
+          field.append(label, input);
+          placeholderBar.append(field);
+          inputs.push(input);
+        });
+        return inputs[0];
+      }
+
+      function clearPlaceholderInputs() {
+        activeTemplate = null;
+        placeholderBar.replaceChildren();
+        placeholderBar.hidden = true;
+      }
+
+      function selectNextPlaceholder(field) {
+        const pattern = /\[[^\]]+\]/g;
+        const start = field.selectionEnd;
+        pattern.lastIndex = start;
+        let match = pattern.exec(field.value);
+        let target = match ? { field, match } : null;
+        if (!target && field === subject) {
+          match = /\[[^\]]+\]/.exec(message.value);
+          if (match) target = { field: message, match };
+        }
+        return target;
+      }
+
+      function handlePlaceholderTab(event) {
+        if (event.key !== 'Tab' || event.shiftKey || menu.hidden || !activeTemplate) return;
+        const target = selectNextPlaceholder(event.currentTarget);
+        if (!target) return;
+        event.preventDefault();
+        target.field.focus();
+        target.field.setSelectionRange(target.match.index, target.match.index + target.match[0].length);
+      }
+
       function insertTemplate(template) {
         if (!template) return;
         subject.value = template.subject;
         message.value = template.message;
         closeMenu();
+        const firstPlaceholderInput = renderPlaceholderInputs(template);
 
         const subjectPlaceholder = /\[[^\]]+\]/.exec(subject.value);
         const messagePlaceholder = /\[[^\]]+\]/.exec(message.value);
@@ -1810,6 +1892,7 @@ let allowedEmails = [];
         const placeholder = subjectPlaceholder || messagePlaceholder;
         target.focus();
         if (placeholder) target.setSelectionRange(placeholder.index, placeholder.index + placeholder[0].length);
+        if (firstPlaceholderInput) firstPlaceholderInput.focus();
       }
 
       function updateMenu(field) {
@@ -1889,6 +1972,7 @@ let allowedEmails = [];
 
       [subject, message].forEach(field => {
         field.addEventListener('input', () => updateMenu(field));
+        field.addEventListener('keydown', handlePlaceholderTab);
         field.addEventListener('keydown', handleMenuKeydown);
       });
       menu.addEventListener('keydown', handleMenuKeydown);
@@ -1900,6 +1984,7 @@ let allowedEmails = [];
       document.getElementById('clearBroadcastBtn').addEventListener('click', () => {
         subject.value = '';
         message.value = '';
+        clearPlaceholderInputs();
         closeMenu();
         subject.focus();
       });
