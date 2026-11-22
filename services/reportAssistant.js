@@ -375,6 +375,14 @@ function buildTitle({ color, brand, noun }) {
   return title.slice(0, 100);
 }
 
+// Only text that follows an explicit "description is ..." (or "description: ...") cue is
+// treated as the free-form description - an open narration like "I lost my black tumbler
+// near the library" fills the other fields but must not be dumped word-for-word in here.
+function detectDescription(rawText) {
+  const match = String(rawText || '').match(/\bdescription\b\s*(?:is|:|-|=)?\s*(.+)/is);
+  return match ? match[1].trim() : '';
+}
+
 // A location mention is usually "near the library", not a room. Any room-ish detail is kept
 // separately so it lands in the optional "Room or Specific Spot" field instead.
 function detectLocationDetails(rawText) {
@@ -408,7 +416,7 @@ function parseWithRules(message, now = new Date()) {
       category: category.category,
       location: location.location,
       locationDetails: detectLocationDetails(raw),
-      desc: raw.trim(),
+      desc: detectDescription(raw),
       when: when.when
     },
     confidence: {
@@ -611,6 +619,7 @@ module.exports = {
     detectCategory,
     detectLocation,
     detectWhen,
+    detectDescription,
     buildTitle,
     mergeModelResult
   }

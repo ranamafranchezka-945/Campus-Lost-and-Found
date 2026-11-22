@@ -111,17 +111,31 @@ test('extracts a full report from one English sentence', () => {
   // "this morning" is 8am on the day of the message, not the time it was typed.
   assert.equal(new Date(draft.when).getHours(), 8);
   assert.equal(new Date(draft.when).getDate(), 17);
-  assert.equal(assistant.reviewDraft(parse('I lost my black AquaFlask near the library this morning')).ready, true);
+  // The description is never the whole narration, so it's still missing here - the
+  // assistant should go on to ask for it rather than treat the sentence as ready.
+  assert.equal(draft.desc, '');
+  assert.equal(assistant.reviewDraft(parse('I lost my black AquaFlask near the library this morning')).ready, false);
 });
 
-test('extracts a found report and keeps the finder wording as the description', () => {
+test('extracts a found report without dumping the narration into the description', () => {
   const { draft } = parse('I found a blue JanSport backpack at the canteen around lunch');
   assert.equal(draft.type, 'found');
   assert.equal(draft.title, 'Blue JanSport Backpack');
   assert.equal(draft.category, 'Bags & Wallets');
   assert.equal(draft.location, 'Production and Auxiliary Services (Canteen / Commercial)');
   assert.equal(new Date(draft.when).getHours(), 12);
-  assert.match(draft.desc, /^I found a blue JanSport backpack/);
+  assert.equal(draft.desc, '');
+});
+
+test('only takes the description from an explicit "description is ..." cue', () => {
+  const withCue = parse('I found a blue JanSport backpack at the canteen. Description is it has a torn zipper and a keychain.');
+  assert.equal(withCue.draft.desc, 'it has a torn zipper and a keychain.');
+
+  const withColonCue = parse('I lost my wallet at the library. description: brown leather with a CSPC ID inside');
+  assert.equal(withColonCue.draft.desc, 'brown leather with a CSPC ID inside');
+
+  const withoutCue = parse('I lost my wallet at the library, it is brown leather with a CSPC ID inside');
+  assert.equal(withoutCue.draft.desc, '');
 });
 
 test('reads a Filipino sentence', () => {
@@ -163,9 +177,11 @@ test('matches whole words only', () => {
 });
 
 test('asks for the one missing field instead of guessing it', () => {
+  // location and desc are both still missing here; the question is about whichever one
+  // comes first (location), not the description.
   const review = assistant.reviewDraft(parse('lost my keys'));
   assert.equal(review.ready, false);
-  assert.deepEqual(review.missing, ['location']);
+  assert.deepEqual(review.missing, ['location', 'desc']);
   assert.match(review.question, /CSPC office or campus area/);
 });
 
@@ -202,7 +218,7 @@ test('handles an empty or junk message without throwing', () => {
 });
 
 test('truncates an overlong message rather than storing all of it', () => {
-  const result = parse(`I lost my wallet at the library ${'x'.repeat(2000)}`);
+  const result = parse(`I lost my wallet at the library. Description is ${'x'.repeat(2000)}`);
   assert.ok(result.draft.desc.length <= 1000);
   assert.ok(result.draft.title.length <= 100);
 });
@@ -253,7 +269,9 @@ test('the endpoint fills a draft and previews a matching report for a guest', as
 
   assert.equal(body.success, true);
   assert.equal(body.engine, 'rules', 'with no API key the deterministic engine answers');
-  assert.equal(body.ready, true);
+  // Not ready yet: the description only comes from an explicit cue, so it's still missing.
+  assert.equal(body.ready, false);
+  assert.deepEqual(body.missing, ['desc']);
   assert.equal(body.draft.category, 'Water Bottles/Tumblers');
 
   assert.equal(body.matches.length, 1, 'the active found report is offered');
@@ -294,7 +312,7 @@ test('the endpoint saves nothing', async () => {
 });
 
 test('the endpoint strips angle brackets from the message it echoes back', async () => {
-  const body = await (await ask('I lost my <script>alert(1)</script> wallet at the library')).json();
+  const body = await (await ask('I lost my wallet at the library. Description is <script>alert(1)</script>')).json();
   assert.equal(body.success, true);
   assert.equal(body.draft.desc.includes('<'), false);
   assert.equal(body.draft.desc.includes('>'), false);

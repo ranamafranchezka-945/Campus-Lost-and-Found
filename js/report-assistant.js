@@ -37,7 +37,11 @@
     busy: false,
     engine: 'rules',
     recognition: null,
-    listening: false
+    listening: false,
+    // Which field the assistant's last question was about ('desc' when it just asked
+    // "Can you describe it..."), so the very next reply can be taken as a direct answer
+    // to that question even without the usual "description is ..." cue.
+    pendingField: ''
   };
 
   function el(id) {
@@ -119,7 +123,12 @@
 
   // A later message only wins a field when the server is at least as sure about it.
   // Keeps "near the library" from clearing an item name extracted a turn earlier.
-  function mergeDraft(incoming, confidence, rawMessage) {
+  //
+  // The description is never the whole narration: it only comes from the server's
+  // cue-gated extraction (the words after an explicit "description is ..."), except when
+  // the assistant's own last question specifically asked for a description - then the
+  // whole reply is naturally the answer, same as a person would read it.
+  function mergeDraft(incoming, confidence, rawMessage, answeringDescQuestion) {
     const changed = [];
     for (const field of ['type', 'title', 'category', 'location', 'locationDetails', 'when']) {
       const value = String(incoming[field] || '').trim();
@@ -134,9 +143,9 @@
       changed.push(field);
     }
 
-    // The description is the student's own words, so follow-ups are appended rather
-    // than replaced - the first sentence is usually the most descriptive one.
-    const addition = String(rawMessage || '').trim();
+    // Follow-ups are appended rather than replaced - the first bit said is usually the
+    // most descriptive one.
+    const addition = (answeringDescQuestion ? String(rawMessage || '') : String(incoming.desc || '')).trim();
     if (addition) {
       const existing = String(state.draft.desc || '').trim();
       if (!existing) {
@@ -317,7 +326,8 @@
       state.engine = data.engine || 'rules';
       state.turns += 1;
 
-      const changed = mergeDraft(data.draft || {}, data.confidence || {}, text);
+      const changed = mergeDraft(data.draft || {}, data.confidence || {}, text, state.pendingField === 'desc');
+      state.pendingField = (data.missing && data.missing[0]) || '';
       // The form starts folded away; reveal it before filling anything in, so the
       // student can see the fields light up instead of finding them already filled.
       if (changed.length && typeof window.openManualReportForm === 'function') window.openManualReportForm();
@@ -454,6 +464,7 @@
     state.draft = { type: '', title: '', category: '', location: '', locationDetails: '', desc: '', when: '' };
     state.confidence = {};
     state.turns = 0;
+    state.pendingField = '';
     const log = el('assistantLog');
     if (log) log.innerHTML = '';
     const input = el('assistantInput');
