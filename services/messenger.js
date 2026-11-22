@@ -37,24 +37,38 @@ async function sendMessengerText(psid, text) {
 }
 
 // Checks the configured Page token and webhook subscription directly against Meta, so a
-// silent "no reply" issue can be diagnosed (expired token vs. missing webhook subscription)
-// without needing access to server logs.
+// silent "no reply" issue can be diagnosed without needing access to server logs.
+//
+// Token validity comes from /debug_token, which introspects the token itself (type, scopes,
+// expiry) and needs no extra permission - unlike /me?fields=name or /me/subscribed_apps,
+// which both need page-reading permissions (pages_read_engagement / pages_manage_metadata)
+// that a token scoped only for pages_messaging may never have been granted. Reading those as
+// "token invalid" was the earlier bug here; the actual scopes list below is what tells us
+// whether pages_messaging is present.
 async function diagnose() {
   const token = process.env.MESSENGER_PAGE_ACCESS_TOKEN;
   if (!token) return { configured: false, tokenValid: false, error: 'MESSENGER_PAGE_ACCESS_TOKEN is not set.' };
 
-  const result = { configured: true, tokenValid: false };
+  const result = { configured: true };
+
   try {
-    const pageResponse = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/me?fields=id,name&access_token=${encodeURIComponent(token)}`);
-    const pageData = await pageResponse.json().catch(() => ({}));
-    if (!pageResponse.ok) {
-      result.error = formatGraphError(pageData, pageResponse.status);
+    const debugResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/debug_token?input_token=${encodeURIComponent(token)}&access_token=${encodeURIComponent(token)}`
+    );
+    const debugData = await debugResponse.json().catch(() => ({}));
+    const info = debugData?.data;
+    if (!debugResponse.ok || !info) {
+      result.tokenValid = false;
+      result.error = formatGraphError(debugData, debugResponse.status);
       return result;
     }
-    result.tokenValid = true;
-    result.pageId = pageData.id;
-    result.pageName = pageData.name;
+    result.tokenValid = Boolean(info.is_valid);
+    result.tokenType = info.type || 'unknown';
+    result.scopes = info.scopes || [];
+    result.hasMessagingScope = result.scopes.includes('pages_messaging');
+    if (!info.is_valid) result.error = info.error?.message || 'Meta reports this token as no longer valid.';
   } catch (error) {
+    result.tokenValid = false;
     result.error = `Could not reach the Graph API: ${error.message}`;
     return result;
   }
@@ -63,13 +77,13 @@ async function diagnose() {
     const subsResponse = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/me/subscribed_apps?access_token=${encodeURIComponent(token)}`);
     const subsData = await subsResponse.json().catch(() => ({}));
     if (!subsResponse.ok) {
-      result.subscriptionError = formatGraphError(subsData, subsResponse.status);
+      result.subscriptionNote = `Could not read webhook subscriptions (separate permission from messaging): ${formatGraphError(subsData, subsResponse.status)}`;
     } else {
       result.subscribedFields = subsData?.data?.[0]?.subscribed_fields || [];
       result.receivesMessages = result.subscribedFields.includes('messages');
     }
   } catch (error) {
-    result.subscriptionError = `Could not reach the Graph API: ${error.message}`;
+    result.subscriptionNote = `Could not reach the Graph API: ${error.message}`;
   }
 
   return result;
