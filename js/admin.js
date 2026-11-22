@@ -54,6 +54,22 @@ let allowedEmails = [];
         description: 'Explain what claimants should bring to verify ownership.',
         subject: 'Claim Verification Requirements - [Item Name]',
         message: 'To claim [Item Name], found at [Location] on [Date], please visit [Office/Room]. Bring a valid ID and be ready to describe identifying details not included in the public notice. Staff will verify ownership before releasing an item.'
+      },
+      {
+        id: 'turnover',
+        command: '/turnover',
+        title: 'Unclaimed Items Turnover Reminder',
+        description: 'Remind students about the unclaimed items turnover deadline.',
+        subject: 'Notice: Unclaimed Items Scheduled for Turnover/Archiving on [Date]',
+        message: 'These items will be archived/turned over on [Date] if unclaimed: [List of Items]. Please visit [Office/Room] before the deadline with a valid ID and proof of ownership to claim your belongings.'
+      },
+      {
+        id: 'recap',
+        command: '/recap',
+        title: 'Monthly Good-News Recap',
+        description: 'Share the number of items returned to owners this month.',
+        subject: 'Monthly Recap: [X] Items Returned to Owners This Month — Thank You!',
+        message: '[X] items returned to owners this month — Thank you to everyone in the CSPC community who reported, turned in, and helped return lost belongings! If you\'re still looking for a misplaced item, check the latest listings on Back2You or visit [Office/Room].'
       }
     ];
     let visibleAdminItems = [];
