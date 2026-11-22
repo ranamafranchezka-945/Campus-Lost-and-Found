@@ -896,7 +896,11 @@
   font-weight: 700;
 }
 .topbar-search:focus-within .kbd { display: none; }
-@media (hover: none), (max-width: 1023px) { .kbd { display: none; } }
+@media (max-width: 1024px), (pointer: coarse), (hover: none) {
+  .admin-topbar .topbar-search .kbd,
+  .admin-topbar .topbar-actions .keyboard-shortcuts-trigger,
+  .admin-sidebar .side-link .side-shortcut { display: none !important; }
+}
 
 /* Rows light up under the pointer. */
 :root .admin-app #adminItemsTable tbody tr:hover,
