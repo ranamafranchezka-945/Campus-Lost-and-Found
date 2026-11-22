@@ -1753,7 +1753,7 @@ async function loadNotificationsIntoModal() {
             : `<p class="notif-msg">📍 <em>${escapeHtml(n.locationFound || 'Location not specified')}</em></p>
              <p class="notif-msg">💬 ${escapeHtml(n.message)}</p>
              ${n.finderContact && n.finderContact !== 'Anonymous Student / Finder'
-               ? `<p class="notif-contact">📞 Finder left optional contact: ${escapeHtml(n.finderContact)}</p>`
+               ? `<p class="notif-contact">📞 Contact the finder: ${contactLinkHtml(n.finderContact)}</p>`
                : '<p class="notif-contact">🔒 Finder remained anonymous</p>'}`}
         ${!n.read ? `<button class="btn-mark-read" data-action="markNotifRead" data-args="${actionArgs(n.id, '$el')}">Mark as read</button>` : ''}
       </div>
@@ -2424,6 +2424,15 @@ function escapeHtml(str) {
     "'": '&#39;',
     '"': '&quot;'
   }[tag] || tag));
+}
+
+// Renders a contact string as a clickable tel:/mailto: link when it looks like one, plain text otherwise.
+function contactLinkHtml(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return `<a href="mailto:${escapeHtml(text)}">${escapeHtml(text)}</a>`;
+  if (/^[+\d][\d\s().-]{6,}$/.test(text)) return `<a href="tel:${escapeHtml(text.replace(/[^\d+]/g, ''))}">${escapeHtml(text)}</a>`;
+  return escapeHtml(text);
 }
 
 function showToast(msg, isError = false) {
