@@ -10,6 +10,7 @@ const collections = {
   blockedEmails: { table: 'app_blocked_emails' },
   allowedEmails: { table: 'app_allowed_emails' }
 };
+const MESSENGER_CONFIG_TABLE = 'app_messenger_config';
 const contextStorage = new AsyncLocalStorage();
 let pool;
 
@@ -64,6 +65,30 @@ async function getAllowedEmailsDirect() {
   return result.rows.map(row => row.payload);
 }
 
+// The connected Facebook Page's token, read/written directly against the pool rather than
+// through the per-request transaction context: Messenger sends fire after a request's
+// response has already ended (its transaction long since committed), so by the time the
+// token is needed there is no transaction left to read it from.
+async function getMessengerConfigDirect() {
+  if (!isConfigured()) return null;
+  const result = await getPool().query(`SELECT payload FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`);
+  return result.rows[0]?.payload || null;
+}
+
+async function saveMessengerConfigDirect(config) {
+  if (!isConfigured()) throw new Error('DATABASE_URL must be configured for Supabase PostgreSQL.');
+  await getPool().query(
+    `INSERT INTO ${MESSENGER_CONFIG_TABLE} (config_id, payload) VALUES (1, $1::jsonb)
+     ON CONFLICT (config_id) DO UPDATE SET payload = EXCLUDED.payload`,
+    [JSON.stringify(config)]
+  );
+}
+
+async function deleteMessengerConfigDirect() {
+  if (!isConfigured()) return;
+  await getPool().query(`DELETE FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`);
+}
+
 function getCollectionName(filePath) {
   const name = path.basename(filePath, '.json');
   if (!collections[name]) throw new Error(`Unsupported persistent data file: ${name}.json`);
@@ -111,11 +136,17 @@ async function createTables(connection) {
   await connection.query(
     'INSERT INTO app_store_lock (lock_id) VALUES (1) ON CONFLICT (lock_id) DO NOTHING'
   );
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS ${MESSENGER_CONFIG_TABLE} (
+      config_id SMALLINT PRIMARY KEY,
+      payload JSONB NOT NULL
+    )
+  `);
 
   // These tables are used only by the server through its direct PostgreSQL
   // connection. They must not be reachable through Supabase's Data API.
   // RLS also protects the tables if API grants are accidentally reintroduced.
-  for (const table of ['app_users', 'app_items', 'app_claims', 'app_blocked_emails', 'app_allowed_emails', 'app_migrations', 'app_store_lock']) {
+  for (const table of ['app_users', 'app_items', 'app_claims', 'app_blocked_emails', 'app_allowed_emails', 'app_migrations', 'app_store_lock', MESSENGER_CONFIG_TABLE]) {
     await connection.query(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
   }
 
@@ -139,7 +170,7 @@ async function createTables(connection) {
       IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
         REVOKE ALL ON TABLE public.app_users, public.app_items, public.app_claims,
           public.app_blocked_emails, public.app_allowed_emails, public.app_migrations,
-          public.app_store_lock FROM anon;
+          public.app_store_lock, public.${MESSENGER_CONFIG_TABLE} FROM anon;
         IF to_regclass('public.app_sessions') IS NOT NULL THEN
           REVOKE ALL ON TABLE public.app_sessions FROM anon;
         END IF;
@@ -147,7 +178,7 @@ async function createTables(connection) {
       IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
         REVOKE ALL ON TABLE public.app_users, public.app_items, public.app_claims,
           public.app_blocked_emails, public.app_allowed_emails, public.app_migrations,
-          public.app_store_lock FROM authenticated;
+          public.app_store_lock, public.${MESSENGER_CONFIG_TABLE} FROM authenticated;
         IF to_regclass('public.app_sessions') IS NOT NULL THEN
           REVOKE ALL ON TABLE public.app_sessions FROM authenticated;
         END IF;
@@ -364,13 +395,16 @@ module.exports = {
   close,
   commitRequest,
   connectionTarget,
+  deleteMessengerConfigDirect,
   getAllowedEmailsDirect,
+  getMessengerConfigDirect,
   getPool,
   importJsonFiles,
   initialize,
   isConfigured,
   readCollection,
   requestMiddleware,
+  saveMessengerConfigDirect,
   withTransaction,
   writeCollection
 };

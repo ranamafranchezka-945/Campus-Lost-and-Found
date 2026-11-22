@@ -72,6 +72,7 @@
         <p class="side-group">Administrator</p>
         <button type="button" class="side-link" data-view="users"><svg class="ico"><use href="#i-users"/></svg><span>User management</span></button>
         <button type="button" class="side-link" data-view="belongings"><svg class="ico"><use href="#i-lock"/></svg><span>Students' belongings</span></button>
+        <button type="button" class="side-link" data-view="messenger"><svg class="ico"><use href="#i-message"/></svg><span>Messenger integration</span></button>
       </nav>
     </aside>
     <div class="side-backdrop" id="sideBackdrop"></div>
@@ -410,6 +411,29 @@
             </div>
           </div>
           <div id="adminBelongingsEmptyState" class="empty-state" hidden><h3>No registered belongings found</h3></div>
+        </section>
+
+        <!-- ── Messenger integration ── -->
+        <section class="admin-view" id="tabMessenger" aria-labelledby="messengerHeading" hidden>
+          <div class="view-head">
+            <div>
+              <h1 id="messengerHeading">Messenger integration</h1>
+              <p>Connect the Back2You Facebook Page so students can receive match and handover alerts in Messenger.</p>
+            </div>
+            <div class="view-head-actions">
+              <button type="button" class="btn btn-outline view-head-btn" data-action="loadMessengerPanel">Refresh</button>
+            </div>
+          </div>
+
+          <div class="admin-table-card" style="padding:1.25rem;">
+            <h3 style="margin:0 0 .75rem;">Connected Page</h3>
+            <div id="messengerConnectionBody">Loading…</div>
+          </div>
+
+          <div class="admin-table-card" style="padding:1.25rem;margin-top:1rem;">
+            <h3 style="margin:0 0 .75rem;">Diagnostics</h3>
+            <div id="messengerDiagnosticsBody">Loading…</div>
+          </div>
         </section>
 
       </main>

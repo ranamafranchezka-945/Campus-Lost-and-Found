@@ -59,6 +59,7 @@ let allowedEmails = [];
       refreshAdminUsers();
       refreshBlockedEmails();
       refreshAllowedEmails();
+      showMessengerConnectBanner();
       window.setInterval(() => {
         refreshAdminItems();
         refreshStudentBelongings();
@@ -473,6 +474,110 @@ let allowedEmails = [];
       }
     }
 
+    // ── Messenger integration ─────────────────────────────────────────────────
+    async function loadMessengerPanel() {
+      const connectionBody = document.getElementById('messengerConnectionBody');
+      const diagnosticsBody = document.getElementById('messengerDiagnosticsBody');
+      if (!connectionBody || !diagnosticsBody) return;
+      connectionBody.textContent = 'Loading…';
+      diagnosticsBody.textContent = 'Loading…';
+
+      try {
+        const response = await adminFetch('/api/messenger/page/connection', { cache: 'no-store' });
+        const data = await response.json();
+        renderMessengerConnection(data.success ? data : null);
+      } catch (error) {
+        connectionBody.textContent = 'Could not load the connection status.';
+      }
+
+      try {
+        const response = await adminFetch('/api/messenger/diagnostics', { cache: 'no-store' });
+        const data = await response.json();
+        renderMessengerDiagnostics(data.success ? data : null);
+      } catch (error) {
+        diagnosticsBody.textContent = 'Could not load diagnostics.';
+      }
+    }
+
+    function renderMessengerConnection(data) {
+      const body = document.getElementById('messengerConnectionBody');
+      if (!data) { body.textContent = 'Could not load the connection status.'; return; }
+
+      if (!data.connected) {
+        body.innerHTML = `
+          <p style="color:var(--text-muted);margin-bottom:.9rem;">No Facebook Page is connected yet. Connect one so students can link Messenger alerts.</p>
+          <a class="btn btn-primary" href="/api/messenger/oauth/start">Connect with Facebook</a>
+        `;
+        return;
+      }
+
+      const page = data.page;
+      body.innerHTML = `
+        <p style="margin-bottom:.35rem;"><strong>${escHtml(page.pageName || 'Connected Page')}</strong> <span style="color:var(--text-muted);">(${escHtml(page.pageId)})</span></p>
+        <p style="color:var(--text-muted);margin-bottom:.9rem;">Connected ${escHtml(formatDate(page.connectedAt))}${page.connectedByName ? ` by ${escHtml(page.connectedByName)}` : ''}</p>
+        <div style="display:flex;gap:.75rem;">
+          <a class="btn btn-outline" href="/api/messenger/oauth/start">Reconnect / switch Page</a>
+          <button type="button" class="btn btn-outline" data-action="disconnectMessengerPage">Disconnect</button>
+        </div>
+      `;
+    }
+
+    function renderMessengerDiagnostics(data) {
+      const body = document.getElementById('messengerDiagnosticsBody');
+      if (!data) { body.textContent = 'Could not load diagnostics.'; return; }
+
+      if (!data.configured) {
+        body.innerHTML = `<p style="color:var(--text-muted);">${escHtml(data.error || 'No Messenger Page is connected.')}</p>`;
+        return;
+      }
+
+      const rows = [
+        ['Token valid', data.tokenValid ? '✅ Yes' : `❌ No${data.error ? ` — ${data.error}` : ''}`],
+        ['Token type', data.tokenType || '—'],
+        ['Scopes granted', (data.scopes || []).join(', ') || '—'],
+        ['Can send/receive messages', data.hasMessagingScope ? '✅ Yes (pages_messaging)' : '❌ No'],
+        ['Webhook subscribed to "messages"', data.receivesMessages ? '✅ Yes' : (data.subscriptionNote ? `⚠️ ${data.subscriptionNote}` : '❌ No')]
+      ];
+      body.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;">
+          <tbody>
+            ${rows.map(([label, value]) => `
+              <tr>
+                <td style="padding:.4rem .6rem .4rem 0;color:var(--text-muted);white-space:nowrap;">${escHtml(label)}</td>
+                <td style="padding:.4rem 0;word-break:break-word;">${escHtml(value)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function disconnectMessengerPage() {
+      if (!window.confirm('Disconnect this Facebook Page? Students will stop receiving Messenger alerts until a Page is connected again.')) return;
+      try {
+        const response = await adminFetch('/api/messenger/page/disconnect', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Could not disconnect.');
+        showToast('Facebook Page disconnected.');
+        loadMessengerPanel();
+      } catch (error) {
+        showToast(error.message || 'Could not disconnect.', 'error');
+      }
+    }
+
+    // Surfaces the result of the Facebook OAuth redirect once, then cleans the URL.
+    function showMessengerConnectBanner() {
+      const params = new URLSearchParams(window.location.search);
+      const connected = params.get('connected');
+      const connectError = params.get('connectError');
+      if (!connected && !connectError) return;
+      if (connected) showToast(`Connected to Facebook Page "${connected}".`);
+      if (connectError) showToast(connectError, 'error');
+      params.delete('connected');
+      params.delete('connectError');
+      const query = params.toString();
+      window.history.replaceState(window.history.state, '', window.location.pathname + (query ? `?${query}` : '') + window.location.hash);
+    }
+
     // ── Views, sidebar and identity ──────────────────────────────────────────
     const ADMIN_VIEWS = {
       dashboard: 'tabDashboard',
@@ -480,7 +585,8 @@ let allowedEmails = [];
       claims: 'tabClaimQueue',
       broadcast: 'tabBroadcast',
       belongings: 'tabBelongings',
-      users: 'tabUsers'
+      users: 'tabUsers',
+      messenger: 'tabMessenger'
     };
     const ITEM_HEADINGS = {
       '': ['All items', 'Every lost and found report. Update statuses, review claims or remove reports.'],
@@ -494,6 +600,7 @@ let allowedEmails = [];
       Object.entries(ADMIN_VIEWS).forEach(([key, id]) => { document.getElementById(id).hidden = key !== name; });
       syncSidebar();
       if (name === 'users') renderAdminUsers();
+      if (name === 'messenger') loadMessengerPanel();
       // The address follows the view so a refresh or a shared link opens the same place.
       // history.state is kept: the dashboard back guard stores its marker there.
       const hash = name === 'items' ? (adminTypeFilter || 'items') : name === 'dashboard' ? '' : name;

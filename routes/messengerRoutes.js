@@ -95,8 +95,8 @@ router.post('/webhook', async (req, res) => {
 
 // POST /api/messenger/link-code - A signed-in student requests a one-time code to send to
 // the Back2You Facebook Page, linking their Messenger account for alerts.
-router.post('/link-code', requireAuth, (req, res) => {
-  if (!messenger.isConfigured()) {
+router.post('/link-code', requireAuth, async (req, res) => {
+  if (!(await messenger.isConfigured())) {
     return res.status(503).json({ success: false, message: 'Messenger alerts are not configured yet.' });
   }
 
@@ -143,6 +143,83 @@ router.post('/unlink', requireAuth, (req, res) => {
 router.get('/diagnostics', requireRole('admin'), async (req, res) => {
   const result = await messenger.diagnose();
   res.json({ success: true, ...result });
+});
+
+// ── "Connect Facebook Page" admin OAuth flow ──────────────────────────────────────────────
+// Lets an admin sign in with Facebook, pick the Page to connect, and have Back2You store
+// that Page's token and turn on its webhook subscription automatically - instead of an
+// admin manually pasting a Page Access Token and ticking webhook checkboxes by hand.
+
+function oauthRedirectUri() {
+  const base = process.env.APP_BASE_URL;
+  if (!base) throw new Error('APP_BASE_URL must be configured.');
+  return new URL('/api/messenger/oauth/callback', base).toString();
+}
+
+// GET /api/messenger/oauth/start - Admin-only: redirects to the Facebook OAuth dialog.
+router.get('/oauth/start', requireRole('admin'), (req, res) => {
+  try {
+    const state = crypto.randomUUID();
+    req.session.messengerOAuthState = state;
+    res.redirect(messenger.getOAuthDialogUrl(oauthRedirectUri(), state));
+  } catch (error) {
+    res.status(500).send(`Could not start the Facebook connection: ${error.message}`);
+  }
+});
+
+// GET /api/messenger/oauth/callback - Facebook redirects here with an authorization code.
+// Exchanges it for a long-lived Page token, turns on the Page's webhook subscription, and
+// stores the connection so the rest of the app can start sending/receiving immediately.
+router.get('/oauth/callback', requireRole('admin'), async (req, res) => {
+  const { code, state, error: oauthError, error_description: oauthErrorDescription } = req.query;
+  const expectedState = req.session.messengerOAuthState;
+  delete req.session.messengerOAuthState;
+
+  const fail = message => res.redirect(`/admin.html?connectError=${encodeURIComponent(message)}#messenger`);
+
+  if (oauthError) return fail(oauthErrorDescription || String(oauthError));
+  if (!state || !expectedState || state !== expectedState) return fail('This connection request expired or was tampered with. Please try again.');
+  if (!code) return fail('Facebook did not return an authorization code.');
+
+  try {
+    const redirectUri = oauthRedirectUri();
+    const shortLivedToken = await messenger.exchangeCodeForUserToken(code, redirectUri);
+    const userToken = await messenger.exchangeForLongLivedUserToken(shortLivedToken);
+    const pages = await messenger.listManagedPages(userToken);
+    if (!pages.length) return fail('No Facebook Page is available to this account. Make sure you are an admin of the Back2You Page and try again.');
+
+    const page = pages.find(entry => entry.name === process.env.MESSENGER_PAGE_NAME) || pages[0];
+    await messenger.subscribePageWebhookFields(page.id, page.access_token);
+    await messenger.saveStoredConfig({
+      pageId: page.id,
+      pageName: page.name,
+      pageAccessToken: page.access_token,
+      connectedAt: new Date().toISOString(),
+      connectedByName: req.session.user.fullName || req.session.user.email
+    });
+
+    res.redirect(`/admin.html?connected=${encodeURIComponent(page.name)}#messenger`);
+  } catch (error) {
+    fail(error.message);
+  }
+});
+
+// GET /api/messenger/page/connection - Admin-only: the currently connected Page, if any
+// (never returns the raw token - only what the admin UI needs to display).
+router.get('/page/connection', requireRole('admin'), async (req, res) => {
+  const stored = await messenger.getStoredConfig();
+  res.json({
+    success: true,
+    connected: Boolean(stored),
+    page: stored ? { pageId: stored.pageId, pageName: stored.pageName, connectedAt: stored.connectedAt, connectedByName: stored.connectedByName } : null
+  });
+});
+
+// POST /api/messenger/page/disconnect - Admin-only: forgets the connected Page. A manually
+// configured MESSENGER_PAGE_ACCESS_TOKEN (if any) still applies afterwards.
+router.post('/page/disconnect', requireRole('admin'), async (req, res) => {
+  await messenger.clearStoredConfig();
+  res.json({ success: true });
 });
 
 module.exports = router;
