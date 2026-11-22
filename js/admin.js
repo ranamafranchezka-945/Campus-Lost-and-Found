@@ -95,41 +95,15 @@ let allowedEmails = [];
         if (activeTab !== 'items') showAdminItems(adminTypeFilter);
       });
       bindTrendTooltip();
-      // "/" or Ctrl/Cmd+K jumps to search; Escape clears it, then leaves it.
-      document.addEventListener('keydown', event => {
-        const search = document.getElementById('adminSearch');
-        if (event.target === search && event.key === 'Escape') {
-          if (search.value) {
-            search.value = '';
-            search.dispatchEvent(new Event('input', { bubbles: true }));
-          } else {
-            search.blur();
-          }
-          return;
-        }
-        const typing = event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]');
-        const slash = event.key === '/' && !typing && !event.ctrlKey && !event.metaKey && !event.altKey;
-        const palette = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k';
-        if (!slash && !palette) return;
-        if (document.querySelector('.slip-overlay.open, .del-modal-backdrop.open, .claim-review-backdrop.open')) return;
-        event.preventDefault();
-        search.focus();
-        search.select();
-      });
+      setupGlobalKeyboardShortcuts();
       window.addEventListener('hashchange', applyAdminHash);
       applyAdminHash();
 
       // Delete modal controls
       document.getElementById('cancelDelete').addEventListener('click',  closeDeleteModal);
       document.getElementById('confirmDelete').addEventListener('click', doDelete);
-      document.getElementById('deleteModal').addEventListener('click', e => {
-        if (e.target === document.getElementById('deleteModal')) closeDeleteModal();
-      });
       document.getElementById('cancelRestore').addEventListener('click', closeRestoreModal);
       document.getElementById('confirmRestore').addEventListener('click', confirmRestore);
-      document.getElementById('restoreModal').addEventListener('click', e => {
-        if (e.target === document.getElementById('restoreModal')) closeRestoreModal();
-      });
 
       document.getElementById('bulkClaimBtn').addEventListener('click', () => runBulkAction('claim'));
       document.getElementById('bulkArchiveBtn').addEventListener('click', () => runBulkAction('archive'));
@@ -137,7 +111,6 @@ let allowedEmails = [];
       document.getElementById('exportSelectedBtn').addEventListener('click', () => exportCSV([...selectedItemIds]));
       document.getElementById('sendBroadcastBtn').addEventListener('click', sendBroadcast);
       document.getElementById('cancelActionConfirm').addEventListener('click', closeActionConfirm);
-      document.getElementById('actionConfirmModal').addEventListener('click', event => { if (event.target.id === 'actionConfirmModal') closeActionConfirm(); });
       document.getElementById('openCreateUserBtn').addEventListener('click', () => { document.getElementById('userFormPanel').hidden = false; });
       document.getElementById('cancelCreateUserBtn').addEventListener('click', closeCreateUserForm);
       document.getElementById('createUserForm').addEventListener('submit', createAdminUser);
@@ -161,7 +134,6 @@ let allowedEmails = [];
       });
       document.getElementById('confirmDeleteUser').addEventListener('click', deleteAdminUser);
       document.getElementById('cancelDeleteUser').addEventListener('click', closeDeleteUserModal);
-      document.getElementById('deleteUserModal').addEventListener('click', event => { if (event.target.id === 'deleteUserModal') closeDeleteUserModal(); });
       document.getElementById('blockEmailForm').addEventListener('submit', blockEmail);
       document.getElementById('allowEmailForm').addEventListener('submit', allowEmail);
       document.getElementById('selectAllItems').addEventListener('change', toggleSelectAllVisible);
@@ -629,6 +601,91 @@ let allowedEmails = [];
       });
       document.addEventListener('click', event => { if (!event.target.closest('.pop-wrap')) closeAll(false); });
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeAll(true); });
+    }
+
+    function setupGlobalKeyboardShortcuts() {
+      const search = document.getElementById('adminSearch');
+      const navSelectors = [
+        '.side-link[data-view="dashboard"]',
+        '.side-link[data-view="items"][data-admin-filter="lost"]',
+        '.side-link[data-view="items"][data-admin-filter="found"]',
+        '.side-link[data-view="items"][data-admin-filter=""]',
+        '.side-link[data-view="claims"]',
+        '.side-link[data-view="broadcast"]',
+        '.side-link[data-view="users"]',
+        '.side-link[data-view="belongings"]'
+      ];
+
+      document.getElementById('keyboardShortcutsButton').addEventListener('click', openKeyboardShortcuts);
+      document.addEventListener('keydown', event => {
+        if (event.defaultPrevented) return;
+        if (event.key === 'Escape') {
+          if (document.activeElement === search || event.target === search) {
+            event.preventDefault();
+            search.blur();
+          }
+          return;
+        }
+        if (event.repeat) return;
+
+        const target = event.target;
+        const typing = target instanceof HTMLElement
+          && (target.matches('input, textarea, select') || target.isContentEditable);
+        const hasOpenDialog = document.querySelector('.slip-overlay.open, .del-modal-backdrop.open, .claim-review-backdrop.open');
+        if (hasOpenDialog) return;
+
+        const commandK = (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k';
+        const searchShortcut = commandK
+          || (event.key === '/' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && !typing);
+        if (searchShortcut) {
+          event.preventDefault();
+          search.focus();
+          search.select();
+          return;
+        }
+
+        const helpShortcut = (event.key === '?' || (event.key === '/' && event.shiftKey))
+          && !event.ctrlKey && !event.metaKey && !event.altKey && !typing;
+        if (helpShortcut) {
+          event.preventDefault();
+          openKeyboardShortcuts();
+          return;
+        }
+
+        if (event.altKey && !event.ctrlKey && !event.metaKey && /^[1-8]$/.test(event.key)) {
+          const link = document.querySelector(navSelectors[Number(event.key) - 1]);
+          if (link) {
+            event.preventDefault();
+            link.click();
+          }
+          return;
+        }
+
+        if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === 'e') {
+          if (activeTab === 'dashboard') {
+            event.preventDefault();
+            exportCSV();
+          }
+          return;
+        }
+
+        if (event.key === '[' && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && !typing) {
+          event.preventDefault();
+          document.getElementById('sidebarCollapse').click();
+        }
+      });
+    }
+
+    function openKeyboardShortcuts() {
+      const modal = document.getElementById('keyboardShortcutsModal');
+      modal.hidden = false;
+      modal.classList.add('open');
+    }
+
+    function closeKeyboardShortcuts() {
+      const modal = document.getElementById('keyboardShortcutsModal');
+      modal.classList.remove('open');
+      modal.hidden = true;
     }
 
     // The sun / moon switch follows the page theme, including changes made elsewhere.
