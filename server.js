@@ -204,7 +204,7 @@ function createApp() {
     try {
       allowedEmails = await postgresStore.getAllowedEmailsDirect();
     } catch (error) {
-      console.error('Could not read the allowlist:', error.message);
+      console.error(`Could not read the allowlist (${postgresStore.connectionTarget()}):`, error.message);
       return next();
     }
     if (allowedEmails.length === 0) return next();

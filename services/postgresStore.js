@@ -29,6 +29,19 @@ function isConfigured() {
   return getConfig() !== null;
 }
 
+// host:port only (never the password) - included in connection error logs so a timeout
+// in production logs shows which endpoint is unreachable, without a debugger attached.
+function connectionTarget() {
+  const connectionString = process.env.DATABASE_URL || process.env.SUPABASE_DB_URL;
+  if (!connectionString) return 'unconfigured';
+  try {
+    const url = new URL(connectionString);
+    return `${url.hostname}:${url.port || 5432}`;
+  } catch {
+    return 'unparseable connection string';
+  }
+}
+
 function getPool() {
   const config = getConfig();
   if (!config) throw new Error('DATABASE_URL must be configured for Supabase PostgreSQL.');
@@ -36,7 +49,7 @@ function getPool() {
     pool = new Pool(config);
     // An idle client can be dropped by the network (e.g. Supabase connection blips) and pg
     // emits that as an 'error' event; without a listener here, Node crashes the whole process.
-    pool.on('error', error => console.error('Postgres pool idle client error:', error.message));
+    pool.on('error', error => console.error(`Postgres pool idle client error (${connectionTarget()}):`, error.message));
   }
   return pool;
 }
@@ -248,7 +261,7 @@ function requestMiddleware() {
     try {
       context = await acquireContext();
     } catch (error) {
-      console.error('Could not start a Supabase request transaction:', error.message);
+      console.error(`Could not start a Supabase request transaction (${connectionTarget()}):`, error.message);
       return next(error);
     }
 
@@ -350,6 +363,7 @@ async function close() {
 module.exports = {
   close,
   commitRequest,
+  connectionTarget,
   getAllowedEmailsDirect,
   getPool,
   importJsonFiles,
