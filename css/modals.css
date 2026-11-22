@@ -620,30 +620,30 @@
 .connect-toggle-switch {
   position: relative;
   flex-shrink: 0;
-  width: 2.5rem;
-  height: 1.45rem;
+  width: 3.1rem;
+  height: 1.7rem;
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.22);
-  border: 1.5px solid rgba(59, 130, 246, 0.55);
+  background: #e5e7eb;
+  border: 1px solid #cbd5e1;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 .connect-toggle-knob {
   position: absolute;
   top: 1px;
   left: 1px;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1.55rem;
+  height: 1.55rem;
   border-radius: 50%;
   background: #ffffff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.06);
   transition: transform 0.2s ease;
 }
 .connect-toggle input:checked + .connect-toggle-switch {
-  background: var(--tone-success-strong);
-  border-color: var(--tone-success-strong);
+  background: #22c55e;
+  border-color: #22c55e;
 }
 .connect-toggle input:checked + .connect-toggle-switch .connect-toggle-knob {
-  transform: translateX(1.05rem);
+  transform: translateX(1.4rem);
 }
 .connect-toggle input:focus-visible + .connect-toggle-switch {
   outline: 2px solid var(--blue-main);
