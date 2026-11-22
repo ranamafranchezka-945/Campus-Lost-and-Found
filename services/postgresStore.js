@@ -55,13 +55,29 @@ function getPool() {
   return pool;
 }
 
+// A brief Supabase connection blip (seen in production as "timeout exceeded when trying to
+// connect") is usually gone a few hundred milliseconds later; failing outright on the first
+// attempt turns one slow handshake into a dropped request (an unanswered Messenger webhook,
+// a failed sign-in) when a short retry would have gone through. Only used for read-mostly,
+// safely-repeatable operations below - never for the multi-statement transaction body.
+async function withConnectRetry(fn, attempts = 3, baseDelayMs = 300) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (attempt >= attempts) throw error;
+      await new Promise(resolve => setTimeout(resolve, baseDelayMs * attempt));
+    }
+  }
+}
+
 // Reads the allowlist directly from the pool, independent of the per-request transaction
 // context above: middleware that runs on every request (not just /api/* ones) needs to
 // read it without a transaction ever being opened. Not configured (local/dev without a
 // database) means no restriction is in effect.
 async function getAllowedEmailsDirect() {
   if (!isConfigured()) return [];
-  const result = await getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`);
+  const result = await withConnectRetry(() => getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`));
   return result.rows.map(row => row.payload);
 }
 
@@ -71,7 +87,7 @@ async function getAllowedEmailsDirect() {
 // token is needed there is no transaction left to read it from.
 async function getMessengerConfigDirect() {
   if (!isConfigured()) return null;
-  const result = await getPool().query(`SELECT payload FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`);
+  const result = await withConnectRetry(() => getPool().query(`SELECT payload FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`));
   return result.rows[0]?.payload || null;
 }
 
@@ -212,7 +228,7 @@ async function saveCollection(connection, name, rows) {
 }
 
 async function acquireContext() {
-  const connection = await getPool().connect();
+  const connection = await withConnectRetry(() => getPool().connect());
   let transactionStarted = false;
   try {
     await connection.query('BEGIN');
