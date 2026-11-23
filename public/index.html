@@ -846,16 +846,13 @@
     </div>
   </div>
 
-  <!-- CONNECT & NOTIFY SCREEN MODAL: message the owner, and optionally exchange direct contact -->
+  <!-- CONNECT & NOTIFY SCREEN MODAL: message the owner, and optionally exchange direct contact.
+       Styled as a one-shot conversation preview (same bubble language as the claim
+       conversation modal) since the finder may have no account to open a real thread with. -->
   <div class="slip-overlay" id="anonymousFinderModal" data-close="closeAnonymousFinderModal">
-    <div class="modal-card connect-card">
+    <div class="modal-card connect-card thread-card">
       <button type="button" class="connect-card-close" data-action="closeAnonymousFinderModal" aria-label="Close">&times;</button>
 
-      <div class="connect-people" aria-hidden="true">
-        <span class="connect-avatar">👤</span>
-        <span class="connect-people-link">💬</span>
-        <span class="connect-avatar">🎒</span>
-      </div>
       <p class="connect-eyebrow">You Found</p>
       <h3 class="connect-title" id="finderScreenItemTitle">MacBook Air M2</h3>
       <p class="connect-ref" id="finderScreenRefCode">CSPC-REG-QR-001</p>
@@ -866,7 +863,13 @@
         <input type="hidden" id="finderMatchTokenInput" />
         <input type="hidden" id="finderSubmissionKeyInput" />
 
-        <div class="connect-field">
+        <div class="thread-messages thread-messages--preview" aria-hidden="true">
+          <div class="thread-msg thread-msg--theirs">
+            <p class="thread-msg-text">👋 Someone registered this item. Where did you find it, and what would you like to tell the owner?</p>
+          </div>
+        </div>
+
+        <div class="connect-field connect-field--bubble">
           <span class="connect-field-icon" aria-hidden="true">📍</span>
           <div class="connect-field-body">
             <label for="finderLocationInput">Where is it right now? <span class="required">*</span></label>
@@ -874,7 +877,7 @@
           </div>
         </div>
 
-        <div class="connect-field">
+        <div class="connect-field connect-field--bubble">
           <span class="connect-field-icon" aria-hidden="true">💬</span>
           <div class="connect-field-body">
             <label for="finderMessageInput">Your message to the owner <span class="required">*</span></label>
@@ -891,7 +894,7 @@
           </span>
         </label>
 
-        <div class="connect-field connect-field--contact" id="finderContactField" hidden>
+        <div class="connect-field connect-field--bubble connect-field--contact" id="finderContactField" hidden>
           <span class="connect-field-icon" aria-hidden="true">✉️</span>
           <div class="connect-field-body">
             <label for="finderContactInput">Your phone number or email</label>
@@ -977,38 +980,9 @@
       </div>
 
       <div class="no-print modal-actions">
-        <button type="button" class="btn btn-outline" id="matchContactFinderBtn" style="display: none;" data-action="openClaimRequestModalFromMatch">📨 Contact Finder</button>
-        <button type="button" class="btn btn-primary" id="matchConversationBtn" style="display: none;" data-action="openClaimThreadModalFromMatch">💬 Open conversation</button>
+        <button type="button" class="btn btn-primary" id="matchConversationBtn" style="display: none;" data-action="openClaimThreadModalFromMatch">💬 Message the finder</button>
         <button type="button" class="btn btn-primary" data-action="printMatchQr">🖨️ Print Match Reference</button>
       </div>
-    </div>
-  </div>
-
-  <!-- CLAIM REQUEST MODAL: submit ownership proof for a matched found item -->
-  <div class="slip-overlay" id="claimRequestModal" data-close="closeClaimRequestModal">
-    <div class="modal-card modal-card--sm">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title modal-heading modal-heading--flush">Contact Finder</h2>
-          <p class="modal-subtitle">Submit proof this is your item, then talk it over with the finder in a conversation to arrange the handover.</p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeClaimRequestModal" aria-label="Close">&times;</button>
-      </div>
-      <form id="claimRequestForm" data-submit="handleSubmitClaimRequest">
-        <div class="input-field modal-field">
-          <label for="claimRequestProof">An identifying detail only the real owner would know <span class="required">*</span></label>
-          <textarea id="claimRequestProof" rows="3" minlength="5" maxlength="500" placeholder="e.g. There's a small scratch near the charging port, and a blue sticker inside the lid." required></textarea>
-        </div>
-        <div class="input-field modal-field">
-          <label for="claimRequestContact">Contact number (optional)</label>
-          <input type="text" id="claimRequestContact" maxlength="50" placeholder="e.g. 09XX-XXX-XXXX" />
-        </div>
-        <p id="claimRequestError" class="modal-error" role="alert" style="display: none;"></p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" data-action="closeClaimRequestModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="claimRequestSubmit">Submit Claim</button>
-        </div>
-      </form>
     </div>
   </div>
 

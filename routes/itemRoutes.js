@@ -1648,6 +1648,9 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     status: 'pending',
     createdAt: new Date().toISOString()
   };
+  // The proof doubles as the opening message of the claim conversation, so the
+  // claimant sees what they just sent rather than an empty thread.
+  claim.messages = [{ id: `msg-${crypto.randomUUID()}`, senderId: claim.claimantId, text: proof, createdAt: claim.createdAt }];
   claims.unshift(claim);
   saveClaims(claims);
   await postgresStore.commitRequest();

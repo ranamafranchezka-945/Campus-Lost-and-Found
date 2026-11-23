@@ -515,29 +515,6 @@
 .connect-card-close:hover,
 .connect-card-close:focus-visible { color: var(--text-main); }
 
-.connect-people {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  margin-bottom: 0.65rem;
-}
-/* Same squared icon-tile look as the category picker's buttons, for one consistent icon
-   language across the app instead of circular colored-emoji avatars. */
-.connect-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 10px;
-  font-size: 1.4rem;
-  background: rgba(59, 130, 246, 0.04);
-  border: 1px solid var(--border);
-  color: var(--blue-light);
-}
-.connect-people-link { font-size: 1.1rem; color: var(--text-muted); }
-
 .connect-eyebrow {
   margin: 0 0 0.15rem;
   font-size: 0.75rem;
@@ -576,6 +553,12 @@
   border: 1.5px solid var(--surface-subtle-border);
   border-radius: 12px;
   background: var(--surface-subtle);
+}
+/* Outgoing-message shape (matches .thread-msg--mine in the claim conversation
+   modal) so this one-shot form reads as the finder's half of an exchange. */
+.connect-field--bubble {
+  margin-left: 1.25rem;
+  border-radius: 16px 16px 4px 16px;
 }
 .connect-field-icon { flex-shrink: 0; font-size: 1.1rem; line-height: 1.6; }
 .connect-field-body { flex: 1; min-width: 0; }

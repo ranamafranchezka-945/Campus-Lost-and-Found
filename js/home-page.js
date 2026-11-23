@@ -1355,20 +1355,19 @@ async function handleAnonymousFinderSubmit(e) {
 }
 
 // ── Match QR Modal ────────────────────────────────────────────────────────
-// "Contact Finder" only ever submits a claim request for admin review - it never reveals
-// the finder's contact info directly, matching the privacy the status-only API response
-// already enforces (it strips location/contact for anyone but an admin or the owner).
-function updateMatchContactFinderButton(canRequestClaim, lostId, foundId, claimId) {
-  const contactButton = document.getElementById('matchContactFinderBtn');
-  const conversationButton = document.getElementById('matchConversationBtn');
-  if (!contactButton || !conversationButton) return;
-  // Once a claim exists for this match, there's nothing left to submit - the two
-  // parties take it from here in the conversation instead.
-  contactButton.style.display = canRequestClaim && !claimId ? '' : 'none';
-  contactButton.dataset.lostId = lostId || '';
-  contactButton.dataset.foundId = foundId || '';
-  conversationButton.style.display = claimId ? '' : 'none';
-  conversationButton.dataset.claimId = claimId || '';
+// "Message the finder" never reveals the finder's identity up front - it opens
+// straight into the claim conversation, matching the privacy the status-only API
+// response already enforces (it strips location/contact for anyone but an admin
+// or the owner). The finder only becomes visible once a claim exists and the two
+// of them are messaging directly.
+function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle) {
+  const button = document.getElementById('matchConversationBtn');
+  if (!button) return;
+  button.style.display = canRequestClaim ? '' : 'none';
+  button.dataset.lostId = lostId || '';
+  button.dataset.foundId = foundId || '';
+  button.dataset.claimId = claimId || '';
+  button.dataset.foundTitle = foundTitle || '';
 }
 
 async function openMatchQrModal(lostId, foundId) {
@@ -1384,7 +1383,7 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchContactFinderButton(data.canRequestClaim, lost.id, found.id, data.claimId);
+    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1411,56 +1410,14 @@ function printMatchQr() {
   window.print();
 }
 
-// ── Claim request (opened from the Match QR modal's "Contact Finder" button) ──────
-function openClaimRequestModalFromMatch() {
-  const button = document.getElementById('matchContactFinderBtn');
-  openClaimRequestModal(button.dataset.lostId, button.dataset.foundId);
-}
-
-function openClaimRequestModal(lostId, foundId) {
+// ── Open the claim conversation straight from the Match QR modal ───────────
+function openClaimThreadModalFromMatch() {
+  const button = document.getElementById('matchConversationBtn');
   closeMatchQrModal();
-  const form = document.getElementById('claimRequestForm');
-  form.reset();
-  form.dataset.lostId = lostId;
-  form.dataset.foundId = foundId;
-  document.getElementById('claimRequestError').style.display = 'none';
-  document.getElementById('claimRequestModal').classList.add('open');
-}
-
-function closeClaimRequestModal() {
-  document.getElementById('claimRequestModal').classList.remove('open');
-}
-
-async function handleSubmitClaimRequest(event) {
-  event.preventDefault();
-  const errorBox = document.getElementById('claimRequestError');
-  errorBox.style.display = 'none';
-  const form = event.target;
-  const proof = document.getElementById('claimRequestProof').value.trim();
-  const contactNumber = document.getElementById('claimRequestContact').value.trim();
-  const button = document.getElementById('claimRequestSubmit');
-  button.disabled = true;
-  try {
-    const res = await fetch(`/api/items/${encodeURIComponent(form.dataset.foundId)}/claim-requests`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'same-origin',
-      body: JSON.stringify({ proof, contactNumber, lostId: form.dataset.lostId })
-    });
-    const data = await res.json();
-    if (data.success) {
-      closeClaimRequestModal();
-      showToast(data.message || 'Claim submitted.');
-      if (data.claim?.id) openClaimThreadModal(data.claim.id);
-    } else {
-      errorBox.textContent = data.message || 'Could not submit the claim.';
-      errorBox.style.display = 'block';
-    }
-  } catch (err) {
-    errorBox.textContent = 'Network error. Please try again.';
-    errorBox.style.display = 'block';
-  } finally {
-    button.disabled = false;
+  if (button.dataset.claimId) {
+    openClaimThreadModal(button.dataset.claimId);
+  } else {
+    openClaimThreadStarter(button.dataset.lostId, button.dataset.foundId, button.dataset.foundTitle);
   }
 }
 
@@ -1740,16 +1697,15 @@ function shareMeetupLocation(claimId, button) {
 // item matches, share where to meet, and each confirm the handover themselves -
 // there is no separate admin approval step any more.
 let activeClaimThreadId = null;
-
-function openClaimThreadModalFromMatch() {
-  const button = document.getElementById('matchConversationBtn');
-  closeMatchQrModal();
-  openClaimThreadModal(button.dataset.claimId);
-}
+// Set instead of activeClaimThreadId while no claim exists yet for this match - the
+// first message the claimant sends doubles as the claim's ownership proof.
+let pendingClaimStart = null;
 
 async function openClaimThreadModal(claimId) {
   if (!claimId) return;
   activeClaimThreadId = claimId;
+  pendingClaimStart = null;
+  document.getElementById('claimThreadInput').placeholder = 'Type a message…';
   document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading…</p>';
   document.getElementById('claimThreadMeetup').innerHTML = '';
   document.getElementById('claimThreadConfirm').innerHTML = '';
@@ -1757,8 +1713,24 @@ async function openClaimThreadModal(claimId) {
   await refreshClaimThread();
 }
 
+// Opened when no claim exists yet for this match - describing the item IS the
+// claim request, submitted the moment the claimant sends their first message.
+function openClaimThreadStarter(lostId, foundId, foundTitle) {
+  activeClaimThreadId = null;
+  pendingClaimStart = { lostId, foundId };
+  document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${foundTitle || 'Item'}`;
+  document.getElementById('claimThreadSubtitle').textContent = 'Starts once you send your first message';
+  document.getElementById('claimThreadBody').innerHTML =
+    '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
+  document.getElementById('claimThreadMeetup').innerHTML = '';
+  document.getElementById('claimThreadConfirm').innerHTML = '';
+  document.getElementById('claimThreadInput').placeholder = "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
+  document.getElementById('claimThreadModal').classList.add('open');
+}
+
 function closeClaimThreadModal() {
   activeClaimThreadId = null;
+  pendingClaimStart = null;
   document.getElementById('claimThreadModal').classList.remove('open');
 }
 
@@ -1834,10 +1806,25 @@ async function sendClaimThreadMessage(event) {
   event.preventDefault();
   const input = document.getElementById('claimThreadInput');
   const text = input.value.trim();
-  if (!text || !activeClaimThreadId) return;
+  if (!text || (!activeClaimThreadId && !pendingClaimStart)) return;
   const button = document.getElementById('claimThreadSendBtn');
   button.disabled = true;
   try {
+    if (pendingClaimStart) {
+      const res = await fetch(`/api/items/${encodeURIComponent(pendingClaimStart.foundId)}/claim-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proof: text, lostId: pendingClaimStart.lostId })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.message || 'Could not start the conversation.');
+      pendingClaimStart = null;
+      activeClaimThreadId = data.claim.id;
+      input.value = '';
+      input.placeholder = 'Type a message…';
+      await refreshClaimThread();
+      return;
+    }
     const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
