@@ -817,7 +817,7 @@ function renderItemsGrid(items) {
 
     let matchBadgeHtml = '';
     if (item.potentialMatch && currentUser) {
-      matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
+      matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id, item.type)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
     }
 
     // Admins and the reporter can both remove a report, lost/found/claimed alike -
@@ -1360,9 +1360,11 @@ async function handleAnonymousFinderSubmit(e) {
 // response already enforces (it strips location/contact for anyone but an admin
 // or a party to the match). The other person only becomes visible once a claim
 // exists and the two of them are messaging directly. Either side can start the
-// conversation - the owner (the lost item's reporter) messages the finder, and
-// the finder (the found item's reporter) messages the owner.
-function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole) {
+// conversation. The label names whichever role the card itself represents
+// (a found item's card always says "Message the finder", a lost item's card
+// always says "Message the owner"), not who the viewer actually is - someone
+// viewing their own reported item's card gets the same label anyone else would.
+function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole, cardType) {
   const button = document.getElementById('matchConversationBtn');
   if (!button) return;
   button.style.display = canRequestClaim ? '' : 'none';
@@ -1371,10 +1373,10 @@ function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId
   button.dataset.claimId = claimId || '';
   button.dataset.foundTitle = foundTitle || '';
   button.dataset.role = requesterRole || '';
-  button.textContent = requesterRole === 'finder' ? '💬 Message the owner' : '💬 Message the finder';
+  button.textContent = cardType === 'lost' ? '💬 Message the owner' : '💬 Message the finder';
 }
 
-async function openMatchQrModal(lostId, foundId) {
+async function openMatchQrModal(lostId, foundId, cardType) {
   try {
     const response = await fetch(`/api/items/match-reference-token?lostId=${encodeURIComponent(lostId)}&foundId=${encodeURIComponent(foundId)}`);
     const data = await response.json();
@@ -1387,7 +1389,7 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole);
+    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole, cardType);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1456,7 +1458,9 @@ async function openMatchReferenceFromQr(token) {
     document.getElementById('matchLostLocation').textContent = data.lost.location || 'Location unavailable';
     document.getElementById('matchFoundLocation').textContent = data.found.location || 'Location unavailable';
     document.getElementById('matchQrImage').src = qrImageUrl(window.location.href);
-    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole);
+    // Scanning the QR has no "card clicked" to anchor the label to - the match
+    // reference is printed from the found item's side, so default to that.
+    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole, 'found');
     document.getElementById('matchQrModal').classList.add('open');
   } catch (error) {
     showToast(error.message || 'Could not open match verification.', 'error');
