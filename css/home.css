@@ -496,7 +496,10 @@
       border-color: #991b1b;
     }
     .btn-delete-notifications:disabled {
-      opacity: 0.45;
+      background: #7f1d1d;
+      border-color: #7f1d1d;
+      color: #ffffff;
+      opacity: 1;
       cursor: not-allowed;
     }
     .notif-time {
