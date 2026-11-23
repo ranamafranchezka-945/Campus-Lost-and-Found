@@ -653,6 +653,15 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
     item.claimedAt = null;
   }
   addItemActivity(item, req, status === 'approved' ? 'Claim approved' : 'Claim rejected', status === 'approved' ? pickupInstructions : rejectionReason);
+  if (status === 'approved') {
+    const lostItem = items.find(entry => String(entry.id) === String(claim.lostItemId));
+    if (lostItem && !lostItem.claimed) {
+      lostItem.claimed = true;
+      lostItem.status = 'claimed';
+      lostItem.claimedAt = claim.reviewedAt;
+      addItemActivity(lostItem, req, 'Claim approved', pickupInstructions);
+    }
+  }
   saveItems(items);
   saveClaims(claims);
   await postgresStore.commitRequest();
@@ -984,6 +993,15 @@ router.post('/claims/:claimId/thread/confirm', requireAuth, async (req, res) => 
       }
     });
     addItemActivity(item, req, 'Claim confirmed by both parties', '');
+    // The matching lost report is resolved too - without this it would keep sitting
+    // in the Lost tab forever, even though the owner already has their item back.
+    const lostItem = items.find(entry => String(entry.id) === String(claim.lostItemId));
+    if (lostItem && !lostItem.claimed) {
+      lostItem.claimed = true;
+      lostItem.status = 'claimed';
+      lostItem.claimedAt = now;
+      addItemActivity(lostItem, req, 'Claim confirmed by both parties', '');
+    }
     saveItems(items);
   }
   saveClaims(claims);
