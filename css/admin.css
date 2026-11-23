@@ -165,17 +165,27 @@
     .broadcast-card h3 { color:var(--blue-light); font-size:1rem; }
     .broadcast-card .form-control { margin-top:.75rem; }
     .broadcast-card .btn { margin-top:.75rem; }
-    .broadcast-template-tools { position:relative; display:flex; justify-content:flex-end; margin-bottom:1rem; }
-    .broadcast-template-actions { display:flex; align-items:center; gap:.45rem; }
+    .broadcast-subject-heading {
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      gap:.75rem;
+      margin-bottom:.5rem;
+    }
+    .broadcast-subject-heading > label { flex:none; margin:0; }
+    .broadcast-card .broadcast-subject-heading + .form-control { margin-top:0; }
+    .broadcast-template-tools { position:relative; display:flex; margin-left:auto; }
+    .broadcast-template-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end; gap:.45rem; }
     .broadcast-template-dropdown-trigger,
     .broadcast-template-clear {
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      min-height:2rem;
-      padding:.35rem .65rem;
+      min-height:2.5rem;
+      padding:.5rem .75rem;
       border:1px solid var(--control-border);
-      border-radius:999px;
+      border-radius:8px;
       background:var(--control-bg);
       color:var(--text-main);
       font:600 .75rem/1.2 var(--admin-font, 'DM Sans', sans-serif);

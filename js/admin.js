@@ -14,60 +14,44 @@ let allowedEmails = [];
     const selectedItemIds = new Set();
     const BROADCAST_TEMPLATES = [
       {
-        id: 'unclaimed',
-        command: '/unclaimed',
-        title: 'Unclaimed Items Notice',
-        description: 'Remind students to claim a recovered item.',
-        subject: 'Unclaimed [Item Name] Available for Claim',
-        message: 'An item matching [Item Name] was found at [Location] on [Date]. If it belongs to you, please visit [Office/Room] to claim it. Please bring a valid ID and share details that confirm ownership.'
-      },
-      {
         id: 'urgent',
         command: '/urgent',
-        title: 'Urgent High-Value / ID Found',
-        description: 'Share a timely notice about a high-value item or ID.',
+        title: 'Urgent Found Item / ID',
+        description: 'Post a quick alert about an item or ID you found.',
         subject: 'Urgent: [Item Name] Found',
-        message: 'A high-value item or ID, [Item Name], was found at [Location] on [Date]. Please contact [Office/Room] as soon as convenient so ownership can be verified and collection arranged. Bring a valid ID and details that confirm the item is yours.'
+        message: 'Hi! I found [Item Name] near [Location] on [Date]. If it may be yours, reply through Back2You with a detail that confirms ownership. We can arrange a safe handover on campus.'
       },
       {
-        id: 'hours',
-        command: '/hours',
-        title: 'Claiming Office Hours Update',
-        description: 'Announce updated claiming hours and location.',
-        subject: 'Claiming Office Hours - [Date]',
-        message: 'The Lost & Found claiming office will be open [Office Hours] on [Date] at [Office/Room]. Please bring a valid ID and the details needed to verify your claim. For questions, contact [Contact Details].'
+        id: 'unclaimed',
+        command: '/unclaimed',
+        title: 'Unclaimed Item Reminder',
+        description: 'Let the owner know a found item is still unclaimed.',
+        subject: 'Reminder: [Item Name] Is Still Unclaimed',
+        message: 'A [Item Name] found near [Location] on [Date] is still unclaimed. If it belongs to you, message the finder through Back2You with a private identifying detail so you can arrange a safe handover.'
       },
       {
-        id: 'event',
-        command: '/event',
-        title: 'Post-Event Lost & Found Sweep',
-        description: 'Report items collected after a campus event.',
-        subject: 'Post-Event Lost & Found Sweep - [Event Name]',
-        message: 'Following [Event Name] on [Date], our team collected items from [Location]. If you are missing something, please visit [Office/Room] and provide a description to help identify it.'
+        id: 'lost',
+        command: '/lost',
+        title: 'Missing Item Alert',
+        description: 'Ask the campus community to help find a misplaced item.',
+        subject: 'Missing: [Item Name] Last Seen Near [Location]',
+        message: 'I misplaced [Item Name] near [Location] on [Date]. It is [Description]. If you found it, please message me through Back2You and share a detail to help confirm it.'
       },
       {
-        id: 'policy',
-        command: '/policy',
-        title: 'Claim Verification Requirements',
-        description: 'Explain what claimants should bring to verify ownership.',
-        subject: 'Claim Verification Requirements - [Item Name]',
-        message: 'To claim [Item Name], found at [Location] on [Date], please visit [Office/Room]. Bring a valid ID and be ready to describe identifying details not included in the public notice. Staff will verify ownership before releasing an item.'
+        id: 'batch',
+        command: '/batch',
+        title: 'Weekly Unclaimed Summary',
+        description: 'Share a roundup of items still waiting to be claimed.',
+        subject: 'Weekly Unclaimed Items Summary - [Week of Date]',
+        message: 'These items were reported found this week and are still unclaimed: [List of Items]. If one may be yours, open its listing on Back2You and message the finder with a private identifying detail. Please arrange any handover directly and safely.'
       },
       {
-        id: 'turnover',
-        command: '/turnover',
-        title: 'Unclaimed Items Turnover Reminder',
-        description: 'Remind students about the unclaimed items turnover deadline.',
-        subject: 'Notice: Unclaimed Items Scheduled for Turnover/Archiving on [Date]',
-        message: 'These items will be archived/turned over on [Date] if unclaimed: [List of Items]. Please visit [Office/Room] before the deadline with a valid ID and proof of ownership to claim your belongings.'
-      },
-      {
-        id: 'recap',
-        command: '/recap',
-        title: 'Monthly Good-News Recap',
-        description: 'Share the number of items returned to owners this month.',
-        subject: 'Monthly Recap: [X] Items Returned to Owners This Month — Thank You!',
-        message: '[X] items returned to owners this month — Thank you to everyone in the CSPC community who reported, turned in, and helped return lost belongings! If you\'re still looking for a misplaced item, check the latest listings on Back2You or visit [Office/Room].'
+        id: 'safety',
+        command: '/safety',
+        title: 'Meetup & Claim Reminder',
+        description: 'Share a few reminders for a safe, verified handover.',
+        subject: 'A Safe Meetup for [Item Name]',
+        message: 'Before meeting about [Item Name], confirm the item details in Back2You messages and agree on a public campus location and time ([Date/Time]). Consider bringing someone you trust. Do not share sensitive information or meet if you feel unsafe.'
       }
     ];
     let visibleAdminItems = [];
@@ -794,6 +778,23 @@ let allowedEmails = [];
           && (target.matches('input, textarea, select') || target.isContentEditable);
         const hasOpenDialog = document.querySelector('.slip-overlay.open, .del-modal-backdrop.open');
         if (hasOpenDialog) return;
+
+        const broadcastSection = document.getElementById('tabBroadcast');
+        if (activeTab === 'broadcast' && broadcastSection.contains(target)) {
+          if (event.altKey && !event.ctrlKey && !event.metaKey && /^[1-5]$/.test(event.key)) {
+            const option = document.querySelectorAll('#broadcastTemplateMenu [role="menuitem"]')[Number(event.key) - 1];
+            if (option) {
+              event.preventDefault();
+              option.click();
+              return;
+            }
+          }
+          if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key === 'Enter') {
+            event.preventDefault();
+            document.getElementById('sendBroadcastBtn').click();
+            return;
+          }
+        }
 
         const commandK = (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k';
         const searchShortcut = commandK
@@ -1786,7 +1787,7 @@ let allowedEmails = [];
       }
 
       function handlePlaceholderTab(event) {
-        if (event.key !== 'Tab' || event.shiftKey) return;
+        if (event.key !== 'Tab' || event.shiftKey || !menu.hidden) return;
         const target = selectNextPlaceholder(event.currentTarget);
         if (!target) return;
         event.preventDefault();
@@ -1805,11 +1806,12 @@ let allowedEmails = [];
 
         const subjectPlaceholder = /\[[^\]]+\]/.exec(subject.value);
         const messagePlaceholder = /\[[^\]]+\]/.exec(message.value);
-        subject.focus();
-        if (subjectPlaceholder) subject.setSelectionRange(subjectPlaceholder.index, subjectPlaceholder.index + subjectPlaceholder[0].length);
-        else if (messagePlaceholder) {
+        if (messagePlaceholder) {
           message.focus();
           message.setSelectionRange(messagePlaceholder.index, messagePlaceholder.index + messagePlaceholder[0].length);
+        } else {
+          subject.focus();
+          if (subjectPlaceholder) subject.setSelectionRange(subjectPlaceholder.index, subjectPlaceholder.index + subjectPlaceholder[0].length);
         }
       }
 
@@ -1823,7 +1825,7 @@ let allowedEmails = [];
         const commandText = field === subject
           ? precedingText
           : precedingText.slice(precedingText.lastIndexOf('\n') + 1);
-        const commandMatch = commandText.match(/^\/([a-z0-9-]*)$/i);
+        const commandMatch = commandText.match(/(?:^|\s)\/([a-z0-9-]*)$/i);
         if (!commandMatch) {
           closeMenu();
           return;
@@ -1877,7 +1879,9 @@ let allowedEmails = [];
         } else if (event.key === 'ArrowUp') {
           event.preventDefault();
           selectOption(selectedIndex - 1);
-        } else if (event.key === 'Enter') {
+        } else if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+          return;
+        } else if (event.key === 'Enter' || (event.key === 'Tab' && !event.shiftKey)) {
           event.preventDefault();
           insertTemplate(matches[selectedIndex]);
         } else if (event.key === 'Escape') {
@@ -1955,6 +1959,20 @@ let allowedEmails = [];
           const option = event.key === 'Home' ? options[0] : options[options.length - 1];
           if (option) option.focus();
         }
+      });
+      document.getElementById('tabBroadcast').addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || event.defaultPrevented
+          || document.querySelector('.slip-overlay.open, .del-modal-backdrop.open')) return;
+        event.preventDefault();
+        if (!menu.hidden) closeMenu();
+        else if (!templateMenu.hidden) {
+          closeTemplateMenu();
+          templateToggle.focus();
+        } else document.getElementById('clearBroadcastBtn').click();
+      });
+      document.getElementById('sendBroadcastBtn').addEventListener('click', () => {
+        closeMenu();
+        closeTemplateMenu();
       });
       document.getElementById('clearBroadcastBtn').addEventListener('click', () => {
         subject.value = '';

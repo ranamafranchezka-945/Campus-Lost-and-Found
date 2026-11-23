@@ -315,17 +315,19 @@
             </div>
           </div>
           <div class="broadcast-card">
-            <div class="broadcast-template-tools">
-              <div class="broadcast-template-actions">
-                <button type="button" class="broadcast-template-dropdown-trigger" id="broadcastTemplateToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="broadcastTemplateMenu">
-                  Templates <span aria-hidden="true">▾</span>
-                </button>
-                <button type="button" class="broadcast-template-clear" id="clearBroadcastBtn">Clear</button>
-              </div>
-              <div class="broadcast-template-menu" id="broadcastTemplateMenu" role="menu" aria-label="Broadcast message templates" hidden></div>
-            </div>
             <div class="broadcast-fields" id="broadcastFields">
-              <label for="broadcastSubject">Subject</label>
+              <div class="broadcast-subject-heading">
+                <label for="broadcastSubject">Subject</label>
+                <div class="broadcast-template-tools">
+                  <div class="broadcast-template-actions">
+                    <button type="button" class="broadcast-template-dropdown-trigger" id="broadcastTemplateToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="broadcastTemplateMenu">
+                      Templates <span aria-hidden="true">▾</span>
+                    </button>
+                    <button type="button" class="broadcast-template-clear" id="clearBroadcastBtn">Clear</button>
+                  </div>
+                  <div class="broadcast-template-menu" id="broadcastTemplateMenu" role="menu" aria-label="Broadcast message templates" hidden></div>
+                </div>
+              </div>
               <input class="form-control" id="broadcastSubject" maxlength="120" placeholder="Announcement subject" aria-controls="broadcastCommandMenu" aria-expanded="false" />
               <label for="broadcastMessage">Message</label>
               <textarea class="claim-review-input" id="broadcastMessage" maxlength="2000" rows="5" placeholder="Write the announcement..." aria-controls="broadcastCommandMenu" aria-expanded="false"></textarea>
@@ -483,6 +485,9 @@
         <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>7</kbd></span><span>User management</span></div>
         <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>8</kbd></span><span>Students' belongings</span></div>
         <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>E</kbd></span><span>Export CSV (Dashboard only)</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Alt</kbd>+<kbd>1</kbd>–<kbd>5</kbd></span><span>Insert Broadcast template 1–5 when focused in Broadcast</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Cmd</kbd>+<kbd>Enter</kbd></span><span>Open the send confirmation when focused in Broadcast</span></div>
+        <div class="keyboard-shortcuts-row"><span><kbd>Esc</kbd> (Broadcast)</span><span>Close command menu or clear the form when focused in Broadcast</span></div>
         <div class="keyboard-shortcuts-row"><span><kbd>[</kbd></span><span>Collapse or expand the sidebar</span></div>
         <div class="keyboard-shortcuts-row"><span><kbd>?</kbd> (<kbd>Shift</kbd>+<kbd>/</kbd>)</span><span>Open this shortcuts guide</span></div>
       </div>
