@@ -1355,12 +1355,14 @@ async function handleAnonymousFinderSubmit(e) {
 }
 
 // ── Match QR Modal ────────────────────────────────────────────────────────
-// "Message the finder" never reveals the finder's identity up front - it opens
+// The button never reveals the other party's identity up front - it opens
 // straight into the claim conversation, matching the privacy the status-only API
 // response already enforces (it strips location/contact for anyone but an admin
-// or the owner). The finder only becomes visible once a claim exists and the two
-// of them are messaging directly.
-function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle) {
+// or a party to the match). The other person only becomes visible once a claim
+// exists and the two of them are messaging directly. Either side can start the
+// conversation - the owner (the lost item's reporter) messages the finder, and
+// the finder (the found item's reporter) messages the owner.
+function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole) {
   const button = document.getElementById('matchConversationBtn');
   if (!button) return;
   button.style.display = canRequestClaim ? '' : 'none';
@@ -1368,6 +1370,8 @@ function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId
   button.dataset.foundId = foundId || '';
   button.dataset.claimId = claimId || '';
   button.dataset.foundTitle = foundTitle || '';
+  button.dataset.role = requesterRole || '';
+  button.textContent = requesterRole === 'finder' ? '💬 Message the owner' : '💬 Message the finder';
 }
 
 async function openMatchQrModal(lostId, foundId) {
@@ -1383,7 +1387,7 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title);
+    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1417,7 +1421,7 @@ function openClaimThreadModalFromMatch() {
   if (button.dataset.claimId) {
     openClaimThreadModal(button.dataset.claimId);
   } else {
-    openClaimThreadStarter(button.dataset.lostId, button.dataset.foundId, button.dataset.foundTitle);
+    openClaimThreadStarter(button.dataset.lostId, button.dataset.foundId, button.dataset.foundTitle, button.dataset.role);
   }
 }
 
@@ -1452,8 +1456,8 @@ async function openMatchReferenceFromQr(token) {
     document.getElementById('matchLostLocation').textContent = data.lost.location || 'Location unavailable';
     document.getElementById('matchFoundLocation').textContent = data.found.location || 'Location unavailable';
     document.getElementById('matchQrImage').src = qrImageUrl(window.location.href);
-    document.getElementById('matchQrModal').classList.remove('open');
-    showAnonymousFinderForItem(data.found, token);
+    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole);
+    document.getElementById('matchQrModal').classList.add('open');
   } catch (error) {
     showToast(error.message || 'Could not open match verification.', 'error');
   }
@@ -1715,16 +1719,19 @@ async function openClaimThreadModal(claimId) {
 
 // Opened when no claim exists yet for this match - describing the item IS the
 // claim request, submitted the moment the claimant sends their first message.
-function openClaimThreadStarter(lostId, foundId, foundTitle) {
+function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
   activeClaimThreadId = null;
   pendingClaimStart = { lostId, foundId };
   document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${foundTitle || 'Item'}`;
   document.getElementById('claimThreadSubtitle').textContent = 'Starts once you send your first message';
-  document.getElementById('claimThreadBody').innerHTML =
-    '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
+  document.getElementById('claimThreadBody').innerHTML = requesterRole === 'finder'
+    ? '<p class="thread-empty">Send the owner a message - where you found it, or ask them to confirm a detail - to start the conversation.</p>'
+    : '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
   document.getElementById('claimThreadMeetup').innerHTML = '';
   document.getElementById('claimThreadConfirm').innerHTML = '';
-  document.getElementById('claimThreadInput').placeholder = "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
+  document.getElementById('claimThreadInput').placeholder = requesterRole === 'finder'
+    ? 'e.g. Found it near the gym entrance, handed it to campus security.'
+    : "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
   document.getElementById('claimThreadModal').classList.add('open');
 }
 

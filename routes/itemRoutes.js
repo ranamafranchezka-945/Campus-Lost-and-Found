@@ -246,6 +246,15 @@ function findOwnClaimId(foundItem, claims, userId) {
   return claim ? claim.id : null;
 }
 
+// Either the owner (the matching lost item's reporter) or the finder (the found
+// item's reporter) can open the claim conversation - whichever one this viewer is.
+function matchRequesterRole(lost, found, userId) {
+  if (!userId) return null;
+  if (String(lost.reportedBy) === String(userId)) return 'owner';
+  if (String(found.reportedBy) === String(userId)) return 'finder';
+  return null;
+}
+
 // Helper: Smart Match & Reconciliation Detector
 function normalizeText(value) {
   return String(value || '')
@@ -1375,6 +1384,7 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
   const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
   const url = `${baseUrl.replace(/\/$/, '')}/match-reference?token=${encodeURIComponent(token)}`;
   if (!isAdmin) {
+    const requesterRole = matchRequesterRole(lost, found, req.session.user.id);
     return res.json({
       success: true,
       view: 'status-only',
@@ -1382,8 +1392,9 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
       url,
       referenceId,
       foundItemId: found.id,
-      canRequestClaim: String(lost.reportedBy) === String(req.session.user.id) && !found.claimed,
-      claimId: findOwnClaimId(found, claims, req.session.user.id),
+      canRequestClaim: Boolean(requesterRole) && !found.claimed,
+      requesterRole,
+      claimId: findOwnClaimId(found, claims, lost.reportedBy),
       issuedAt: new Date(issuedAt).toISOString(),
       expiresAt: new Date(expiresAt).toISOString(),
       status,
@@ -1428,6 +1439,7 @@ router.get('/match-reference/:token', (req, res) => {
   found.matchScanLog = found.matchScanLog.slice(0, 100);
   saveItems(items);
   if (req.session?.user?.role !== 'admin') {
+    const requesterRole = matchRequesterRole(lost, found, req.session?.user?.id);
     return res.json({
       success: true,
       view: 'status-only',
@@ -1435,8 +1447,9 @@ router.get('/match-reference/:token', (req, res) => {
       issuedAt: new Date(reference.issuedAt).toISOString(),
       expiresAt: new Date(reference.expiresAt).toISOString(),
       referenceId,
-      canRequestClaim: Boolean(req.session?.user) && String(lost.reportedBy) === String(req.session.user.id) && !found.claimed,
-      claimId: findOwnClaimId(found, claims, req.session?.user?.id),
+      canRequestClaim: Boolean(requesterRole) && !found.claimed,
+      requesterRole,
+      claimId: findOwnClaimId(found, claims, lost.reportedBy),
       status,
       lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
       found: { id: found.id, title: found.title, refCode: found.refCode }
@@ -1605,13 +1618,17 @@ router.get('/:id', (req, res) => {
   });
 });
 
+// Either the lost item's owner or the found item's finder can start this
+// conversation - whichever one of them didn't start it is still always the
+// "claimant" (claimantId, claimantName, etc. always describe the owner, since
+// that's who meetup/confirm/email logic elsewhere keys off of).
 router.post('/:id/claim-requests', requireAuth, async (req, res) => {
   const proof = sanitizeString(req.body.proof || '');
-  const courseYear = sanitizeString(req.body.courseYear || req.session.user.courseYear || req.session.user.yearLevel || '');
-  const contactNumber = sanitizeString(req.body.contactNumber || req.session.user.phone || req.session.user.contactNumber || '');
   if (proof.length < 5 || proof.length > 500) {
-    return res.status(400).json({ success: false, message: 'Ownership details must be between 5 and 500 characters.' });
+    return res.status(400).json({ success: false, message: 'Describe the item or an identifying detail, between 5 and 500 characters.' });
   }
+  const courseYear = sanitizeString(req.body.courseYear || '');
+  const contactNumber = sanitizeString(req.body.contactNumber || '');
   if (courseYear.length > 100 || contactNumber.length > 50) {
     return res.status(400).json({ success: false, message: 'Claimant contact details exceed the allowed length.' });
   }
@@ -1626,20 +1643,32 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     String(entry.id) === String(req.body.lostId) &&
     entry.type === 'lost'
   );
-  const isLostReporter = lostItem && String(lostItem.reportedBy) === String(req.session.user.id);
   const isPotentialMatch = lostItem && findMatches(lostItem, items).some(match => String(match.id) === String(item.id));
-  if (!isLostReporter || !isPotentialMatch) {
-    return res.status(403).json({ success: false, message: 'Only the original reporter of the matching lost item can submit this claim request.' });
+  const userId = String(req.session.user.id);
+  const isOwner = lostItem && String(lostItem.reportedBy) === userId;
+  const isFinder = String(item.reportedBy) === userId;
+  if (!isPotentialMatch || (!isOwner && !isFinder)) {
+    return res.status(403).json({ success: false, message: "Only the lost item's owner or the found item's finder can start this conversation." });
   }
+
+  const claimant = isOwner ? req.session.user : readJsonArray(USERS_FILE).find(user => String(user.id) === String(lostItem.reportedBy));
+  if (!claimant) {
+    return res.status(404).json({ success: false, message: "The lost item's owner account could not be found." });
+  }
+  // The body's courseYear/contactNumber are only ever honored when the claimant is
+  // submitting for themselves - letting the finder set the owner's contact details
+  // through the conversation's starter message would let them spoof that data.
+  const claimantContact = isOwner ? (contactNumber || claimant.phone || claimant.contactNumber || '') : (claimant.phone || claimant.contactNumber || '');
+  const claimantCourseYear = isOwner ? (courseYear || claimant.courseYear || claimant.yearLevel || '') : (claimant.courseYear || claimant.yearLevel || '');
 
   const claims = getClaims();
   const duplicate = claims.some(claim =>
     String(claim.itemId) === String(item.id) &&
-    claim.claimantId === req.session.user.id &&
+    String(claim.claimantId) === String(claimant.id) &&
     claim.status === 'pending'
   );
   if (duplicate) {
-    return res.status(409).json({ success: false, message: 'You already have a pending claim for this item.' });
+    return res.status(409).json({ success: false, message: 'There is already a pending claim conversation for this item.' });
   }
 
   const claim = {
@@ -1650,20 +1679,20 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     lostItemId: lostItem.id,
     lostItemTitle: lostItem.title,
     lostItemRefCode: lostItem.refCode,
-    claimantId: req.session.user.id,
-    claimantName: req.session.user.fullName,
-    claimantEmail: req.session.user.email,
-    claimantContact: contactNumber,
-    claimantStudentId: req.session.user.studentId || '',
-    claimantCourseYear: courseYear,
-    claimantDepartment: req.session.user.department || '',
+    claimantId: claimant.id,
+    claimantName: claimant.fullName,
+    claimantEmail: claimant.email,
+    claimantContact,
+    claimantStudentId: claimant.studentId || '',
+    claimantCourseYear,
+    claimantDepartment: claimant.department || '',
     proof,
     status: 'pending',
     createdAt: new Date().toISOString()
   };
-  // The proof doubles as the opening message of the claim conversation, so the
-  // claimant sees what they just sent rather than an empty thread.
-  claim.messages = [{ id: `msg-${crypto.randomUUID()}`, senderId: claim.claimantId, text: proof, createdAt: claim.createdAt }];
+  // The proof doubles as the opening message of the claim conversation, so
+  // whoever started it sees what they just sent rather than an empty thread.
+  claim.messages = [{ id: `msg-${crypto.randomUUID()}`, senderId: req.session.user.id, text: proof, createdAt: claim.createdAt }];
   claims.unshift(claim);
   saveClaims(claims);
   await postgresStore.commitRequest();
@@ -1673,7 +1702,7 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     user.email && (
       user.role === 'admin' ||
       String(user.id) === String(item.reportedBy) ||
-      String(user.id) === String(req.session.user.id)
+      String(user.id) === String(claim.claimantId)
     )
   );
   for (const recipient of recipients) {
@@ -1684,7 +1713,13 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     }
   }
 
-  res.status(201).json({ success: true, message: 'Claim request submitted. Open the conversation to talk with the finder.', claim: { id: claim.id, status: claim.status } });
+  res.status(201).json({
+    success: true,
+    message: isOwner
+      ? 'Claim request submitted. Open the conversation to talk with the finder.'
+      : 'Message sent. Open the conversation to talk with the owner.',
+    claim: { id: claim.id, status: claim.status }
+  });
 });
 
 // POST /api/items - Create item report
