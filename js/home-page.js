@@ -2190,6 +2190,14 @@ async function loadNotificationsIntoModal() {
     document.getElementById('selectAllNotifications').checked = false;
     list.innerHTML = data.notifications.map(n => n.notificationType === 'finder-conversation' ? `
       <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+        <label class="notification-select-control">
+          <input class="notification-select" type="checkbox" value="${escapeHtml(JSON.stringify({
+            kind: 'item',
+            recordId: String(n.itemId),
+            id: String(n.id)
+          }))}" data-change="updateNotificationSelection">
+          <span>Select conversation</span>
+        </label>
         <div class="notif-header">
           <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>

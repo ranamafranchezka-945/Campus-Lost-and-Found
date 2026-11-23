@@ -835,6 +835,26 @@ test('registered QR alerts create a secure owner-finder conversation with messag
     headers: guestHeaders
   });
   assert.equal(expiredResponse.status, 410);
+
+  const notificationReference = [{ kind: 'item', recordId: '12', id: conversationId }];
+  const otherOwnerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Cookie: otherStudentCookie },
+    body: JSON.stringify({ notificationIds: notificationReference })
+  });
+  assert.equal((await otherOwnerDeleteResponse.json()).deletedCount, 0);
+
+  const ownerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({ notificationIds: notificationReference })
+  });
+  assert.equal(ownerDeleteResponse.status, 200);
+  assert.equal((await ownerDeleteResponse.json()).deletedCount, 1);
+  const deletedConversationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal(deletedConversationResponse.status, 404);
 });
 
 test('finder QR alerts appear in the owner inbox and are emailed to the owner', async t => {
