@@ -305,6 +305,27 @@ function createApp() {
   return app;
 }
 
+// Two instances can end up starting at almost the same moment (a deploy's old and new
+// process briefly overlapping, or a crash-looping restart), and their first-run
+// CREATE/ALTER TABLE statements then collide on Postgres's system catalog with
+// "tuple concurrently updated" - transient, and gone as soon as the other instance's
+// statement commits, so retry a few times instead of crashing the whole process over
+// a race that clears itself within a second or two.
+async function initializeDatabaseWithRetry(attempts = 5, baseDelayMs = 500) {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await postgresStore.initialize();
+      return;
+    } catch (error) {
+      const retryable = /tuple concurrently updated|deadlock detected/i.test(error.message);
+      if (!retryable || attempt === attempts) throw error;
+      const delay = baseDelayMs * attempt + Math.random() * baseDelayMs;
+      console.warn(`Database setup hit a transient conflict (attempt ${attempt}/${attempts}), retrying in ${Math.round(delay)}ms:`, error.message);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+}
+
 async function startServer() {
   const PORT = process.env.PORT || 3000;
   const app = createApp();
@@ -314,7 +335,7 @@ async function startServer() {
   // the application within their startup timeout.
   try {
     if (process.env.NODE_ENV === 'production' || postgresStore.isConfigured()) {
-      await postgresStore.initialize();
+      await initializeDatabaseWithRetry();
     }
     await authRoutes.ensureDefaultAdminAccount();
   } catch (error) {
