@@ -275,8 +275,16 @@
         <div class="form-row">
           <div class="input-field">
             <label for="itemLocation">CSPC Office / Campus Location *</label>
-            <input type="text" id="itemLocation" list="itemLocationOptions" required
-                   placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+            <div class="location-input-wrap">
+              <span class="location-input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+              </span>
+              <input type="text" id="itemLocation" list="itemLocationOptions" required
+                     placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+            </div>
             <datalist id="itemLocationOptions">
               <option value="College of Computer Studies (CCS)"></option>
               <option value="College of Engineering and Architecture (CEA)"></option>
