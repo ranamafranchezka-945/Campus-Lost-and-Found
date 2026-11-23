@@ -2421,6 +2421,7 @@ async function loadNotificationsIntoModal() {
           ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
           : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'}
         <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
+        <button type="button" class="btn-delete-conversation" data-action="deleteClaimConversationNotification" data-args="${actionArgs(n.claimId, '$el')}">Delete conversation</button>
       </div>
     ` : n.notificationType === 'meetup' ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
@@ -2555,6 +2556,39 @@ async function deleteRegisteredConversationNotification(notificationId, itemId, 
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
     if (!data.deletedCount) throw new Error('The conversation was not found or is no longer available.');
     showToast('Conversation deleted.');
+    await loadNotificationsIntoModal();
+    await loadMyNotifications();
+  } catch (error) {
+    button.disabled = false;
+    showToast(error.message || 'Could not delete the conversation.', 'error');
+  }
+}
+
+async function deleteClaimConversationNotification(claimId, button) {
+  if (!claimId || button.disabled) return;
+  const confirmed = await askConfirm(
+    'Remove this claim conversation from your Account Notifications? The other participant will still have access.',
+    { title: 'Delete conversation?', confirmLabel: 'Delete', icon: '🗑️' }
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/items/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{
+          kind: 'claim-conversation',
+          recordId: String(claimId),
+          id: `claim-conversation-${claimId}`
+        }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
+    if (!data.deletedCount) throw new Error('The conversation was not found or is no longer available.');
+    showToast('Conversation deleted from your notifications.');
     await loadNotificationsIntoModal();
     await loadMyNotifications();
   } catch (error) {
