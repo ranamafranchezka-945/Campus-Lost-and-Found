@@ -45,8 +45,139 @@ function findFinderSubmission(items, submissionKey) {
 }
 
 function publicFinderNotification(notification) {
-  const { submissionKey, submissionFingerprint, ...result } = notification;
+  const { submissionKey, submissionFingerprint, conversation, ...result } = notification;
+  if (conversation) {
+    result.conversation = {
+      status: conversation.status,
+      expiresAt: conversation.expiresAt
+    };
+  }
   return result;
+}
+
+const REGISTERED_CONVERSATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const REGISTERED_CONVERSATION_MESSAGE_LIMIT = { max: 60, windowMs: 60 * 60 * 1000 };
+const registeredConversationAttempts = new Map();
+
+function finderConversationTokenHash(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+function loadRegisteredConversation(req, res, role) {
+  const items = getItems();
+  const item = items.find(entry => entry.type === 'registered' &&
+    Array.isArray(entry.notifications) &&
+    entry.notifications.some(notification => notification.id === req.params.conversationId && notification.conversation));
+  const notification = item?.notifications.find(entry => entry.id === req.params.conversationId);
+  const conversation = notification?.conversation;
+  if (!item || !notification || !conversation) {
+    res.status(404).json({ success: false, message: 'Finder conversation not found.' });
+    return null;
+  }
+  if (Date.parse(conversation.expiresAt) <= Date.now()) {
+    res.status(410).json({ success: false, message: 'This finder conversation has expired.' });
+    return null;
+  }
+
+  if (role === 'owner') {
+    if (String(item.reportedBy) !== String(req.session.user.id)) {
+      res.status(404).json({ success: false, message: 'Finder conversation not found.' });
+      return null;
+    }
+  } else {
+    const token = /^Bearer ([a-f0-9]{64})$/i.exec(req.get('Authorization') || '')?.[1];
+    if (!token) {
+      res.status(401).json({ success: false, message: 'A valid conversation link is required.' });
+      return null;
+    }
+    const providedHash = Buffer.from(finderConversationTokenHash(token), 'hex');
+    const savedHash = Buffer.from(String(conversation.tokenHash || ''), 'hex');
+    if (savedHash.length !== providedHash.length || !crypto.timingSafeEqual(providedHash, savedHash)) {
+      res.status(404).json({ success: false, message: 'Finder conversation not found.' });
+      return null;
+    }
+  }
+
+  return { items, item, notification, conversation, role };
+}
+
+function registeredConversationView(context) {
+  const { item, notification, conversation, role } = context;
+  const otherRole = role === 'owner' ? 'finder' : 'owner';
+  const meetup = conversation.meetup || {};
+  const myRequest = meetup[role] || {};
+  const theirRequest = meetup[otherRole] || {};
+  const otherName = role === 'owner'
+    ? notification.finderContact && notification.finderContact !== 'Anonymous Student / Finder'
+      ? notification.finderContact
+      : 'Anonymous finder'
+    : 'Item owner';
+
+  return {
+    success: true,
+    claim: { id: notification.id, status: conversation.status === 'returned' ? 'returned' : 'pending' },
+    conversation: { id: notification.id, status: conversation.status, expiresAt: conversation.expiresAt },
+    item: { id: item.id, title: item.title },
+    otherName,
+    role,
+    messages: (conversation.messages || []).map(message => ({
+      id: message.id,
+      text: message.text,
+      mine: message.sender === role,
+      createdAt: message.createdAt
+    })),
+    confirmedByMe: (conversation.confirmations || []).includes(role),
+    confirmedByOther: (conversation.confirmations || []).includes(otherRole),
+    meetupNotification: {
+      claimId: `registered:${notification.id}`,
+      itemTitle: item.title,
+      role,
+      otherName,
+      timestamp: notification.timestamp,
+      myLocation: {
+        status: theirRequest.status,
+        location: theirRequest.location,
+        expiresAt: theirRequest.location?.expiresAt
+      },
+      theirLocation: {
+        status: myRequest.status,
+        location: myRequest.location,
+        expiresAt: myRequest.location?.expiresAt,
+        askAgainAt: myRequest.status === 'declined'
+          ? new Date(Date.parse(myRequest.respondedAt) + MEETUP_ASK_AGAIN_MS).toISOString()
+          : null
+      }
+    }
+  };
+}
+
+function pruneRegisteredConversationMeetup(conversation, now = Date.now()) {
+  if (!conversation.meetup) return false;
+  let changed = false;
+  Object.values(conversation.meetup).forEach(request => {
+    if (request.location && Date.parse(request.location.expiresAt) <= now) {
+      delete request.location;
+      request.status = 'expired';
+      changed = true;
+    }
+    if (request.status === 'pending' && now - Date.parse(request.createdAt) > MEETUP_REQUEST_TTL_MS) {
+      request.status = 'expired';
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+function registeredConversationHandler(role, handler) {
+  return async (req, res, next) => {
+    try {
+      const context = loadRegisteredConversation(req, res, role);
+      if (!context) return;
+      await handler(context, req, res);
+    } catch (error) {
+      next(error);
+    }
+  };
 }
 
 // res.sendFile requires an absolute path. DATA_DIR is commonly configured as
@@ -1192,10 +1323,13 @@ router.get('/qr-lookup/:refCode', (req, res) => {
 // POST /api/items/anonymous-notify - Public finder messaging (delivers alert straight to owner's account)
 router.post('/anonymous-notify', async (req, res) => {
   try {
-    const { refCode, message, locationFound, finderContact } = req.body;
+    const { refCode, message, locationFound, finderContact, conversationToken } = req.body;
     const submissionKey = req.get('Idempotency-Key')?.trim();
     if (!refCode || !message) {
       return res.status(400).json({ success: false, message: 'Reference code and message are required.' });
+    }
+    if (conversationToken && !/^[a-f0-9]{64}$/i.test(conversationToken)) {
+      return res.status(400).json({ success: false, message: 'Invalid finder conversation token.' });
     }
     if (submissionKey && !/^[A-Za-z0-9_-]{16,128}$/.test(submissionKey)) {
       return res.status(400).json({ success: false, message: 'Invalid finder alert submission key.' });
@@ -1217,11 +1351,24 @@ router.post('/anonymous-notify', async (req, res) => {
       if (previousSubmission.submissionFingerprint !== submissionFingerprint) {
         return res.status(409).json({ success: false, message: 'This finder alert key was already used for a different alert.' });
       }
+      if (conversationToken && previousSubmission.conversation &&
+          previousSubmission.conversation.tokenHash !== finderConversationTokenHash(conversationToken)) {
+        return res.status(409).json({ success: false, message: 'This finder alert key was already used for a different conversation.' });
+      }
       return res.json({
         success: true,
         duplicate: true,
         message: 'This alert was already sent to the owner.',
-        notification: publicFinderNotification(previousSubmission)
+        notification: publicFinderNotification(previousSubmission),
+        ...(conversationToken && previousSubmission.conversation
+          ? {
+              conversation: {
+                id: previousSubmission.id,
+                token: conversationToken,
+                expiresAt: previousSubmission.conversation.expiresAt
+              }
+            }
+          : {})
       });
     }
 
@@ -1241,7 +1388,7 @@ router.post('/anonymous-notify', async (req, res) => {
     if (!item.notifications) item.notifications = [];
 
     const newNotification = {
-      id: 'notif-' + Date.now(),
+      id: `notif-${crypto.randomUUID()}`,
       refCode: item.refCode,
       itemTitle: item.title,
       message: sanitizeString(message),
@@ -1249,6 +1396,22 @@ router.post('/anonymous-notify', async (req, res) => {
       finderContact: sanitizeString(finderContact || 'Anonymous Student / Finder'),
       timestamp: new Date().toISOString(),
       read: false,
+      ...(conversationToken ? {
+        conversation: {
+          tokenHash: finderConversationTokenHash(conversationToken),
+          status: 'open',
+          createdAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + REGISTERED_CONVERSATION_TTL_MS).toISOString(),
+          messages: [{
+            id: `msg-${crypto.randomUUID()}`,
+            sender: 'finder',
+            text: sanitizeString(message).slice(0, 500),
+            createdAt: new Date().toISOString()
+          }],
+          confirmations: [],
+          meetup: {}
+        }
+      } : {}),
       ...(submissionKey ? { submissionKey, submissionFingerprint } : {})
     };
 
@@ -1278,12 +1441,199 @@ router.post('/anonymous-notify', async (req, res) => {
         : 'Finder alert saved to the owner\'s inbox, but email delivery is unavailable.',
       emailSent,
       itemTitle: item.title,
-      notification: publicFinderNotification(newNotification)
+      notification: publicFinderNotification(newNotification),
+      ...(conversationToken ? {
+        conversation: {
+          id: newNotification.id,
+          token: conversationToken,
+          expiresAt: newNotification.conversation.expiresAt
+        }
+      } : {})
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to deliver notification.' });
   }
 });
+
+router.get('/registered-conversations/:conversationId', requireAuth,
+  registeredConversationHandler('owner', async (context, req, res) => {
+    let changed = false;
+    if (!context.notification.read) {
+      context.notification.read = true;
+      changed = true;
+    }
+    if (pruneRegisteredConversationMeetup(context.conversation)) changed = true;
+    if (changed) {
+      saveItems(context.items);
+      await postgresStore.commitRequest();
+    }
+    res.json(registeredConversationView(context));
+  }));
+
+router.get('/registered-conversations/:conversationId/guest',
+  registeredConversationHandler('finder', (context, req, res) => {
+    if (pruneRegisteredConversationMeetup(context.conversation)) {
+      saveItems(context.items);
+      return postgresStore.commitRequest().then(() => res.json(registeredConversationView(context)));
+    }
+    res.json(registeredConversationView(context));
+  }));
+
+function sendRegisteredConversationMessage(role) {
+  return registeredConversationHandler(role, async (context, req, res) => {
+    const { conversation } = context;
+    if (conversation.status !== 'open') {
+      return res.status(409).json({ success: false, message: 'This conversation has been resolved.' });
+    }
+    const senderKey = `${context.notification.id}:${role}`;
+    if (isRateLimited(registeredConversationAttempts, senderKey, REGISTERED_CONVERSATION_MESSAGE_LIMIT)) {
+      return res.status(429).json({ success: false, message: 'Too many messages were sent. Please try again later.' });
+    }
+    const text = sanitizeString(req.body.text || '');
+    if (text.length < 1 || text.length > 500) {
+      return res.status(400).json({ success: false, message: 'Message must be 1-500 characters.' });
+    }
+    conversation.messages.push({
+      id: `msg-${crypto.randomUUID()}`,
+      sender: role,
+      text,
+      createdAt: new Date().toISOString()
+    });
+    conversation.messages = conversation.messages.slice(-500);
+    if (role === 'finder') context.notification.read = false;
+    saveItems(context.items);
+    await postgresStore.commitRequest();
+    res.status(201).json(registeredConversationView(context));
+  });
+}
+
+router.post('/registered-conversations/:conversationId/messages', requireAuth,
+  sendRegisteredConversationMessage('owner'));
+router.post('/registered-conversations/:conversationId/guest/messages',
+  sendRegisteredConversationMessage('finder'));
+
+function confirmRegisteredConversation(role) {
+  return registeredConversationHandler(role, async (context, req, res) => {
+    const { conversation } = context;
+    if (conversation.status === 'open') {
+      conversation.confirmations = Array.isArray(conversation.confirmations) ? conversation.confirmations : [];
+      if (!conversation.confirmations.includes(role)) conversation.confirmations.push(role);
+      if (conversation.confirmations.includes('owner') && conversation.confirmations.includes('finder')) {
+        conversation.status = 'returned';
+        conversation.returnedAt = new Date().toISOString();
+      }
+      saveItems(context.items);
+      await postgresStore.commitRequest();
+    }
+    res.json(registeredConversationView(context));
+  });
+}
+
+router.post('/registered-conversations/:conversationId/confirm', requireAuth,
+  confirmRegisteredConversation('owner'));
+router.post('/registered-conversations/:conversationId/guest/confirm',
+  confirmRegisteredConversation('finder'));
+
+function registeredMeetupAction(role) {
+  return registeredConversationHandler(role, async (context, req, res) => {
+    const { conversation, item, notification } = context;
+    if (conversation.status !== 'open') {
+      return res.status(409).json({ success: false, message: 'This conversation has been resolved.' });
+    }
+    let changed = pruneRegisteredConversationMeetup(conversation);
+    conversation.meetup = conversation.meetup || {};
+    const otherRole = role === 'owner' ? 'finder' : 'owner';
+    const action = req.params.action;
+
+    if (action === 'request') {
+      const existing = conversation.meetup[role];
+      if (existing?.status === 'pending') {
+        return res.status(409).json({ success: false, message: 'Your location request is already waiting for a response.' });
+      }
+      if (existing?.status === 'shared') {
+        return res.status(409).json({ success: false, message: 'The other person has already shared their location.' });
+      }
+      if (existing?.status === 'declined') {
+        const waitMs = MEETUP_ASK_AGAIN_MS - (Date.now() - Date.parse(existing.respondedAt));
+        if (waitMs > 0) {
+          return res.status(429).json({ success: false, retryAfter: Math.ceil(waitMs / 1000),
+            message: `You can ask again in ${Math.ceil(waitMs / 60000)} minute(s).` });
+        }
+      }
+      conversation.meetup[role] = { status: 'pending', createdAt: new Date().toISOString() };
+      changed = true;
+    } else if (action === 'respond') {
+      const request = conversation.meetup[otherRole];
+      if (!request || request.status !== 'pending') {
+        return res.status(404).json({ success: false, message: 'There is no location request waiting for you.' });
+      }
+      const now = new Date();
+      if (req.body.action === 'decline') {
+        request.status = 'declined';
+        request.respondedAt = now.toISOString();
+        changed = true;
+      } else if (req.body.action === 'share') {
+        const latitude = Number(req.body.latitude);
+        const longitude = Number(req.body.longitude);
+        const accuracy = Number(req.body.accuracy);
+        const note = sanitizeString(req.body.note || '');
+        if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+            !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+          return res.status(400).json({ success: false, message: 'Your location could not be read. Please try again.' });
+        }
+        if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 5000) {
+          return res.status(400).json({ success: false, message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.' });
+        }
+        if (note.length > 160) {
+          return res.status(400).json({ success: false, message: 'The note must be 160 characters or fewer.' });
+        }
+        request.status = 'shared';
+        request.respondedAt = now.toISOString();
+        request.location = {
+          latitude: Math.round(latitude * 1e6) / 1e6,
+          longitude: Math.round(longitude * 1e6) / 1e6,
+          accuracy: Math.round(accuracy),
+          note,
+          sharedAt: now.toISOString(),
+          expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString()
+        };
+        changed = true;
+      } else {
+        return res.status(400).json({ success: false, message: 'Choose to share your location or decline.' });
+      }
+    } else if (action === 'stop') {
+      const request = conversation.meetup[otherRole];
+      if (!request?.location) {
+        return res.status(404).json({ success: false, message: 'You are not sharing your location.' });
+      }
+      delete request.location;
+      request.status = 'stopped';
+      request.respondedAt = new Date().toISOString();
+      changed = true;
+    } else {
+      return res.status(404).json({ success: false, message: 'Location action not found.' });
+    }
+
+    if (changed) {
+      saveItems(context.items);
+      await postgresStore.commitRequest();
+    }
+    const recipient = role === 'owner' ? 'the anonymous finder' : (item.ownerName || 'the owner');
+    res.json({
+      success: true,
+      message: action === 'request' ? `We asked ${recipient} to share their location.`
+        : action === 'stop' ? 'You stopped sharing your location. It has been deleted.'
+          : req.body.action === 'decline' ? 'You declined to share your location.'
+            : `Your location is shared with ${recipient} for one hour.`,
+      conversation: registeredConversationView(context)
+    });
+  });
+}
+
+router.post('/registered-conversations/:conversationId/meetup/:action', requireAuth,
+  registeredMeetupAction('owner'));
+router.post('/registered-conversations/:conversationId/guest/meetup/:action',
+  registeredMeetupAction('finder'));
 
 // POST /api/items/match-reference-notify - Anonymous alert for a scanned match QR.
 router.post('/match-reference-notify', async (req, res) => {
@@ -1398,6 +1748,13 @@ router.get('/my-notifications', requireAuth, (req, res) => {
       i.notifications.forEach(n => {
         notifications.push({
           ...publicFinderNotification(n),
+          ...(n.conversation ? {
+            notificationType: 'finder-conversation',
+            conversationId: n.id,
+            conversationStatus: n.conversation.status,
+            conversationExpiresAt: n.conversation.expiresAt,
+            lastMessage: n.conversation.messages?.[n.conversation.messages.length - 1]?.text || n.message
+          } : {}),
           itemId: i.id,
           itemTitle: i.title,
           refCode: i.refCode

@@ -1256,6 +1256,54 @@ async function handleRegisterBelongingSubmit(e) {
 }
 
 // ── Anonymous Finder Modal ────────────────────────────────────────────────
+let activeFinderConversationToken = null;
+let activeRegisteredFinderConversation = null;
+
+function createFinderConversationToken() {
+  const bytes = new Uint8Array(32);
+  window.crypto.getRandomValues(bytes);
+  return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function setFinderConversationLink(conversationId, token) {
+  const fragment = `finderConversation=${encodeURIComponent(conversationId)}.${token}`;
+  window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${fragment}`);
+}
+
+function getFinderConversationLink() {
+  const match = window.location.hash.match(/^#finderConversation=([^.]*)\.([a-f0-9]{64})$/i);
+  if (!match) return null;
+  try {
+    const id = decodeURIComponent(match[1]);
+    return /^notif-[a-z0-9-]+$/i.test(id) ? { id, token: match[2] } : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+async function copyFinderConversationLink() {
+  const credentials = getFinderConversationLink();
+  if (!credentials) {
+    showToast('The secure conversation link is not available.', true);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    showToast('Secure conversation link copied. It expires in seven days.');
+  } catch (error) {
+    showToast('Could not copy the link. Copy it from your browser address bar instead.', true);
+  }
+}
+
+function openFinderConversationFromModal() {
+  const credentials = getFinderConversationLink();
+  if (!credentials) {
+    showToast('The secure conversation link is not available.', true);
+    return;
+  }
+  openRegisteredFinderConversation(credentials.id, credentials.token);
+}
+
 function showAnonymousFinderForItem(item, matchToken = '') {
   const safeItem = item || {};
   document.getElementById('finderScreenItemTitle').textContent = safeItem.title || 'Found Item';
@@ -1280,6 +1328,10 @@ function showAnonymousFinderForItem(item, matchToken = '') {
   const sendButton = document.getElementById('finderSendBtn');
   sendButton.disabled = false;
   sendButton.textContent = '🚀 Send to Owner';
+  const isRegisteredBelonging = safeItem.isRegisteredBelonging === true && !matchToken;
+  activeFinderConversationToken = isRegisteredBelonging ? createFinderConversationToken() : null;
+  document.getElementById('finderCopyConversationLinkBtn').hidden = true;
+  document.getElementById('finderOpenConversationBtn').hidden = true;
   document.getElementById('anonymousFinderModal').classList.add('open');
 }
 
@@ -1331,7 +1383,13 @@ async function handleAnonymousFinderSubmit(e) {
     const endpoint = matchToken ? '/api/items/match-reference-notify' : '/api/items/anonymous-notify';
     const body = matchToken
       ? { token: matchToken, message, locationFound, finderContact }
-      : { refCode, message, locationFound, finderContact };
+      : {
+          refCode,
+          message,
+          locationFound,
+          finderContact,
+          ...(activeFinderConversationToken ? { conversationToken: activeFinderConversationToken } : {})
+        };
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
@@ -1345,6 +1403,11 @@ async function handleAnonymousFinderSubmit(e) {
       document.getElementById('anonymousFinderForm')
         .querySelectorAll('input:not([type="hidden"]), textarea')
         .forEach(field => { field.disabled = true; });
+      if (data.conversation?.id && data.conversation?.token) {
+        setFinderConversationLink(data.conversation.id, data.conversation.token);
+        document.getElementById('finderCopyConversationLinkBtn').hidden = false;
+        document.getElementById('finderOpenConversationBtn').hidden = false;
+      }
     } else {
       sendButton.disabled = false;
       sendButton.textContent = '🚀 Send to Owner';
@@ -1495,7 +1558,9 @@ function refreshOpenNotifications() {
   // Never wipe a note being typed, a pending action or a selection in progress.
   const busy = [...list.querySelectorAll('.meetup-note')].some(input => input.value || input === document.activeElement) ||
     list.querySelector('button:disabled[data-busy]') || list.querySelector('.notification-select:checked');
-  if (!busy && list.querySelector('.notif-item--meetup')) loadNotificationsIntoModal();
+  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--finder-conversation')) {
+    loadNotificationsIntoModal();
+  }
 }
 
 // ── Handover meetup: one-time location sharing on an approved claim ────────
@@ -1659,14 +1724,25 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
 }
 
 async function meetupAction(claimId, path, body, button, busyLabel) {
+  const registeredId = String(claimId).startsWith('registered:') ? String(claimId).slice('registered:'.length) : null;
+  const registeredConversation = registeredId && activeRegisteredFinderConversation?.id === registeredId
+    ? activeRegisteredFinderConversation
+    : null;
   button.disabled = true;
   button.dataset.busy = 'true';
   const label = button.textContent;
   button.textContent = busyLabel;
   try {
-    const res = await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/meetup/${path}`, {
+    const endpoint = registeredConversation
+      ? `/api/items/registered-conversations/${encodeURIComponent(registeredId)}${registeredConversation.role === 'finder' ? '/guest' : ''}/meetup/${path}`
+      : `/api/items/claims/${encodeURIComponent(claimId)}/meetup/${path}`;
+    const headers = { 'Content-Type': 'application/json' };
+    if (registeredConversation?.role === 'finder') {
+      headers.Authorization = `Bearer ${registeredConversation.token}`;
+    }
+    const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(body || {})
     });
     const data = await res.json();
@@ -1674,7 +1750,8 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
     if (data.success) {
       await loadNotificationsIntoModal();
       await loadMyNotifications();
-      if (activeClaimThreadId === claimId) await refreshClaimThreadMeetup();
+      if (registeredConversation) await refreshClaimThread();
+      else if (activeClaimThreadId === claimId) await refreshClaimThreadMeetup();
       return;
     }
   } catch (error) {
@@ -1760,7 +1837,7 @@ let claimThreadPollTimer = null;
 function startClaimThreadPolling() {
   stopClaimThreadPolling();
   claimThreadPollTimer = setInterval(() => {
-    if (!activeClaimThreadId) { stopClaimThreadPolling(); return; }
+    if (!activeClaimThreadId && !activeRegisteredFinderConversation) { stopClaimThreadPolling(); return; }
     if (document.visibilityState === 'visible') refreshClaimThread({ silent: true });
   }, 5000);
 }
@@ -1773,6 +1850,7 @@ function stopClaimThreadPolling() {
 async function openClaimThreadModal(claimId) {
   if (!claimId) return;
   closeNotificationsModal();
+  activeRegisteredFinderConversation = null;
   activeClaimThreadId = claimId;
   pendingClaimStart = null;
   lastKnownThreadMessageCount = 0;
@@ -1785,10 +1863,55 @@ async function openClaimThreadModal(claimId) {
   startClaimThreadPolling();
 }
 
+function registeredConversationEndpoint(conversation, suffix = '') {
+  const rolePath = conversation.role === 'finder' ? '/guest' : '';
+  return `/api/items/registered-conversations/${encodeURIComponent(conversation.id)}${rolePath}${suffix}`;
+}
+
+function registeredConversationHeaders(conversation, json = false) {
+  const headers = json ? { 'Content-Type': 'application/json' } : {};
+  if (conversation.role === 'finder') headers.Authorization = `Bearer ${conversation.token}`;
+  return headers;
+}
+
+async function openRegisteredFinderConversation(conversationId, token) {
+  if (!conversationId || !token) return;
+  closeNotificationsModal();
+  closeAnonymousFinderModal();
+  activeClaimThreadId = null;
+  pendingClaimStart = null;
+  activeRegisteredFinderConversation = { id: conversationId, token, role: 'finder' };
+  lastKnownThreadMessageCount = 0;
+  document.getElementById('claimThreadInput').placeholder = 'Type a message…';
+  document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading conversation…</p>';
+  document.getElementById('claimThreadMeetup').innerHTML = '';
+  document.getElementById('claimThreadConfirm').innerHTML = '';
+  document.getElementById('claimThreadModal').classList.add('open');
+  await refreshClaimThread();
+  startClaimThreadPolling();
+}
+
+async function openRegisteredOwnerConversation(conversationId) {
+  if (!conversationId) return;
+  closeNotificationsModal();
+  activeClaimThreadId = null;
+  pendingClaimStart = null;
+  activeRegisteredFinderConversation = { id: conversationId, role: 'owner' };
+  lastKnownThreadMessageCount = 0;
+  document.getElementById('claimThreadInput').placeholder = 'Type a message…';
+  document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading conversation…</p>';
+  document.getElementById('claimThreadMeetup').innerHTML = '';
+  document.getElementById('claimThreadConfirm').innerHTML = '';
+  document.getElementById('claimThreadModal').classList.add('open');
+  await refreshClaimThread();
+  startClaimThreadPolling();
+}
+
 // Opened when no claim exists yet for this match - describing the item IS the
 // claim request, submitted the moment the claimant sends their first message.
 function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
   stopClaimThreadPolling();
+  activeRegisteredFinderConversation = null;
   activeClaimThreadId = null;
   pendingClaimStart = { lostId, foundId };
   lastKnownThreadMessageCount = 0;
@@ -1807,6 +1930,7 @@ function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
 
 function closeClaimThreadModal() {
   activeClaimThreadId = null;
+  activeRegisteredFinderConversation = null;
   pendingClaimStart = null;
   stopClaimThreadPolling();
   document.getElementById('claimThreadModal').classList.remove('open');
@@ -1835,7 +1959,9 @@ function applyClaimThreadUpdate(thread, { silent = false } = {}) {
 }
 
 function renderClaimThread(thread) {
-  document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${thread.item.title}`;
+  const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
+  document.getElementById('claimThreadTitle').textContent =
+    `${isRegisteredConversation ? 'QR finder conversation' : 'Claim conversation'} · ${thread.item.title}`;
   document.getElementById('claimThreadSubtitle').textContent = `You and ${thread.otherName}`;
 
   const body = document.getElementById('claimThreadBody');
@@ -1846,59 +1972,62 @@ function renderClaimThread(thread) {
   if (wasScrolledToEnd) body.scrollTop = body.scrollHeight;
 
   const confirmBox = document.getElementById('claimThreadConfirm');
-  if (thread.claim.status === 'approved') {
+  if (thread.claim.status === 'approved' || thread.claim.status === 'returned') {
     confirmBox.innerHTML = `
-      <p class="thread-resolved">✅ Both sides confirmed. Item marked as claimed.</p>
-      <p class="thread-waiting">This conversation will auto-delete in 24 hours.</p>
-      <button type="button" class="btn btn-outline btn-compact" data-action="deleteClaimThread">🗑️ Delete now</button>`;
+      <p class="thread-resolved">✅ Both sides confirmed. The return is complete.</p>`;
   } else if (thread.confirmedByMe) {
     confirmBox.innerHTML = `<p class="thread-waiting">You confirmed. Waiting for ${escapeHtml(thread.otherName)} to confirm too…</p>`;
   } else {
     confirmBox.innerHTML = `
-      <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item received/returned</button>
+      <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item ${isRegisteredConversation ? 'returned' : 'received/returned'}</button>
       ${thread.confirmedByOther ? `<p class="thread-waiting">${escapeHtml(thread.otherName)} already confirmed.</p>` : ''}`;
   }
+  if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
 }
 
 // The location-sharing section is driven by the same meetup notification the
 // inbox uses - reused here instead of duplicating that request/respond logic.
+function renderClaimThreadMeetupNotification(notification) {
+  const meetupBox = document.getElementById('claimThreadMeetup');
+  const mapExpanded = Boolean(meetupBox.querySelector('.meetup-map-toggle[aria-expanded="true"]'));
+  meetupBox.querySelectorAll('[data-meetup-map]').forEach(container => {
+    const map = activeMeetupMaps.get(container.id);
+    if (map) {
+      map.remove();
+      activeMeetupMaps.delete(container.id);
+    }
+  });
+  meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-', mapExpanded) : '';
+  const mapToggle = meetupBox.querySelector('.meetup-map-toggle');
+  if (mapToggle) {
+    mapToggle.addEventListener('click', () => {
+      const panel = document.getElementById(mapToggle.getAttribute('aria-controls'));
+      if (!panel) return;
+      const expanded = panel.hidden;
+      panel.hidden = !expanded;
+      mapToggle.setAttribute('aria-expanded', String(expanded));
+      mapToggle.textContent = expanded ? 'Hide Map' : 'Show Map';
+      if (expanded) {
+        const container = panel.querySelector('[data-meetup-map]');
+        let map = container && activeMeetupMaps.get(container.id);
+        if (container && !map) {
+          initMeetupMaps(panel);
+          map = activeMeetupMaps.get(container.id);
+        }
+        if (map) requestAnimationFrame(() => map.invalidateSize());
+      }
+    });
+  }
+  if (mapExpanded) initMeetupMaps(meetupBox);
+}
+
 async function refreshClaimThreadMeetup() {
   if (!activeClaimThreadId) return;
   try {
     const res = await fetch('/api/items/my-notifications', { cache: 'no-store' });
     const data = await res.json();
     const notification = data.notifications?.find(n => n.notificationType === 'meetup' && n.claimId === activeClaimThreadId);
-    const meetupBox = document.getElementById('claimThreadMeetup');
-    const mapExpanded = Boolean(meetupBox.querySelector('.meetup-map-toggle[aria-expanded="true"]'));
-    meetupBox.querySelectorAll('[data-meetup-map]').forEach(container => {
-      const map = activeMeetupMaps.get(container.id);
-      if (map) {
-        map.remove();
-        activeMeetupMaps.delete(container.id);
-      }
-    });
-    meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-', mapExpanded) : '';
-    const mapToggle = meetupBox.querySelector('.meetup-map-toggle');
-    if (mapToggle) {
-      mapToggle.addEventListener('click', () => {
-        const panel = document.getElementById(mapToggle.getAttribute('aria-controls'));
-        if (!panel) return;
-        const expanded = panel.hidden;
-        panel.hidden = !expanded;
-        mapToggle.setAttribute('aria-expanded', String(expanded));
-        mapToggle.textContent = expanded ? 'Hide Map' : 'Show Map';
-        if (expanded) {
-          const container = panel.querySelector('[data-meetup-map]');
-          let map = container && activeMeetupMaps.get(container.id);
-          if (container && !map) {
-            initMeetupMaps(panel);
-            map = activeMeetupMaps.get(container.id);
-          }
-          if (map) requestAnimationFrame(() => map.invalidateSize());
-        }
-      });
-    }
-    if (mapExpanded) initMeetupMaps(meetupBox);
+    renderClaimThreadMeetupNotification(notification);
   } catch (error) {
     // Location sharing is secondary to the conversation itself; fail quietly.
   }
@@ -1906,9 +2035,15 @@ async function refreshClaimThreadMeetup() {
 
 async function refreshClaimThread({ silent = false } = {}) {
   const claimId = activeClaimThreadId;
-  if (!claimId) return;
+  const registeredConversation = activeRegisteredFinderConversation;
+  if (!claimId && !registeredConversation) return;
   try {
-    const res = await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/thread`, { cache: 'no-store' });
+    const res = registeredConversation
+      ? await fetch(registeredConversationEndpoint(registeredConversation), {
+          cache: 'no-store',
+          headers: registeredConversationHeaders(registeredConversation)
+        })
+      : await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/thread`, { cache: 'no-store' });
     const thread = await res.json();
     if (!res.ok || !thread.success) {
       if (!silent) {
@@ -1918,7 +2053,8 @@ async function refreshClaimThread({ silent = false } = {}) {
       return;
     }
     applyClaimThreadUpdate(thread, { silent });
-    await refreshClaimThreadMeetup();
+    if (registeredConversation) renderClaimThreadMeetupNotification(thread.meetupNotification);
+    else await refreshClaimThreadMeetup();
   } catch (error) {
     if (!silent) showToast('Could not load the conversation. Please try again.', true);
   }
@@ -1933,7 +2069,7 @@ async function sendClaimThreadMessage(event) {
   if (button.disabled) return;
   const input = document.getElementById('claimThreadInput');
   const text = input.value.trim();
-  if (!text || (!activeClaimThreadId && !pendingClaimStart)) return;
+  if (!text || (!activeClaimThreadId && !activeRegisteredFinderConversation && !pendingClaimStart)) return;
   button.disabled = true;
   const originalLabel = button.textContent;
   button.textContent = 'Sending…';
@@ -1954,11 +2090,18 @@ async function sendClaimThreadMessage(event) {
       startClaimThreadPolling();
       return;
     }
-    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
+    const registeredConversation = activeRegisteredFinderConversation;
+    const res = registeredConversation
+      ? await fetch(registeredConversationEndpoint(registeredConversation, '/messages'), {
+          method: 'POST',
+          headers: registeredConversationHeaders(registeredConversation, true),
+          body: JSON.stringify({ text })
+        })
+      : await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
-    });
+      });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not send that message.');
     input.value = '';
@@ -1973,21 +2116,33 @@ async function sendClaimThreadMessage(event) {
 }
 
 async function confirmClaimThread() {
-  if (!activeClaimThreadId) return;
-  const confirmed = await askConfirm('Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.', {
-    title: 'Confirm item received/returned?',
+  if (!activeClaimThreadId && !activeRegisteredFinderConversation) return;
+  const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
+  const confirmed = await askConfirm(
+    isRegisteredConversation
+      ? 'Confirm that the registered belonging has been returned to its owner? The conversation closes only after both people confirm.'
+      : 'Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.',
+    {
+    title: isRegisteredConversation ? 'Confirm item returned?' : 'Confirm item received/returned?',
     confirmLabel: 'Confirm',
     icon: '✓'
   });
   if (!confirmed) return;
   try {
-    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
+    const conversation = activeRegisteredFinderConversation;
+    const res = conversation
+      ? await fetch(registeredConversationEndpoint(conversation, '/confirm'), {
+          method: 'POST',
+          headers: registeredConversationHeaders(conversation, true),
+          body: JSON.stringify({})
+        })
+      : await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not confirm.');
     applyClaimThreadUpdate(data);
-    if (data.claim.status === 'approved') {
-      showToast('Item marked as claimed.');
-      fetchAndRenderItems();
+    if (data.claim.status === 'approved' || data.claim.status === 'returned') {
+      showToast(isRegisteredConversation ? 'The return is confirmed by both people.' : 'Item marked as claimed.');
+      if (!isRegisteredConversation) fetchAndRenderItems();
     }
   } catch (error) {
     showToast(error.message || 'Network error. Please try again.', true);
@@ -2033,7 +2188,19 @@ async function loadNotificationsIntoModal() {
 
     document.getElementById('notificationSelectionToolbar').hidden = false;
     document.getElementById('selectAllNotifications').checked = false;
-    list.innerHTML = data.notifications.map(n => n.notificationType === 'meetup' ? `
+    list.innerHTML = data.notifications.map(n => n.notificationType === 'finder-conversation' ? `
+      <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+        <div class="notif-header">
+          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
+        </div>
+        <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
+        <p class="notif-msg">${escapeHtml(n.lastMessage || n.message || '')}</p>
+        ${Date.parse(n.conversationExpiresAt) > Date.now()
+          ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+          : '<p class="notif-contact">This conversation has expired.</p>'}
+      </div>
+    ` : n.notificationType === 'meetup' ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
           <strong>🏷️ ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
@@ -2979,7 +3146,9 @@ document.addEventListener('DOMContentLoaded', () => {
   window.setInterval(loadMyNotifications, 30000);
   openMatchReferenceFromQr(matchParams.get('token'));
   const finderRef = window.location.pathname === '/found' ? matchParams.get('ref') : null;
-  if (finderRef) openAnonymousFinderModal(finderRef);
+  const finderConversation = getFinderConversationLink();
+  if (finderConversation) openRegisteredFinderConversation(finderConversation.id, finderConversation.token);
+  else if (finderRef) openAnonymousFinderModal(finderRef);
   restoreFeedFromUrl();
   fetchAndRenderItems();
 

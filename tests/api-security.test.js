@@ -686,6 +686,157 @@ test('registered belongings are private except through QR reference lookup', asy
   assert.equal(Object.hasOwn(item, 'ownerEmail'), false);
 });
 
+test('registered QR alerts create a secure owner-finder conversation with messaging, meetup, and mutual return confirmation', async t => {
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  const otherStudentCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
+  const token = 'a'.repeat(64);
+  const submissionKey = 'registered-conversation-test-01';
+  let conversationId;
+  t.after(() => {
+    if (!conversationId) return;
+    const itemsPath = path.join(dataDir, 'items.json');
+    const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+    const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
+    if (item) item.notifications = item.notifications.filter(notification => notification.id !== conversationId);
+    fs.writeFileSync(itemsPath, JSON.stringify(items));
+  });
+
+  const alertResponse = await fetch(`${baseUrl}/api/items/anonymous-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
+    body: JSON.stringify({
+      refCode: 'CSPC-REG-QR-0012',
+      message: 'I found the laptop by the library entrance.',
+      locationFound: 'Library entrance',
+      conversationToken: token
+    })
+  });
+  assert.equal(alertResponse.status, 200);
+  const alert = await alertResponse.json();
+  conversationId = alert.conversation.id;
+  assert.equal(alert.conversation.token, token);
+  assert.equal(Object.hasOwn(alert.notification, 'tokenHash'), false);
+  assert.equal(Object.hasOwn(alert.notification.conversation, 'tokenHash'), false);
+
+  const guestHeaders = { Authorization: `Bearer ${token}` };
+  const noTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`);
+  assert.equal(noTokenResponse.status, 401);
+  const invalidTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: { Authorization: `Bearer ${'b'.repeat(64)}` }
+  });
+  assert.equal(invalidTokenResponse.status, 404);
+  const otherOwnerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: otherStudentCookie }
+  });
+  assert.equal(otherOwnerResponse.status, 404);
+
+  const ownerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal(ownerResponse.status, 200);
+  const ownerThread = await ownerResponse.json();
+  assert.equal(ownerThread.messages[0].mine, false);
+  assert.equal(ownerThread.role, 'owner');
+
+  const inboxResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
+    headers: { Cookie: studentCookie }
+  });
+  const inbox = await inboxResponse.json();
+  const ownerEntry = inbox.notifications.find(notification => notification.conversationId === conversationId);
+  assert.equal(ownerEntry.notificationType, 'finder-conversation');
+  assert.equal(Object.hasOwn(ownerEntry, 'tokenHash'), false);
+  assert.equal(Object.hasOwn(ownerEntry, 'conversationToken'), false);
+
+  const ownerMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({ text: 'I can meet at the student center.' })
+  });
+  assert.equal(ownerMessageResponse.status, 201);
+  const ownerMessage = await ownerMessageResponse.json();
+  assert.equal(ownerMessage.messages.at(-1).mine, true);
+
+  const guestMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({ text: 'That works. I will be there at noon.' })
+  });
+  assert.equal(guestMessageResponse.status, 201);
+  const guestMessage = await guestMessageResponse.json();
+  assert.equal(guestMessage.messages.at(-1).mine, true);
+
+  const requestLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/meetup/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({})
+  });
+  assert.equal(requestLocationResponse.status, 200);
+  const guestPendingResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: guestHeaders
+  });
+  const guestPending = await guestPendingResponse.json();
+  assert.equal(guestPending.meetupNotification.myLocation.status, 'pending');
+
+  const shareLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/meetup/respond`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({
+      action: 'share',
+      latitude: 13.416,
+      longitude: 123.412,
+      accuracy: 18,
+      note: 'By the library entrance'
+    })
+  });
+  assert.equal(shareLocationResponse.status, 200);
+  const sharedLocation = await shareLocationResponse.json();
+  assert.equal(sharedLocation.conversation.meetupNotification.myLocation.location.latitude, 13.416);
+
+  const ownerConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/confirm`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal((await ownerConfirmResponse.json()).conversation.status, 'open');
+  const guestConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/confirm`, {
+    method: 'POST',
+    headers: guestHeaders
+  });
+  assert.equal((await guestConfirmResponse.json()).conversation.status, 'returned');
+
+  const resolvedMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({ text: 'One more message after resolution.' })
+  });
+  assert.equal(resolvedMessageResponse.status, 409);
+
+  const retryResponse = await fetch(`${baseUrl}/api/items/anonymous-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
+    body: JSON.stringify({
+      refCode: 'CSPC-REG-QR-0012',
+      message: 'I found the laptop by the library entrance.',
+      locationFound: 'Library entrance',
+      conversationToken: token
+    })
+  });
+  const retry = await retryResponse.json();
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.conversation.id, conversationId);
+  assert.equal(retry.conversation.token, token);
+
+  const itemsPath = path.join(dataDir, 'items.json');
+  const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+  const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
+  item.notifications.find(notification => notification.id === conversationId).conversation.expiresAt =
+    new Date(Date.now() - 1000).toISOString();
+  fs.writeFileSync(itemsPath, JSON.stringify(items));
+  const expiredResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: guestHeaders
+  });
+  assert.equal(expiredResponse.status, 410);
+});
+
 test('finder QR alerts appear in the owner inbox and are emailed to the owner', async t => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const smtp = await startSmtpCaptureServer();
@@ -844,9 +995,13 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(response.headers.get('content-type'), /text\/html/);
   const html = await response.text();
   assert.match(html, /id="anonymousFinderModal"/);
+  assert.match(html, /id="finderCopyConversationLinkBtn"/);
+  assert.match(html, /id="finderOpenConversationBtn"/);
   const scriptPath = html.match(/src="(\/js\/home-page\.js[^"]*)"/)[1];
   const script = await (await fetch(`${baseUrl}${scriptPath}`)).text();
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
+  assert.match(script, /setFinderConversationLink/);
+  assert.match(script, /finderConversation=/);
 });
 
 test('signed-in students using home aliases reach the portal report form', async () => {
