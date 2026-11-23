@@ -205,14 +205,19 @@
 }
 :root[data-theme='light'] .thread-msg--mine .thread-msg-text {
   color: #fff !important;
-  -webkit-text-fill-color: #fff;
+  -webkit-text-fill-color: #fff !important;
 }
 :root:not([data-theme='light']) .thread-msg--mine .thread-msg-text {
   color: #0f172a !important;
-  -webkit-text-fill-color: #0f172a;
+  -webkit-text-fill-color: #0f172a !important;
 }
 :root[data-theme='light'] .thread-msg--mine .thread-msg-time { color: #fff; }
 :root:not([data-theme='light']) .thread-msg--mine .thread-msg-time { color: #0f172a; }
+#claimThreadModal .thread-msg.thread-msg--mine > p.thread-msg-text {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1;
+}
 .thread-meetup:not(:empty) { margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .thread-compose { display: flex; gap: 0.5rem; }
 .thread-compose input {
