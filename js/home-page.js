@@ -2299,16 +2299,7 @@ async function sendClaimThreadMessage(event) {
 async function confirmClaimThread() {
   if (!activeClaimThreadId && !activeRegisteredFinderConversation) return;
   const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
-  const confirmed = isRegisteredConversation
-    ? await askConfirmItemReturned()
-    : await askConfirm(
-        'Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.',
-        {
-          title: 'Confirm item received/returned?',
-          confirmLabel: 'Confirm',
-          icon: '✓'
-        }
-      );
+  const confirmed = await askConfirmItemReturned(isRegisteredConversation);
   if (!confirmed) return;
   try {
     const conversation = activeRegisteredFinderConversation;
@@ -3311,7 +3302,16 @@ function contactLinkHtml(value) {
 let genericConfirmResolve = null;
 let confirmItemReturnedResolve = null;
 
-function askConfirmItemReturned() {
+function askConfirmItemReturned(isRegisteredConversation = false) {
+  document.getElementById('confirmItemReturnedTitle').textContent = isRegisteredConversation
+    ? 'Confirm item returned?'
+    : 'Confirm item received/returned?';
+  document.getElementById('confirmItemReturnedText').textContent = isRegisteredConversation
+    ? 'Confirm that the registered belonging has been returned to its owner? The conversation closes only after both people confirm.'
+    : 'Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.';
+  document.getElementById('confirmItemReturnedButton').textContent = isRegisteredConversation
+    ? 'Confirm return'
+    : 'Confirm';
   document.getElementById('confirmItemReturnedModal').classList.add('open');
   return new Promise(resolve => { confirmItemReturnedResolve = resolve; });
 }

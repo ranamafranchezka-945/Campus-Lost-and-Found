@@ -1018,9 +1018,13 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(html, /id="finderCopyConversationLinkBtn"/);
   assert.match(html, /id="finderOpenConversationBtn"/);
   assert.match(html, /id="confirmItemReturnedModal"/);
+  assert.match(html, /id="confirmItemReturnedTitle"/);
+  assert.match(html, /id="confirmItemReturnedText"/);
+  assert.match(html, /id="confirmItemReturnedButton"/);
   assert.match(html, /class="btn btn-success confirm-item-returned-button"/);
   const scriptPath = html.match(/src="(\/js\/home-page\.js[^"]*)"/)[1];
   const script = await (await fetch(`${baseUrl}${scriptPath}`)).text();
+  assert.match(script, /await askConfirmItemReturned\(isRegisteredConversation\)/);
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
   assert.match(script, /setFinderConversationLink/);
   assert.match(script, /finderConversation=/);
