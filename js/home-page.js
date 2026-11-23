@@ -1909,11 +1909,17 @@ async function refreshClaimThread({ silent = false } = {}) {
 
 async function sendClaimThreadMessage(event) {
   event.preventDefault();
+  const button = document.getElementById('claimThreadSendBtn');
+  // A send is already in flight (Enter key and the Send button both route here,
+  // and the prior guard only set button.disabled without checking it first, so
+  // a fast double-click/double-Enter slipped through and fired two requests).
+  if (button.disabled) return;
   const input = document.getElementById('claimThreadInput');
   const text = input.value.trim();
   if (!text || (!activeClaimThreadId && !pendingClaimStart)) return;
-  const button = document.getElementById('claimThreadSendBtn');
   button.disabled = true;
+  const originalLabel = button.textContent;
+  button.textContent = 'Sending…';
   try {
     if (pendingClaimStart) {
       const res = await fetch(`/api/items/${encodeURIComponent(pendingClaimStart.foundId)}/claim-requests`, {
@@ -1944,6 +1950,7 @@ async function sendClaimThreadMessage(event) {
     showToast(error.message || 'Network error. Please try again.', true);
   } finally {
     button.disabled = false;
+    button.textContent = originalLabel;
     input.focus();
   }
 }
