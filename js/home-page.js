@@ -1505,7 +1505,7 @@ function meetupTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-function meetupNotificationHtml(n, idPrefix = '') {
+function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
   const other = escapeHtml(n.otherName);
   const otherRole = n.role === 'owner' ? 'the finder' : 'the owner';
   const claimArg = actionArgs(n.claimId, '$el');
@@ -1515,7 +1515,7 @@ function meetupNotificationHtml(n, idPrefix = '') {
   const theirs = n.theirLocation || {};
   let theirsHtml;
   if (theirs.status === 'shared' && theirs.location) {
-    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix);
+    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded);
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -1566,12 +1566,12 @@ function meetupNotificationHtml(n, idPrefix = '') {
 // with the reading's accuracy as a circle and links to open it in a full map app.
 // The map itself is only a placeholder div here - initMeetupMaps() below turns every
 // one of these into an actual Leaflet instance once the markup is in the DOM.
-function meetupMapHtml(location, otherName, claimId, idPrefix = '') {
+function meetupMapHtml(location, otherName, claimId, idPrefix = '', mapExpanded = false) {
   const lat = location.latitude.toFixed(6);
   const lng = location.longitude.toFixed(6);
   const name = escapeHtml(otherName);
   const containerId = `meetup-map-${idPrefix}${escapeHtml(String(claimId)).replace(/[^\w-]/g, '')}`;
-  return `
+  const mapContent = `
     <div class="meetup-map" id="${containerId}" aria-label="Map showing where ${name} is"
       data-meetup-map data-lat="${lat}" data-lng="${lng}" data-accuracy="${escapeHtml(String(location.accuracy))}"></div>
     ${location.note ? `<p class="meetup-note-text">“${escapeHtml(location.note)}”</p>` : ''}
@@ -1579,6 +1579,16 @@ function meetupMapHtml(location, otherName, claimId, idPrefix = '') {
     <div class="meetup-actions">
       <a class="btn btn-primary btn-compact meetup-btn" href="https://www.google.com/maps/search/?api=1&amp;query=${lat},${lng}" target="_blank" rel="noopener">Open in Google Maps</a>
       <a class="btn btn-outline btn-compact meetup-btn" href="https://www.openstreetmap.org/?mlat=${lat}&amp;mlon=${lng}#map=18/${lat}/${lng}" target="_blank" rel="noopener">OpenStreetMap</a>
+    </div>`;
+  if (idPrefix !== 'thread-') return mapContent;
+
+  const panelId = `${containerId}-panel`;
+  return `
+    <div class="meetup-map-disclosure">
+      <button type="button" class="btn btn-outline btn-compact meetup-btn meetup-map-toggle" aria-expanded="${mapExpanded}" aria-controls="${panelId}">
+        ${mapExpanded ? 'Hide Map' : 'Show Map'}
+      </button>
+      <div class="meetup-map-panel" id="${panelId}"${mapExpanded ? '' : ' hidden'}>${mapContent}</div>
     </div>`;
 }
 
@@ -1842,8 +1852,36 @@ async function refreshClaimThreadMeetup() {
     const data = await res.json();
     const notification = data.notifications?.find(n => n.notificationType === 'meetup' && n.claimId === activeClaimThreadId);
     const meetupBox = document.getElementById('claimThreadMeetup');
-    meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-') : '';
-    initMeetupMaps(meetupBox);
+    const mapExpanded = Boolean(meetupBox.querySelector('.meetup-map-toggle[aria-expanded="true"]'));
+    meetupBox.querySelectorAll('[data-meetup-map]').forEach(container => {
+      const map = activeMeetupMaps.get(container.id);
+      if (map) {
+        map.remove();
+        activeMeetupMaps.delete(container.id);
+      }
+    });
+    meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-', mapExpanded) : '';
+    const mapToggle = meetupBox.querySelector('.meetup-map-toggle');
+    if (mapToggle) {
+      mapToggle.addEventListener('click', () => {
+        const panel = document.getElementById(mapToggle.getAttribute('aria-controls'));
+        if (!panel) return;
+        const expanded = panel.hidden;
+        panel.hidden = !expanded;
+        mapToggle.setAttribute('aria-expanded', String(expanded));
+        mapToggle.textContent = expanded ? 'Hide Map' : 'Show Map';
+        if (expanded) {
+          const container = panel.querySelector('[data-meetup-map]');
+          let map = container && activeMeetupMaps.get(container.id);
+          if (container && !map) {
+            initMeetupMaps(panel);
+            map = activeMeetupMaps.get(container.id);
+          }
+          if (map) requestAnimationFrame(() => map.invalidateSize());
+        }
+      });
+    }
+    if (mapExpanded) initMeetupMaps(meetupBox);
   } catch (error) {
     // Location sharing is secondary to the conversation itself; fail quietly.
   }
