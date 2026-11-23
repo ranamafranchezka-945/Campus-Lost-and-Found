@@ -534,6 +534,21 @@ router.get('/claims', requireRole('admin'), (req, res) => {
   res.json({ success: true, claims });
 });
 
+// PATCH /api/items/claims/:claimId/seen - Dismiss a claim from this admin's bell
+// notifications. Per-admin (not a global flag), so it doesn't affect the true
+// pending count shown elsewhere (the Claims sidebar badge, the dashboard tile).
+router.patch('/claims/:claimId/seen', requireRole('admin'), (req, res) => {
+  const claims = getClaims();
+  const claim = claims.find(entry => entry.id === req.params.claimId);
+  if (!claim) return res.status(404).json({ success: false, message: 'Claim not found.' });
+  claim.seenByAdmin = Array.isArray(claim.seenByAdmin) ? claim.seenByAdmin : [];
+  if (!claim.seenByAdmin.includes(req.session.user.id)) {
+    claim.seenByAdmin.push(req.session.user.id);
+    saveClaims(claims);
+  }
+  res.json({ success: true });
+});
+
 // DELETE /api/items/claims/:claimId - Admin cleanup of a claim record. Only removes
 // the claim itself; an item the claim already marked claimed stays claimed, since
 // deleting the record isn't the same as undoing a handover that may have happened.

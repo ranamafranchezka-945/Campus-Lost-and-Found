@@ -858,6 +858,8 @@ let allowedEmails = [];
       sync();
     }
 
+    // `pending` here is already filtered down to claims this admin hasn't dismissed -
+    // the true pending count (Claims badge, dashboard tile) is tracked separately.
     function renderNotifications(pending) {
       const waiting = [...pending].sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)).slice(0, 5);
       document.getElementById('notifCount').textContent = pending.length ? `${pending.length} waiting` : 'All clear';
@@ -865,8 +867,26 @@ let allowedEmails = [];
         ? `<ul class="feed">${waiting.map(claim => `
           <li class="feed-row">
             <div class="feed-main"><strong title="${escHtml(claim.itemTitle || 'Item')}">Claim for ${escHtml(claim.itemTitle || 'an item')}</strong><small>${escHtml(claim.claimantName || 'Unknown claimant')} · ${escHtml(relativeTime(claim.createdAt))}</small></div>
+            <button type="button" class="action-btn action-btn-outline" data-action="markClaimNotificationRead" data-args="${actionArgs(claim.id)}">Mark as read</button>
           </li>`).join('')}</ul>`
         : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>You are all caught up.</p>';
+    }
+
+    async function markClaimNotificationRead(id, button) {
+      button.disabled = true;
+      try {
+        const response = await adminFetch(`/api/items/claims/${encodeURIComponent(id)}/seen`, { method: 'PATCH' });
+        if (!response.ok) throw new Error();
+        const claim = claimRequests.find(entry => entry.id === id);
+        if (claim) {
+          claim.seenByAdmin = Array.isArray(claim.seenByAdmin) ? claim.seenByAdmin : [];
+          if (!claim.seenByAdmin.includes(window.currentAdminUserId)) claim.seenByAdmin.push(window.currentAdminUserId);
+        }
+        renderDashboard(adminItems);
+      } catch (error) {
+        showToast('Could not mark notification as read.', 'error');
+        button.disabled = false;
+      }
     }
 
     function renderAdminIdentity(user) {
@@ -1149,12 +1169,15 @@ let allowedEmails = [];
           </li>`).join('')}</ul>`
         : '<p class="feed-empty">No reports yet.</p>';
 
+      // The Claims badge and KPI tile always show the true pending count; the bell
+      // only shows claims this admin hasn't dismissed yet (see markClaimNotificationRead).
+      const unseenPending = pending.filter(claim => !(claim.seenByAdmin || []).includes(window.currentAdminUserId));
       setCount('countLost', openLost);
       setCount('countFound', openFound);
       setCount('countClaims', pending.length);
-      setCount('bellCount', pending.length);
-      renderNotifications(pending);
-      document.getElementById('adminBell').setAttribute('aria-label', pending.length ? `${pending.length} claim${pending.length === 1 ? '' : 's'} pending` : 'No claims pending');
+      setCount('bellCount', unseenPending.length);
+      renderNotifications(unseenPending);
+      document.getElementById('adminBell').setAttribute('aria-label', unseenPending.length ? `${unseenPending.length} claim${unseenPending.length === 1 ? '' : 's'} pending` : 'No claims pending');
       playDashboardIntro();
     }
 

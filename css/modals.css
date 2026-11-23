@@ -1,6 +1,13 @@
 /* Shared popup (dialog) styles. Colours come from theme variables so light mode
    needs no per-element overrides. Loaded after styles.css / home.css. */
 
+/* Every .slip-overlay shares the same z-index (home.css), so two stacked at once
+   paint in DOM order - whichever is later in the page wins, regardless of which
+   was opened more recently. The generic confirm (e.g. "Delete conversation?" on
+   top of the claim conversation modal) always needs to win that stacking, so it
+   gets a z-index above every other overlay instead of relying on source order. */
+#genericConfirmModal { z-index: 1200; }
+
 :root {
   --modal-bg: #18181b;
   --modal-shadow: 0 10px 45px rgba(0, 0, 0, 0.85);
