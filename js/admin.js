@@ -1277,8 +1277,22 @@ let allowedEmails = [];
           <td>${escHtml(claim.claimantName || 'Unknown')}<small>${escHtml(claim.claimantEmail || '')}</small></td>
           <td>${escHtml(formatDate(claim.createdAt))}</td>
           <td>${status}</td>
+          <td><button class="action-btn action-btn-delete" data-action="deleteClaim" data-args="${actionArgs(claim.id, claim.itemTitle || 'this item')}">Delete</button></td>
         </tr>`;
       }).join('');
+    }
+
+    async function deleteClaim(id, itemTitle) {
+      if (!await openActionConfirm('Delete Claim', `Permanently delete the claim for "${itemTitle}"? This cannot be undone.`)) return;
+      try {
+        const response = await adminFetch(`/api/items/claims/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to delete claim.');
+        showToast(data.message || 'Claim deleted.');
+        await refreshAdminClaims();
+      } catch (error) {
+        showToast(error.message || 'Unable to delete claim.', 'error');
+      }
     }
 
     // key is a property name, or a function that reads the label from an item.

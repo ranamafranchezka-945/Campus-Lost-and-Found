@@ -679,6 +679,9 @@ async function fetchAndRenderItems(options = {}) {
   if (currentFilter === 'lost') params.append('type', 'lost');
   if (currentFilter === 'found') params.append('type', 'found');
   if (currentFilter === 'claimed') params.append('status', 'claimed');
+  // Claimed items are done - keep them out of All/Lost/Found so the campus listing
+  // only shows reports still needing attention; they stay visible under Claimed.
+  if (['all', 'lost', 'found'].includes(currentFilter)) params.append('status', 'active');
   if (currentFilter === 'registered') params.append('type', 'registered');
   if (currentLocationFilter) params.append('location', currentLocationFilter);
   if (search) params.append('search', search);

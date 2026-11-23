@@ -534,6 +534,18 @@ router.get('/claims', requireRole('admin'), (req, res) => {
   res.json({ success: true, claims });
 });
 
+// DELETE /api/items/claims/:claimId - Admin cleanup of a claim record. Only removes
+// the claim itself; an item the claim already marked claimed stays claimed, since
+// deleting the record isn't the same as undoing a handover that may have happened.
+router.delete('/claims/:claimId', requireRole('admin'), (req, res) => {
+  const claims = getClaims();
+  const index = claims.findIndex(entry => entry.id === req.params.claimId);
+  if (index === -1) return res.status(404).json({ success: false, message: 'Claim not found.' });
+  claims.splice(index, 1);
+  saveClaims(claims);
+  res.json({ success: true, message: 'Claim deleted.' });
+});
+
 // POST /api/items/broadcast - Send an admin announcement to registered students and employees.
 router.post('/broadcast', requireRole('admin'), async (req, res) => {
   const subject = sanitizeString(req.body.subject || '');
