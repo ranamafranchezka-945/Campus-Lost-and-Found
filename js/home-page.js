@@ -2419,6 +2419,112 @@ function setupPhotoDropZone() {
   area.addEventListener('drop', handlePhotoDrop);
 }
 
+function setupItemLocationSuggestions() {
+  const input = document.getElementById('itemLocation');
+  const suggestions = document.getElementById('itemLocationSuggestions');
+  const datalist = document.getElementById('itemLocationOptions');
+  const wrapper = input?.closest('.location-input-wrap');
+  if (!input || !suggestions || !datalist || !wrapper) return;
+
+  const locations = [...datalist.options].map(option => option.value).filter(Boolean);
+  let visibleLocations = [];
+  let activeIndex = -1;
+
+  const closeSuggestions = () => {
+    suggestions.hidden = true;
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+    activeIndex = -1;
+  };
+
+  const renderSuggestions = () => {
+    const query = input.value.trim().toLocaleLowerCase();
+    visibleLocations = locations.filter(location => location.toLocaleLowerCase().includes(query));
+    activeIndex = -1;
+    suggestions.replaceChildren();
+
+    if (!visibleLocations.length) {
+      closeSuggestions();
+      return;
+    }
+
+    visibleLocations.forEach((location, index) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.id = `itemLocationOption${index}`;
+      option.className = 'location-suggestion';
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', 'false');
+      option.tabIndex = -1;
+      option.dataset.location = location;
+      option.textContent = location;
+      suggestions.append(option);
+    });
+
+    suggestions.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  };
+
+  const setActiveOption = index => {
+    if (!visibleLocations.length) return;
+    activeIndex = (index + visibleLocations.length) % visibleLocations.length;
+    const options = suggestions.querySelectorAll('[role="option"]');
+    options.forEach((option, optionIndex) => {
+      const active = optionIndex === activeIndex;
+      option.setAttribute('aria-selected', String(active));
+      option.classList.toggle('is-active', active);
+    });
+    const activeOption = options[activeIndex];
+    input.setAttribute('aria-activedescendant', activeOption.id);
+    activeOption.scrollIntoView({ block: 'nearest' });
+  };
+
+  const selectLocation = location => {
+    input.value = location;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    closeSuggestions();
+  };
+
+  input.addEventListener('focus', renderSuggestions);
+  input.addEventListener('click', () => {
+    if (suggestions.hidden) renderSuggestions();
+  });
+  input.addEventListener('input', renderSuggestions);
+  input.addEventListener('keydown', event => {
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (suggestions.hidden) renderSuggestions();
+      if (suggestions.hidden) return;
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      const start = activeIndex < 0 ? (direction > 0 ? -1 : 0) : activeIndex;
+      setActiveOption(start + direction);
+    } else if (event.key === 'Enter' && !suggestions.hidden && activeIndex >= 0) {
+      event.preventDefault();
+      selectLocation(visibleLocations[activeIndex]);
+    } else if (event.key === 'Escape' && !suggestions.hidden) {
+      event.preventDefault();
+      closeSuggestions();
+    } else if (event.key === 'Tab') {
+      closeSuggestions();
+    }
+  });
+
+  suggestions.addEventListener('mousedown', event => {
+    if (event.target.closest('[role="option"]')) event.preventDefault();
+  });
+  suggestions.addEventListener('click', event => {
+    const option = event.target.closest('[role="option"]');
+    if (option && suggestions.contains(option)) selectLocation(option.dataset.location);
+  });
+  input.addEventListener('blur', () => {
+    window.setTimeout(closeSuggestions, 120);
+  });
+  document.addEventListener('click', event => {
+    if (!wrapper.contains(event.target)) closeSuggestions();
+  });
+}
+
 // The optional fields fold away again whenever the form is cleared (Cancel or after submitting).
 function setupReportMoreDetails() {
   const form = document.getElementById('itemForm');
@@ -2843,6 +2949,7 @@ function loadTheme() {
 document.addEventListener('DOMContentLoaded', () => {
   loadTheme();
   setupPhotoDropZone();
+  setupItemLocationSuggestions();
   setupReportMoreDetails();
   ['deleteAccountPassword', 'deleteAccountConfirm'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', updateDeleteAccountButton);

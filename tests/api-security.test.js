@@ -868,7 +868,9 @@ test('signed-in students using home aliases reach the portal report form', async
   assert.equal(portal.status, 200);
   const html = await portal.text();
   assert.match(html, /class="location-input-wrap"/);
-  assert.match(html, /id="itemLocation" list="itemLocationOptions"/);
+  assert.match(html, /id="itemLocation" role="combobox"/);
+  assert.match(html, /id="itemLocationSuggestions" role="listbox"/);
+  assert.match(html, /<datalist id="itemLocationOptions">/);
 });
 
 test('pages send a strict script policy and contain no inline scripts or handlers', async () => {

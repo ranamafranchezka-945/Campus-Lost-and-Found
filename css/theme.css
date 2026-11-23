@@ -127,6 +127,58 @@
   min-width: 0;
 }
 
+:root .location-suggestions {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  box-sizing: border-box;
+  max-height: min(18rem, 45vh);
+  padding: 0.35rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--float-border);
+  border-radius: 0.85rem;
+  background: var(--float-bg);
+  box-shadow: 0 14px 32px rgba(2, 6, 23, 0.32);
+  color: var(--text-main);
+}
+
+:root .location-suggestions[hidden] {
+  display: none;
+}
+
+:root .location-suggestion {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  text-align: left;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+:root .location-suggestion:hover,
+:root .location-suggestion.is-active,
+:root .location-suggestion:focus-visible {
+  outline: none;
+  background: var(--option-hover);
+  color: var(--blue-main);
+}
+
+:root[data-theme='light'] .location-suggestions {
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.16);
+}
+
 :root .location-input-icon {
   position: absolute;
   top: 50%;

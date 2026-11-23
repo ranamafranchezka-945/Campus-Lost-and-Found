@@ -282,8 +282,12 @@
                   <circle cx="12" cy="10" r="2.5" />
                 </svg>
               </span>
-              <input type="text" id="itemLocation" list="itemLocationOptions" required
+              <input type="text" id="itemLocation" role="combobox" aria-autocomplete="list"
+                     aria-controls="itemLocationSuggestions" aria-expanded="false"
+                     aria-haspopup="listbox" required
                      placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+              <div class="location-suggestions" id="itemLocationSuggestions" role="listbox"
+                   aria-label="Campus location suggestions" hidden></div>
             </div>
             <datalist id="itemLocationOptions">
               <option value="College of Computer Studies (CCS)"></option>
