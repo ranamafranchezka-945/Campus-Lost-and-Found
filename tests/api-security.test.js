@@ -1022,6 +1022,8 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
   assert.match(script, /setFinderConversationLink/);
   assert.match(script, /finderConversation=/);
+  assert.match(script, /btn-delete-conversation/);
+  assert.match(script, /deleteRegisteredConversationNotification/);
 });
 
 test('signed-in students using home aliases reach the portal report form', async () => {

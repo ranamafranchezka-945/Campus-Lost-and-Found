@@ -2207,6 +2207,7 @@ async function loadNotificationsIntoModal() {
         ${Date.parse(n.conversationExpiresAt) > Date.now()
           ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
           : '<p class="notif-contact">This conversation has expired.</p>'}
+        <button type="button" class="btn-delete-conversation" data-action="deleteRegisteredConversationNotification" data-args="${actionArgs(n.id, n.itemId, '$el')}">Delete conversation</button>
       </div>
     ` : n.notificationType === 'meetup' ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
@@ -2315,6 +2316,35 @@ async function deleteSelectedNotifications() {
   } catch (err) {
     button.disabled = false;
     showToast(err.message || 'Could not delete notifications.', 'error');
+  }
+}
+
+async function deleteRegisteredConversationNotification(notificationId, itemId, button) {
+  if (!notificationId || !itemId || button.disabled) return;
+  const confirmed = await askConfirm(
+    'Delete this QR finder conversation and its notification? This cannot be undone.',
+    { title: 'Delete conversation?', confirmLabel: 'Delete', icon: '🗑️' }
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/items/notifications', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{ kind: 'item', recordId: String(itemId), id: String(notificationId) }]
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
+    if (!data.deletedCount) throw new Error('The conversation was not found or is no longer available.');
+    showToast('Conversation deleted.');
+    await loadNotificationsIntoModal();
+    await loadMyNotifications();
+  } catch (error) {
+    button.disabled = false;
+    showToast(error.message || 'Could not delete the conversation.', 'error');
   }
 }
 
