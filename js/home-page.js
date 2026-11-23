@@ -1758,7 +1758,8 @@ function renderClaimThread(thread) {
   if (thread.claim.status === 'approved') {
     confirmBox.innerHTML = `
       <p class="thread-resolved">✅ Both sides confirmed. Item marked as claimed.</p>
-      <button type="button" class="btn btn-outline btn-compact" data-action="deleteClaimThread">🗑️ Delete conversation</button>`;
+      <p class="thread-waiting">This conversation will auto-delete in 24 hours.</p>
+      <button type="button" class="btn btn-outline btn-compact" data-action="deleteClaimThread">🗑️ Delete now</button>`;
   } else if (thread.confirmedByMe) {
     confirmBox.innerHTML = `<p class="thread-waiting">You confirmed. Waiting for ${escapeHtml(thread.otherName)} to confirm too…</p>`;
   } else {

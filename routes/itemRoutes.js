@@ -837,6 +837,18 @@ router.post('/claims/:claimId/meetup/stop', requireAuth, (req, res) => {
 // agree the item matches, then each confirm the handover once it has happened.
 // Replaces the old admin-approval step: the item is marked claimed only once both
 // sides here have confirmed it.
+const CLAIM_THREAD_TTL_MS = 24 * 60 * 60 * 1000;
+
+// Either side can delete the conversation once resolved (DELETE route below), and
+// if neither bothers, it clears itself out a day after resolution - mirrors the
+// lazy, prune-on-access pattern pruneMeetup already uses for shared locations.
+function pruneClaimThread(claim, now = Date.now()) {
+  if (claim.status !== 'approved' || !claim.messages.length) return false;
+  if (now - Date.parse(claim.reviewedAt || claim.createdAt) <= CLAIM_THREAD_TTL_MS) return false;
+  claim.messages = [];
+  return true;
+}
+
 function loadClaimThread(req, res) {
   const claims = getClaims();
   const claim = claims.find(entry => entry.id === req.params.claimId);
@@ -853,6 +865,7 @@ function loadClaimThread(req, res) {
   }
   claim.messages = Array.isArray(claim.messages) ? claim.messages : [];
   claim.confirmations = Array.isArray(claim.confirmations) ? claim.confirmations : [];
+  if (pruneClaimThread(claim)) saveClaims(claims);
   const me = userId === String(claimant.id) ? claimant : finder;
   const other = me === claimant ? finder : claimant;
   return { claims, claim, items, item, me, other };
