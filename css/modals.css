@@ -161,6 +161,7 @@
   font-weight: 700;
   color: var(--blue-main);
 }
+.modal-icon--success { color: var(--tone-success); }
 .modal-confirm-title {
   margin-bottom: 0.5rem;
   font-size: 1.2rem;
@@ -168,6 +169,7 @@
   color: var(--blue-main);
 }
 .modal-confirm-title--danger { color: var(--tone-danger); }
+.modal-confirm-title--success { color: var(--tone-success); }
 .modal-confirm-title--neutral { color: var(--text-main); }
 .modal-confirm-text {
   margin-bottom: 1.25rem;
