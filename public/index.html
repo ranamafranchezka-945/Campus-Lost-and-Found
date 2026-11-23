@@ -541,6 +541,19 @@
     </div>
   </div>
 
+  <!-- POSITIVE CONFIRMATION: confirm that a QR-registered item was returned -->
+  <div class="slip-overlay" id="confirmItemReturnedModal" data-close="closeConfirmItemReturned">
+    <div class="modal-card modal-card--sm modal-card--success modal-card--center confirm-item-returned-card">
+      <div class="modal-icon modal-icon--success" aria-hidden="true">✓</div>
+      <h3 class="modal-confirm-title modal-confirm-title--success">Confirm item returned?</h3>
+      <p class="modal-confirm-text">Confirm that the registered belonging has been returned to its owner? The conversation closes only after both people confirm.</p>
+      <div class="modal-actions modal-actions--center">
+        <button type="button" class="btn btn-outline btn-compact" data-action="closeConfirmItemReturned">Cancel</button>
+        <button type="button" class="btn btn-success confirm-item-returned-button" data-action="confirmItemReturned">Confirm return</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CLAIM / UNCLAIM CONFIRMATION MODAL -->
   <div class="slip-overlay" id="claimConfirmModal" data-close="closeClaimModal">
     <div class="modal-card modal-card--md">

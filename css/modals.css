@@ -7,6 +7,25 @@
    top of the claim conversation modal) always needs to win that stacking, so it
    gets a z-index above every other overlay instead of relying on source order. */
 #genericConfirmModal { z-index: 1200; }
+#confirmItemReturnedModal { z-index: 1200; }
+
+#confirmItemReturnedModal .confirm-item-returned-card {
+  border: 2px solid var(--tone-success-strong) !important;
+}
+#confirmItemReturnedModal .modal-icon {
+  color: var(--tone-success) !important;
+}
+#confirmItemReturnedModal .modal-confirm-title { color: var(--tone-success) !important; }
+#confirmItemReturnedModal .confirm-item-returned-button {
+  border: 1px solid #15803d !important;
+  background: #15803d !important;
+  color: #ffffff !important;
+}
+#confirmItemReturnedModal .confirm-item-returned-button:hover {
+  border-color: #166534 !important;
+  background: #166534 !important;
+  color: #ffffff !important;
+}
 
 :root {
   --modal-bg: #18181b;
@@ -161,7 +180,6 @@
   font-weight: 700;
   color: var(--blue-main);
 }
-.modal-icon--success { color: var(--tone-success); }
 .modal-confirm-title {
   margin-bottom: 0.5rem;
   font-size: 1.2rem;
@@ -169,7 +187,6 @@
   color: var(--blue-main);
 }
 .modal-confirm-title--danger { color: var(--tone-danger); }
-.modal-confirm-title--success { color: var(--tone-success); }
 .modal-confirm-title--neutral { color: var(--text-main); }
 .modal-confirm-text {
   margin-bottom: 1.25rem;

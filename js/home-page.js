@@ -2284,16 +2284,16 @@ async function sendClaimThreadMessage(event) {
 async function confirmClaimThread() {
   if (!activeClaimThreadId && !activeRegisteredFinderConversation) return;
   const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
-  const confirmed = await askConfirm(
-    isRegisteredConversation
-      ? 'Confirm that the registered belonging has been returned to its owner? The conversation closes only after both people confirm.'
-      : 'Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.',
-    {
-    title: isRegisteredConversation ? 'Confirm item returned?' : 'Confirm item received/returned?',
-    confirmLabel: 'Confirm',
-    icon: '✓',
-    tone: isRegisteredConversation ? 'success' : 'danger'
-  });
+  const confirmed = isRegisteredConversation
+    ? await askConfirmItemReturned()
+    : await askConfirm(
+        'Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.',
+        {
+          title: 'Confirm item received/returned?',
+          confirmLabel: 'Confirm',
+          icon: '✓'
+        }
+      );
   if (!confirmed) return;
   try {
     const conversation = activeRegisteredFinderConversation;
@@ -3294,20 +3294,32 @@ function contactLinkHtml(value) {
 // ── Generic confirmation modal (replaces window.confirm(), which shows the
 // browser's own "this site says" chrome instead of the app's own styling) ──
 let genericConfirmResolve = null;
+let confirmItemReturnedResolve = null;
 
-function askConfirm(text, { title = 'Are you sure?', confirmLabel = 'Confirm', icon = '⚠️', tone = 'danger' } = {}) {
-  const modal = document.getElementById('genericConfirmModal');
-  const card = modal.querySelector('.modal-card');
-  const titleElement = document.getElementById('genericConfirmTitle');
-  const confirmButton = document.getElementById('genericConfirmBtn');
-  const isSuccess = tone === 'success';
-  card.classList.toggle('modal-card--success', isSuccess);
-  card.classList.toggle('modal-card--danger', !isSuccess);
-  titleElement.classList.toggle('modal-confirm-title--success', isSuccess);
-  titleElement.classList.toggle('modal-confirm-title--danger', !isSuccess);
-  document.getElementById('genericConfirmIcon').classList.toggle('modal-icon--success', isSuccess);
-  confirmButton.classList.toggle('btn-success', isSuccess);
-  confirmButton.classList.toggle('btn-danger', !isSuccess);
+function askConfirmItemReturned() {
+  document.getElementById('confirmItemReturnedModal').classList.add('open');
+  return new Promise(resolve => { confirmItemReturnedResolve = resolve; });
+}
+
+function closeConfirmItemReturned() {
+  document.getElementById('confirmItemReturnedModal').classList.remove('open');
+  if (confirmItemReturnedResolve) {
+    const resolve = confirmItemReturnedResolve;
+    confirmItemReturnedResolve = null;
+    resolve(false);
+  }
+}
+
+function confirmItemReturned() {
+  document.getElementById('confirmItemReturnedModal').classList.remove('open');
+  if (confirmItemReturnedResolve) {
+    const resolve = confirmItemReturnedResolve;
+    confirmItemReturnedResolve = null;
+    resolve(true);
+  }
+}
+
+function askConfirm(text, { title = 'Are you sure?', confirmLabel = 'Confirm', icon = '⚠️' } = {}) {
   document.getElementById('genericConfirmTitle').textContent = title;
   document.getElementById('genericConfirmText').textContent = text;
   document.getElementById('genericConfirmIcon').textContent = icon;
