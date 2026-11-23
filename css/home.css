@@ -483,12 +483,17 @@
     .btn-delete-notifications {
       margin-left: auto;
       padding: 0.35rem 0.65rem;
-      border: 1px solid rgba(248, 113, 113, 0.45);
+      border: 1px solid #b91c1c;
       border-radius: 6px;
-      background: rgba(248, 113, 113, 0.1);
-      color: #fca5a5;
+      background: #b91c1c;
+      color: #ffffff;
       font: inherit;
+      font-weight: 650;
       cursor: pointer;
+    }
+    .btn-delete-notifications:hover:not(:disabled) {
+      background: #991b1b;
+      border-color: #991b1b;
     }
     .btn-delete-notifications:disabled {
       opacity: 0.45;

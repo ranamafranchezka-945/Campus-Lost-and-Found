@@ -1515,7 +1515,13 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
   const theirs = n.theirLocation || {};
   let theirsHtml;
   if (theirs.status === 'shared' && theirs.location) {
-    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded);
+    // The notifications dropdown lists several of these at once - a live, embedded
+    // map per entry was heavy and cramped there. Keep the full map for the claim
+    // conversation (idPrefix 'thread-', already behind its own Show Map toggle) and
+    // give the notifications list a compact summary with a link to view it there.
+    theirsHtml = idPrefix === 'thread-'
+      ? meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded)
+      : meetupSharedSummaryHtml(theirs.location, n.otherName, n.claimId);
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -1559,6 +1565,17 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
     <div class="meetup-section">
       <p class="meetup-label">${other}'s location</p>
       ${theirsHtml}
+    </div>`;
+}
+
+// Notifications-list stand-in for meetupMapHtml below: no embedded map, just the
+// facts plus a button into the claim conversation, where the real map lives.
+function meetupSharedSummaryHtml(location, otherName, claimId) {
+  const name = escapeHtml(otherName);
+  return `
+    <p class="meetup-status"><span class="meetup-live" aria-hidden="true"></span>${name} shared their location · accurate to about ${escapeHtml(String(location.accuracy))} m · visible until ${meetupTime(location.expiresAt)}</p>
+    <div class="meetup-actions">
+      <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="openClaimThreadModal" data-args="${actionArgs(claimId)}">View in conversation</button>
     </div>`;
 }
 
