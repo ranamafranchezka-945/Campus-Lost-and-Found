@@ -1708,24 +1708,49 @@ let activeClaimThreadId = null;
 // Set instead of activeClaimThreadId while no claim exists yet for this match - the
 // first message the claimant sends doubles as the claim's ownership proof.
 let pendingClaimStart = null;
+// How many messages renderClaimThread has already shown, so a background poll can
+// tell which ones are new (and worth a toast) instead of just the full history.
+let lastKnownThreadMessageCount = 0;
+let claimThreadPollTimer = null;
+
+// Polls while the conversation is open so a reply shows up without reopening the
+// modal or refreshing the page; stops itself once the modal closes or the tab
+// isn't visible (no point spending requests on a backgrounded tab).
+function startClaimThreadPolling() {
+  stopClaimThreadPolling();
+  claimThreadPollTimer = setInterval(() => {
+    if (!activeClaimThreadId) { stopClaimThreadPolling(); return; }
+    if (document.visibilityState === 'visible') refreshClaimThread({ silent: true });
+  }, 5000);
+}
+
+function stopClaimThreadPolling() {
+  clearInterval(claimThreadPollTimer);
+  claimThreadPollTimer = null;
+}
 
 async function openClaimThreadModal(claimId) {
   if (!claimId) return;
+  closeNotificationsModal();
   activeClaimThreadId = claimId;
   pendingClaimStart = null;
+  lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadInput').placeholder = 'Type a message…';
   document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading…</p>';
   document.getElementById('claimThreadMeetup').innerHTML = '';
   document.getElementById('claimThreadConfirm').innerHTML = '';
   document.getElementById('claimThreadModal').classList.add('open');
   await refreshClaimThread();
+  startClaimThreadPolling();
 }
 
 // Opened when no claim exists yet for this match - describing the item IS the
 // claim request, submitted the moment the claimant sends their first message.
 function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
+  stopClaimThreadPolling();
   activeClaimThreadId = null;
   pendingClaimStart = { lostId, foundId };
+  lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${foundTitle || 'Item'}`;
   document.getElementById('claimThreadSubtitle').textContent = 'Starts once you send your first message';
   document.getElementById('claimThreadBody').innerHTML = requesterRole === 'finder'
@@ -1742,6 +1767,7 @@ function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
 function closeClaimThreadModal() {
   activeClaimThreadId = null;
   pendingClaimStart = null;
+  stopClaimThreadPolling();
   document.getElementById('claimThreadModal').classList.remove('open');
 }
 
@@ -1752,6 +1778,19 @@ function claimThreadMessageHtml(message) {
       <p class="thread-msg-text">${escapeHtml(message.text)}</p>
       <span class="thread-msg-time">${time}</span>
     </div>`;
+}
+
+// Renders the thread and, on a background poll, toasts about any message the
+// other person sent since the last time this was called.
+function applyClaimThreadUpdate(thread, { silent = false } = {}) {
+  const newFromOther = thread.messages.slice(lastKnownThreadMessageCount).filter(m => !m.mine);
+  if (silent && newFromOther.length) {
+    showToast(newFromOther.length > 1
+      ? `${newFromOther.length} new messages from ${thread.otherName}`
+      : `New message from ${thread.otherName}`);
+  }
+  lastKnownThreadMessageCount = thread.messages.length;
+  renderClaimThread(thread);
 }
 
 function renderClaimThread(thread) {
@@ -1796,21 +1835,23 @@ async function refreshClaimThreadMeetup() {
   }
 }
 
-async function refreshClaimThread() {
+async function refreshClaimThread({ silent = false } = {}) {
   const claimId = activeClaimThreadId;
   if (!claimId) return;
   try {
     const res = await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/thread`, { cache: 'no-store' });
     const thread = await res.json();
     if (!res.ok || !thread.success) {
-      showToast(thread.message || 'This conversation is no longer available.', true);
-      closeClaimThreadModal();
+      if (!silent) {
+        showToast(thread.message || 'This conversation is no longer available.', true);
+        closeClaimThreadModal();
+      }
       return;
     }
-    renderClaimThread(thread);
+    applyClaimThreadUpdate(thread, { silent });
     await refreshClaimThreadMeetup();
   } catch (error) {
-    showToast('Could not load the conversation. Please try again.', true);
+    if (!silent) showToast('Could not load the conversation. Please try again.', true);
   }
 }
 
@@ -1835,6 +1876,7 @@ async function sendClaimThreadMessage(event) {
       input.value = '';
       input.placeholder = 'Type a message…';
       await refreshClaimThread();
+      startClaimThreadPolling();
       return;
     }
     const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
@@ -1845,7 +1887,7 @@ async function sendClaimThreadMessage(event) {
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not send that message.');
     input.value = '';
-    renderClaimThread(data);
+    applyClaimThreadUpdate(data);
   } catch (error) {
     showToast(error.message || 'Network error. Please try again.', true);
   } finally {
@@ -1860,7 +1902,7 @@ async function confirmClaimThread() {
     const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not confirm.');
-    renderClaimThread(data);
+    applyClaimThreadUpdate(data);
     if (data.claim.status === 'approved') {
       showToast('Item marked as claimed.');
       fetchAndRenderItems();
@@ -1911,6 +1953,16 @@ async function loadNotificationsIntoModal() {
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         ${meetupNotificationHtml(n)}
+      </div>
+    ` : n.notificationType === 'claim-message' ? `
+      <div class="notif-item notif-item--message unread" data-id="${escapeHtml(String(n.id))}">
+        <div class="notif-header">
+          <strong>💬 ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
+        </div>
+        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount > 1 ? ` sent ${n.unreadCount} messages` : ' replied'}</p>
+        <p class="notif-msg">${escapeHtml(n.message)}</p>
+        <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
       </div>
     ` : `
       <div class="notif-item${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">

@@ -874,7 +874,18 @@ function loadClaimThread(req, res) {
   }
   claim.messages = Array.isArray(claim.messages) ? claim.messages : [];
   claim.confirmations = Array.isArray(claim.confirmations) ? claim.confirmations : [];
-  if (pruneClaimThread(claim)) saveClaims(claims);
+  claim.lastReadAt = claim.lastReadAt && typeof claim.lastReadAt === 'object' ? claim.lastReadAt : {};
+  let changed = pruneClaimThread(claim);
+  // Loading the thread at all - whether to read it, send a message or confirm -
+  // means you've seen everything in it so far, so the unread-messages bell
+  // notification clears the moment you open the conversation.
+  const previousRead = claim.lastReadAt[userId];
+  const now = new Date().toISOString();
+  if (!previousRead || claim.messages.some(entry => Date.parse(entry.createdAt) > Date.parse(previousRead))) {
+    claim.lastReadAt[userId] = now;
+    changed = true;
+  }
+  if (changed) saveClaims(claims);
   const me = userId === String(claimant.id) ? claimant : finder;
   const other = me === claimant ? finder : claimant;
   return { claims, claim, items, item, me, other };
@@ -982,7 +993,9 @@ function meetupNotification(claim, item, me, other, isOwner) {
   const meetup = claim.meetup || {};
   const mine = meetup[String(me.id)];     // my request: their location for me
   const theirs = meetup[String(other.id)]; // their request: my location for them
-  const times = [claim.reviewedAt, mine?.createdAt, mine?.respondedAt, theirs?.createdAt, theirs?.respondedAt]
+  // claim.reviewedAt is only set once approved - for a still-pending claim with no
+  // meetup activity yet, fall back to claim.createdAt so this always has a time.
+  const times = [claim.reviewedAt, claim.createdAt, mine?.createdAt, mine?.respondedAt, theirs?.createdAt, theirs?.respondedAt]
     .filter(Boolean).map(Date.parse);
   return {
     id: `meetup-${claim.id}`,
@@ -1004,6 +1017,32 @@ function meetupNotification(claim, item, me, other, isOwner) {
       status: theirs?.status || 'none',
       expiresAt: theirs?.location?.expiresAt || null
     }
+  };
+}
+
+// Unread-messages inbox entry for one person - "unread" here means messages the
+// other side sent since this person last opened the conversation (loadClaimThread
+// stamps claim.lastReadAt on every open), not a per-message read receipt.
+function claimMessageNotification(claim, item, me, other) {
+  const messages = Array.isArray(claim.messages) ? claim.messages : [];
+  const lastRead = claim.lastReadAt?.[String(me.id)];
+  const unread = messages.filter(entry =>
+    String(entry.senderId) !== String(me.id) &&
+    (!lastRead || Date.parse(entry.createdAt) > Date.parse(lastRead)));
+  if (!unread.length) return null;
+  const latest = unread[unread.length - 1];
+  return {
+    id: `claim-message-${claim.id}`,
+    notificationType: 'claim-message',
+    claimId: claim.id,
+    itemId: item.id,
+    itemTitle: item.title,
+    refCode: item.refCode,
+    otherName: firstName(other.fullName, 'The other person'),
+    message: latest.text,
+    unreadCount: unread.length,
+    timestamp: latest.createdAt,
+    read: false
   };
 }
 
@@ -1343,8 +1382,11 @@ router.get('/my-notifications', requireAuth, (req, res) => {
     if (!parties) return;
     const isOwner = String(parties.owner.id) === String(userId);
     if (!isOwner && String(parties.finder.id) !== String(userId)) return;
-    notifications.push(meetupNotification(claim, parties.item,
-      isOwner ? parties.owner : parties.finder, isOwner ? parties.finder : parties.owner, isOwner));
+    const me = isOwner ? parties.owner : parties.finder;
+    const other = isOwner ? parties.finder : parties.owner;
+    notifications.push(meetupNotification(claim, parties.item, me, other, isOwner));
+    const messageNotification = claimMessageNotification(claim, parties.item, me, other);
+    if (messageNotification) notifications.push(messageNotification);
   });
   if (claimsChanged) saveClaims(claims);
 

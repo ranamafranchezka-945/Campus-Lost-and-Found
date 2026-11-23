@@ -295,6 +295,7 @@ function createApp() {
         .json({ success: false, message: err.message || 'Invalid upload.' });
     }
     if (req.path.startsWith('/api/')) {
+      console.error('API error:', err);
       return res.status(500).json({ success: false, message: 'An unexpected server error occurred.' });
     }
     console.error('Server error:', err);
