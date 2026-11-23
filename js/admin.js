@@ -3,12 +3,10 @@ let restoreTarget = null;
 let blockedEmails = [];
 let allowedEmails = [];
     let activeTab = 'dashboard';
-    let adminClaimsFilter = 'pending';
     let dashboardRange = 'all';
     let adminItems = [];
     let claimRequests = [];
     let adminClaimsSignature = null;
-    let activeClaimReviewId = null;
     let adminRefreshInProgress = false;
     let adminItemsSignature = null;
     let actionConfirmResolver = null;
@@ -143,9 +141,6 @@ let allowedEmails = [];
       document.getElementById('sidebarClose').addEventListener('click', closeSidebar);
       document.getElementById('sideBackdrop').addEventListener('click', closeSidebar);
       document.addEventListener('keydown', event => { if (event.key === 'Escape') closeSidebar(); });
-      document.querySelectorAll('[data-claims-filter]').forEach(button => {
-        button.addEventListener('click', () => setClaimsFilter(button.dataset.claimsFilter));
-      });
       document.querySelectorAll('#dashRangeSeg [data-range]').forEach(button => {
         button.addEventListener('click', () => setDashboardRange(button.dataset.range));
       });
@@ -797,7 +792,7 @@ let allowedEmails = [];
         const target = event.target;
         const typing = target instanceof HTMLElement
           && (target.matches('input, textarea, select') || target.isContentEditable);
-        const hasOpenDialog = document.querySelector('.slip-overlay.open, .del-modal-backdrop.open, .claim-review-backdrop.open');
+        const hasOpenDialog = document.querySelector('.slip-overlay.open, .del-modal-backdrop.open');
         if (hasOpenDialog) return;
 
         const commandK = (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'k';
@@ -870,7 +865,6 @@ let allowedEmails = [];
         ? `<ul class="feed">${waiting.map(claim => `
           <li class="feed-row">
             <div class="feed-main"><strong title="${escHtml(claim.itemTitle || 'Item')}">Claim for ${escHtml(claim.itemTitle || 'an item')}</strong><small>${escHtml(claim.claimantName || 'Unknown claimant')} · ${escHtml(relativeTime(claim.createdAt))}</small></div>
-            <button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review</button>
           </li>`).join('')}</ul>`
         : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>You are all caught up.</p>';
     }
@@ -1102,13 +1096,13 @@ let allowedEmails = [];
       kpiRow.innerHTML =
         tile('lost', 'search', 'Open lost reports', openLost, subLines(`${lostChange.current} new in 30 days`, lostChange.text), 'showAdminItems', '["lost"]', weeklyCounts(lostTimes)) +
         tile('found', 'found', 'Open found reports', openFound, subLines(`${foundChange.current} new in 30 days`, foundChange.text), 'showAdminItems', '["found"]', weeklyCounts(foundTimes)) +
-        tile('claims', 'shield', 'Claims to review', pending.length, subLines(oldest ? `Oldest: ${escHtml(relativeTime(oldest.createdAt))}` : 'Nothing waiting', ''), 'showAdminView', '["claims"]', weeklyCounts(claimTimes)) +
+        tile('claims', 'shield', 'Pending claims', pending.length, subLines(oldest ? `Oldest: ${escHtml(relativeTime(oldest.createdAt))}` : 'Nothing pending', ''), 'showAdminView', '["claims"]', weeklyCounts(claimTimes)) +
         tile('returned', 'box', 'Resolved reports', resolved, subLines(`${rate}% of all reports`, ''), 'showAdminItems', '["", "claimed"]', weeklyCounts(resolvedTimes));
 
       const banner = document.getElementById('attentionBanner');
       banner.hidden = !pending.length;
       if (pending.length) {
-        banner.querySelector('strong').textContent = `${pending.length} claim${pending.length === 1 ? ' is' : 's are'} waiting for review`;
+        banner.querySelector('strong').textContent = `${pending.length} claim${pending.length === 1 ? ' is' : 's are'} pending`;
         banner.querySelector('small').textContent = oldest ? `The oldest was submitted ${relativeTime(oldest.createdAt)}.` : '';
       }
 
@@ -1143,9 +1137,8 @@ let allowedEmails = [];
         ? `<ul class="feed">${waiting.map(claim => `
           <li class="feed-row">
             <div class="feed-main"><strong title="${escHtml(claim.itemTitle || 'Item')}">${escHtml(claim.itemTitle || 'Item')}</strong><small>${escHtml(claim.claimantName || 'Unknown claimant')} · ${escHtml(relativeTime(claim.createdAt))}</small></div>
-            <button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review</button>
           </li>`).join('')}</ul>`
-        : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>All caught up. No claims are waiting.</p>';
+        : '<p class="feed-empty"><svg class="ico" aria-hidden="true"><use href="#i-found"/></svg>All caught up. No claims are pending.</p>';
 
       const latest = [...items].sort((a, b) => itemTime(b) - itemTime(a)).slice(0, 5);
       document.getElementById('dashRecent').innerHTML = latest.length
@@ -1161,8 +1154,7 @@ let allowedEmails = [];
       setCount('countClaims', pending.length);
       setCount('bellCount', pending.length);
       renderNotifications(pending);
-      document.getElementById('adminBell').setAttribute('aria-label', pending.length ? `${pending.length} claim${pending.length === 1 ? '' : 's'} waiting for review` : 'No claims waiting for review');
-      document.getElementById('segPending').textContent = pending.length ? `(${pending.length})` : '';
+      document.getElementById('adminBell').setAttribute('aria-label', pending.length ? `${pending.length} claim${pending.length === 1 ? '' : 's'} pending` : 'No claims pending');
       playDashboardIntro();
     }
 
@@ -1266,42 +1258,25 @@ let allowedEmails = [];
       document.getElementById('trendTip').hidden = true;
     }
 
-    // ── Claim verification queue ─────────────────────────────────────────────
-    function setClaimsFilter(filter) {
-      adminClaimsFilter = filter === 'all' ? 'all' : 'pending';
-      document.querySelectorAll('[data-claims-filter]').forEach(button => {
-        const on = button.dataset.claimsFilter === adminClaimsFilter;
-        button.classList.toggle('active', on);
-        button.setAttribute('aria-pressed', String(on));
-      });
-      renderClaimQueue();
-    }
-
+    // ── Claims list ───────────────────────────────────────────────────────────
     function renderClaimQueue() {
       const body = document.getElementById('adminClaimsBody');
       const empty = document.getElementById('adminClaimsEmptyState');
       if (!body || !empty) return;
-      const claims = adminClaimsFilter === 'pending'
-        ? claimRequests.filter(claim => claim.status === 'pending').sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt))
-        : claimRequests.slice();
+      const claims = [...claimRequests].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
       empty.hidden = claims.length > 0;
-      empty.querySelector('h3').textContent = adminClaimsFilter === 'pending' ? 'No claims waiting' : 'No claims yet';
       body.innerHTML = claims.map(claim => {
         const status = claim.status === 'pending'
           ? '<span class="badge admin-status-pending">Pending</span>'
           : claim.status === 'approved'
             ? '<span class="badge badge-claimed">Approved</span>'
             : '<span class="badge admin-status-rejected">Rejected</span>';
-        const action = claim.status === 'pending'
-          ? `<button type="button" class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(claim.id)}">Review claim</button>`
-          : `<small>${claim.reviewedAt ? `Reviewed ${escHtml(formatDate(claim.reviewedAt))}` : ''}</small>`;
         return `
         <tr>
           <td class="td-title">${escHtml(claim.itemTitle || 'Item')}<small>${escHtml(claim.itemRefCode || '')}</small></td>
           <td>${escHtml(claim.claimantName || 'Unknown')}<small>${escHtml(claim.claimantEmail || '')}</small></td>
           <td>${escHtml(formatDate(claim.createdAt))}</td>
           <td>${status}</td>
-          <td>${action}</td>
         </tr>`;
       }).join('');
     }
@@ -1402,7 +1377,6 @@ let allowedEmails = [];
           <td class="status-cell" title="${pendingClaim ? 'Pending verification: a claim is waiting for review' : latestClaim?.status === 'rejected' && !item.claimed ? 'Rejected · Available' : escHtml(item.status)}">${itemStatus}</td>
           <td class="actions-cell">
             <div class="action-buttons">
-              ${pendingClaim ? `<button class="action-btn action-btn-claim" data-action="openClaimReview" data-args="${actionArgs(pendingClaim.id)}">Review Claim</button>` : ''}
               ${canRestore ? `<button class="action-btn action-btn-restore" data-action="openRestoreModal" data-args="${actionArgs(item.id, item.status)}">Restore</button>` : ''}
               <button class="action-btn action-btn-delete" data-action="openDeleteModal" data-args="${actionArgs(item.id, item.title, reporterValues[0] || 'Unknown reporter')}">Delete</button>
             </div>
@@ -1575,124 +1549,6 @@ let allowedEmails = [];
         showToast(error.message || 'Unable to delete item. Please try again.', 'error');
       } finally {
         button.disabled = false;
-      }
-    }
-
-    function openClaimReview(id) {
-      const claim = claimRequests.find(entry => entry.id === id);
-      const item = adminItems.find(entry => String(entry.id) === String(claim?.itemId));
-      if (!claim || !item) {
-        showToast('Claim or item details are unavailable. Refresh and try again.', 'error');
-        return;
-      }
-
-      activeClaimReviewId = id;
-      const approveButton = document.getElementById('claimApproveButton');
-      const rejectButton = document.getElementById('claimRejectButton');
-      approveButton.textContent = 'Approve Claim';
-      approveButton.onclick = () => prepareClaimDecision('approved');
-      approveButton.hidden = false;
-      rejectButton.textContent = 'Reject Claim';
-      rejectButton.onclick = () => prepareClaimDecision('rejected');
-      rejectButton.hidden = false;
-
-      document.getElementById('claimReviewTitle').textContent = `Verify Claim Request - ${item.id}`;
-      const proofImage = /^\/uploads\/[a-zA-Z0-9._-]+$/.test(claim.proof || '')
-        ? `<img src="${escHtml(claim.proof)}" alt="Claimant proof image" />`
-        : '';
-      document.getElementById('claimReviewContent').innerHTML = `
-        <div class="claim-review-grid">
-          <section class="claim-review-section">
-            <h3>Claimant Details</h3>
-            <p><strong>Student Name:</strong> ${escHtml(claim.claimantName || 'Not provided')}</p>
-            <p><strong>Student ID Number:</strong> ${escHtml(claim.claimantStudentId || 'Not provided')}</p>
-            <p><strong>Email:</strong> ${escHtml(claim.claimantEmail || 'Not provided')}</p>
-            <p><strong>Contact Number:</strong> ${escHtml(claim.claimantContact || 'Not provided')}</p>
-            <p><strong>Course &amp; Year:</strong> ${escHtml(claim.claimantCourseYear || 'Not provided')}</p>
-            <p><strong>Department:</strong> ${escHtml(claim.claimantDepartment || 'Not provided')}</p>
-          </section>
-          <section class="claim-review-section">
-            <h3>Public Item Details</h3>
-            <p><strong>Item:</strong> ${escHtml(item.title)}</p>
-            <p><strong>Type / Category:</strong> ${escHtml(item.type)} / ${escHtml(item.category)}</p>
-            <p><strong>Location:</strong> ${escHtml(item.location)}</p>
-            <p><strong>Description:</strong> ${escHtml(item.desc || item.description || 'No description provided.')}</p>
-            ${item.photo ? `<img src="${escHtml(item.photo)}" alt="Reported item" />` : ''}
-          </section>
-          <section class="claim-review-section">
-            <h3>Claimant's Proof / Secret Detail</h3>
-            <p>${escHtml(claim.proof || 'No proof detail provided.')}</p>${proofImage}
-          </section>
-          <section class="claim-review-section">
-            <h3>Secret Ownership Detail</h3>
-            <p>${escHtml(item.verification || 'No secret ownership detail was provided.')}</p>
-          </section>
-        </div>`;
-      document.getElementById('claimReviewDecisionFields').innerHTML = '';
-      document.getElementById('claimReviewModal').classList.add('open');
-    }
-
-    function closeClaimReview() {
-      document.getElementById('claimReviewModal').classList.remove('open');
-      activeClaimReviewId = null;
-    }
-
-    function prepareClaimDecision(status) {
-      const fields = document.getElementById('claimReviewDecisionFields');
-      const approveButton = document.getElementById('claimApproveButton');
-      const rejectButton = document.getElementById('claimRejectButton');
-      if (status === 'approved') {
-        fields.innerHTML = `
-          <label for="claimPickupInstructions">Optional pickup instructions</label>
-          <textarea class="claim-review-input" id="claimPickupInstructions" rows="2" maxlength="500" placeholder="Please present your CSPC Student ID at the SAS Office, Room 101"></textarea>
-          <label for="claimHandoverSignature">Admin handover acknowledgment</label>
-          <input class="form-control claim-review-input" id="claimHandoverSignature" maxlength="120" placeholder="Type your full name to acknowledge handover" required />`;
-        approveButton.textContent = 'Confirm Approval';
-        approveButton.onclick = () => submitClaimDecision('approved');
-        rejectButton.hidden = true;
-      } else {
-        fields.innerHTML = `
-          <label for="claimRejectionReason">Reason for rejection</label>
-          <textarea class="claim-review-input" id="claimRejectionReason" rows="2" maxlength="500" required placeholder="Proof provided does not match item details"></textarea>`;
-        rejectButton.textContent = 'Submit Rejection';
-        rejectButton.onclick = () => submitClaimDecision('rejected');
-        approveButton.hidden = true;
-      }
-    }
-
-    async function submitClaimDecision(status) {
-      const pickupInstructions = status === 'approved'
-        ? document.getElementById('claimPickupInstructions').value.trim()
-        : '';
-      const handoverSignature = status === 'approved'
-        ? document.getElementById('claimHandoverSignature').value.trim()
-        : '';
-      const rejectionReason = status === 'rejected'
-        ? document.getElementById('claimRejectionReason').value.trim()
-        : '';
-      if (status === 'rejected' && rejectionReason.length < 5) {
-        showToast('Enter a rejection reason of at least 5 characters.', 'error');
-        return;
-      }
-      if (status === 'approved' && handoverSignature.length < 2) {
-        showToast('Enter your name to acknowledge the physical handover.', 'error');
-        return;
-      }
-
-      try {
-        const response = await adminFetch(`/api/items/claims/${encodeURIComponent(activeClaimReviewId)}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status, pickupInstructions, rejectionReason, handoverSignature })
-        });
-        const data = await response.json();
-        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to review claim.');
-        closeClaimReview();
-        await refreshAdminClaims();
-        await refreshAdminItems();
-        showToast(data.message);
-      } catch (error) {
-        showToast(error.message, 'error');
       }
     }
 

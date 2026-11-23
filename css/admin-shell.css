@@ -789,7 +789,7 @@
 :root .admin-app .badge-found { border-color: color-mix(in srgb, var(--viz-found) 55%, transparent); background: color-mix(in srgb, var(--viz-found) 14%, transparent); }
 :root .admin-app .badge-found::before { background: var(--viz-found); }
 
-/* ── Claim verification view ────────────────────────────────────────────── */
+/* ── Claims view ─────────────────────────────────────────────────────────── */
 .seg { display: inline-flex; padding: 0.2rem; border: 1px solid var(--control-border); border-radius: 999px; background: var(--control-bg); }
 .seg-btn {
   padding: 0.4rem 0.95rem;
