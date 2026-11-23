@@ -341,7 +341,9 @@ function syncMobileHeaderControls(navbar) {
 
   const account = navbar.querySelector('.user-pill, .user-account-wrap');
   const authenticated = Boolean(account);
+  const hasFinderNotifications = Boolean(navbar.querySelector('#finderNotificationsBtn'));
   navbar.classList.toggle('mobile-authenticated', authenticated);
+  navbar.classList.toggle('mobile-finder-notifications', !authenticated && hasFinderNotifications);
 
   let signInButton = actions.querySelector('.mobile-header-signin');
   if (!authenticated && !navbar.classList.contains('admin-navbar')) {
@@ -365,7 +367,7 @@ function syncMobileHeaderControls(navbar) {
   const notification = directNotification || notifications[0];
   let mobileNotification = actions.querySelector('.mobile-header-notification');
 
-  if (authenticated && notification && !navbar.classList.contains('admin-navbar')) {
+  if ((authenticated || hasFinderNotifications) && notification && !navbar.classList.contains('admin-navbar')) {
     notification.classList.add('mobile-header-notification-source');
     if (mobileNotification) mobileNotification.remove();
     notifications.forEach(candidate => {

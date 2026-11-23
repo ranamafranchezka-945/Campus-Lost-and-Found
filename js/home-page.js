@@ -12,6 +12,8 @@ let pendingScrollItemId = null;
 let pendingStartPage = null;
 const FEED_FILTERS = ['all', 'lost', 'found', 'claimed', 'registered'];
 const FEED_SORTS = ['newest', 'oldest', 'title'];
+const FINDER_CONVERSATIONS_STORAGE_KEY = 'back2youFinderConversations';
+let accountUnreadNotificationCount = 0;
 
 function clearStoredAuth() {
   ['adminToken', 'currentUser', 'userRole'].forEach(key => {
@@ -28,6 +30,7 @@ function renderGuestHeader() {
   if (slot) slot.innerHTML = '<a href="/login" class="btn btn-primary nav-signin-btn">Sign In</a>';
   if (chipVault) chipVault.style.display = 'none';
   if (mobileLogout) mobileLogout.classList.remove('visible');
+  refreshFinderNotificationsButton();
 }
 
 function renderAuthenticatedHeader(user) {
@@ -72,6 +75,7 @@ function renderAuthenticatedHeader(user) {
     `;
   }
   if (chipVault) chipVault.style.display = 'inline-block';
+  refreshFinderNotificationsButton();
 }
 
 function toggleUserProfileMenu() {
@@ -1259,6 +1263,146 @@ async function handleRegisterBelongingSubmit(e) {
 let activeFinderConversationToken = null;
 let activeRegisteredFinderConversation = null;
 
+function getSavedFinderConversations() {
+  let serialized;
+  try {
+    serialized = localStorage.getItem(FINDER_CONVERSATIONS_STORAGE_KEY);
+  } catch (error) {
+    console.error('Could not access saved finder conversations:', error);
+    return [];
+  }
+  if (!serialized) return [];
+
+  try {
+    const saved = JSON.parse(serialized);
+    if (!Array.isArray(saved)) throw new Error('Saved finder conversations must be a list.');
+    return saved.filter(entry => entry && typeof entry.id === 'string' &&
+      /^notif-[a-z0-9-]+$/i.test(entry.id) && typeof entry.token === 'string' &&
+      /^[a-f0-9]{64}$/i.test(entry.token));
+  } catch (error) {
+    console.error('Saved finder conversations could not be read:', error);
+    return [];
+  }
+}
+
+function refreshFinderNotificationsButton() {
+  const slot = document.getElementById('userNavSlot');
+  if (!slot) return;
+  const savedCount = getSavedFinderConversations().length;
+
+  if (currentUser) {
+    const badge = document.getElementById('notifCountBadge');
+    const count = accountUnreadNotificationCount + savedCount;
+    if (badge) {
+      badge.textContent = count;
+      badge.style.display = count > 0 ? 'inline-flex' : 'none';
+    }
+    return;
+  }
+
+  const existing = document.getElementById('finderNotificationsBtn');
+  if (!savedCount) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    const badge = existing.querySelector('.notif-badge');
+    if (badge) badge.textContent = savedCount;
+    return;
+  }
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.id = 'finderNotificationsBtn';
+  button.className = 'notif-bell-btn';
+  button.dataset.action = 'openNotificationsModal';
+  button.title = 'View saved finder conversations';
+  button.setAttribute('aria-label', `View ${savedCount} saved finder conversation${savedCount === 1 ? '' : 's'}`);
+  button.innerHTML = `<span class="notif-icon" aria-hidden="true">🔔</span><span class="notif-badge">${savedCount}</span>`;
+  slot.prepend(button);
+}
+
+function saveFinderConversation(conversation) {
+  const savedConversations = getSavedFinderConversations();
+  const existing = savedConversations.find(entry => entry.id === conversation.id);
+  const saved = savedConversations.filter(entry => entry.id !== conversation.id);
+  saved.unshift({
+    id: conversation.id,
+    token: conversation.token,
+    itemTitle: conversation.itemTitle || '',
+    expiresAt: conversation.expiresAt || '',
+    savedAt: existing?.savedAt || new Date().toISOString()
+  });
+  try {
+    localStorage.setItem(FINDER_CONVERSATIONS_STORAGE_KEY, JSON.stringify(saved));
+  } catch (error) {
+    console.error('Could not save finder conversation on this device:', error);
+    showToast('Conversation started, but this browser could not save access for later. Copy the secure link to keep it.', true);
+    return false;
+  }
+  refreshFinderNotificationsButton();
+  return true;
+}
+
+function removeSavedFinderConversation(conversationId) {
+  const saved = getSavedFinderConversations().filter(entry => entry.id !== conversationId);
+  try {
+    localStorage.setItem(FINDER_CONVERSATIONS_STORAGE_KEY, JSON.stringify(saved));
+  } catch (error) {
+    console.error('Could not remove saved finder conversation:', error);
+    showToast('Could not remove this saved conversation from the browser.', true);
+    return false;
+  }
+  refreshFinderNotificationsButton();
+  return true;
+}
+
+async function loadSavedFinderConversationNotifications() {
+  const savedConversations = getSavedFinderConversations();
+  return Promise.all(savedConversations.map(async saved => {
+    const base = {
+      notificationType: 'guest-finder-conversation',
+      id: saved.id,
+      conversationId: saved.id,
+      itemTitle: saved.itemTitle || 'QR finder conversation',
+      timestamp: saved.savedAt || new Date().toISOString(),
+      conversationExpiresAt: saved.expiresAt,
+      conversationStatus: 'open',
+      lastMessage: ''
+    };
+    if (saved.expiresAt && Date.parse(saved.expiresAt) <= Date.now()) {
+      return { ...base, conversationStatus: 'expired' };
+    }
+
+    try {
+      const response = await fetch(`/api/items/registered-conversations/${encodeURIComponent(saved.id)}/guest`, {
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${saved.token}` }
+      });
+      if (response.status === 410) return { ...base, conversationStatus: 'expired' };
+      if (!response.ok) throw new Error(`Could not refresh saved finder conversation (${response.status}).`);
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || 'Could not refresh saved finder conversation.');
+      saveFinderConversation({
+        id: saved.id,
+        token: saved.token,
+        itemTitle: data.item?.title || saved.itemTitle,
+        expiresAt: data.conversation?.expiresAt || saved.expiresAt
+      });
+      return {
+        ...base,
+        itemTitle: data.item?.title || base.itemTitle,
+        conversationExpiresAt: data.conversation?.expiresAt || saved.expiresAt,
+        conversationStatus: data.conversation?.status || 'open',
+        lastMessage: data.messages?.at(-1)?.text || ''
+      };
+    } catch (error) {
+      console.error(`Could not refresh finder conversation ${saved.id}:`, error);
+      return { ...base, loadError: true };
+    }
+  }));
+}
+
 function createFinderConversationToken() {
   const bytes = new Uint8Array(32);
   window.crypto.getRandomValues(bytes);
@@ -1404,6 +1548,12 @@ async function handleAnonymousFinderSubmit(e) {
         .querySelectorAll('input:not([type="hidden"]), textarea')
         .forEach(field => { field.disabled = true; });
       if (data.conversation?.id && data.conversation?.token) {
+        saveFinderConversation({
+          id: data.conversation.id,
+          token: data.conversation.token,
+          itemTitle: data.itemTitle || refCode,
+          expiresAt: data.conversation.expiresAt
+        });
         setFinderConversationLink(data.conversation.id, data.conversation.token);
         document.getElementById('finderCopyConversationLinkBtn').hidden = false;
         document.getElementById('finderOpenConversationBtn').hidden = false;
@@ -1537,6 +1687,12 @@ async function openMatchReferenceFromQr(token) {
 let notificationsRefreshTimer = null;
 
 async function openNotificationsModal() {
+  const heading = document.getElementById('notificationsHeading');
+  const subtitle = document.getElementById('notificationsSubtitle');
+  if (heading) heading.textContent = currentUser ? 'Account Notifications' : 'Finder Notifications';
+  if (subtitle) subtitle.textContent = currentUser
+    ? 'Account alerts and QR finder conversations saved on this browser'
+    : 'Your QR finder conversations are saved on this browser';
   document.getElementById('notificationsModal').classList.add('open');
   await loadNotificationsIntoModal();
   // While the inbox is open, pick up the other person's reply to a location request.
@@ -1558,7 +1714,7 @@ function refreshOpenNotifications() {
   // Never wipe a note being typed, a pending action or a selection in progress.
   const busy = [...list.querySelectorAll('.meetup-note')].some(input => input.value || input === document.activeElement) ||
     list.querySelector('button:disabled[data-busy]') || list.querySelector('.notification-select:checked');
-  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--finder-conversation')) {
+  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--finder-conversation, .notif-item--guest-finder-conversation')) {
     loadNotificationsIntoModal();
   }
 }
@@ -1876,6 +2032,7 @@ function registeredConversationHeaders(conversation, json = false) {
 
 async function openRegisteredFinderConversation(conversationId, token) {
   if (!conversationId || !token) return;
+  saveFinderConversation({ id: conversationId, token });
   closeNotificationsModal();
   closeAnonymousFinderModal();
   activeClaimThreadId = null;
@@ -1889,6 +2046,15 @@ async function openRegisteredFinderConversation(conversationId, token) {
   document.getElementById('claimThreadModal').classList.add('open');
   await refreshClaimThread();
   startClaimThreadPolling();
+}
+
+function openSavedFinderConversation(conversationId) {
+  const saved = getSavedFinderConversations().find(entry => entry.id === conversationId);
+  if (!saved) {
+    showToast('This saved finder conversation is no longer available on this browser.', true);
+    return;
+  }
+  openRegisteredFinderConversation(saved.id, saved.token);
 }
 
 async function openRegisteredOwnerConversation(conversationId) {
@@ -2173,22 +2339,48 @@ async function loadNotificationsIntoModal() {
   destroyMeetupMaps();
   list.innerHTML = '<p class="notif-empty">Loading…</p>';
   try {
-    const res = await fetch('/api/items/my-notifications');
-    const data = await res.json();
-    if (!data.success) {
-      document.getElementById('notificationSelectionToolbar').hidden = true;
-      list.innerHTML = '<p class="notif-empty">Could not load notifications.</p>';
-      return;
+    let data = { success: true, notifications: [], unreadCount: 0 };
+    if (currentUser) {
+      const res = await fetch('/api/items/my-notifications');
+      data = await res.json();
+      if (!res.ok || !data.success) {
+        document.getElementById('notificationSelectionToolbar').hidden = true;
+        list.innerHTML = '<p class="notif-empty">Could not load notifications.</p>';
+        return;
+      }
     }
-    if (!data.notifications.length) {
+
+    const guestConversations = await loadSavedFinderConversationNotifications();
+    const notifications = [...data.notifications, ...guestConversations];
+    if (!notifications.length) {
       document.getElementById('notificationSelectionToolbar').hidden = true;
-      list.innerHTML = '<p class="notif-empty">No account notifications yet.</p>';
+      list.innerHTML = `<p class="notif-empty">${currentUser ? 'No account notifications or saved finder conversations yet.' : 'No saved finder conversations on this browser yet.'}</p>`;
       return;
     }
 
-    document.getElementById('notificationSelectionToolbar').hidden = false;
+    document.getElementById('notificationSelectionToolbar').hidden = !currentUser || !data.notifications.length;
     document.getElementById('selectAllNotifications').checked = false;
-    list.innerHTML = data.notifications.map(n => n.notificationType === 'finder-conversation' ? `
+    list.innerHTML = notifications.map(n => n.notificationType === 'guest-finder-conversation' ? `
+      <div class="notif-item notif-item--message notif-item--guest-finder-conversation${n.conversationStatus === 'returned' ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+        <div class="notif-header">
+          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
+        </div>
+        <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
+        ${n.lastMessage ? `<p class="notif-msg">${escapeHtml(n.lastMessage)}</p>` : ''}
+        ${n.loadError
+          ? '<p class="notif-contact">Could not refresh this conversation. Your saved access is still available; try again shortly.</p>'
+          : n.conversationStatus === 'expired'
+            ? '<p class="notif-contact">This conversation has expired.</p>'
+            : n.conversationStatus === 'returned'
+              ? '<p class="notif-contact">Both sides confirmed the return.</p>'
+              : ''}
+        ${n.conversationStatus !== 'expired'
+          ? `<button type="button" class="btn-mark-read" data-action="openSavedFinderConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+          : ''}
+        <button type="button" class="btn-delete-conversation" data-action="removeSavedFinderConversationFromInbox" data-args="${actionArgs(n.conversationId, '$el')}">Remove from this browser</button>
+      </div>
+    ` : n.notificationType === 'finder-conversation' ? `
       <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <label class="notification-select-control">
           <input class="notification-select" type="checkbox" value="${escapeHtml(JSON.stringify({
@@ -2263,10 +2455,12 @@ async function loadNotificationsIntoModal() {
     // Update badge
     const badge = document.getElementById('notifCountBadge');
     if (badge) {
-      const unread = data.unreadCount || 0;
+      accountUnreadNotificationCount = data.unreadCount || 0;
+      const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
     }
+    refreshFinderNotificationsButton();
   } catch (err) {
     document.getElementById('notificationSelectionToolbar').hidden = true;
     list.innerHTML = '<p class="notif-empty">Failed to load notifications.</p>';
@@ -2348,6 +2542,24 @@ async function deleteRegisteredConversationNotification(notificationId, itemId, 
   }
 }
 
+async function removeSavedFinderConversationFromInbox(conversationId, button) {
+  if (!conversationId || button.disabled) return;
+  const confirmed = await askConfirm(
+    'Remove this saved finder conversation from this browser? The owner will still have the conversation.',
+    { title: 'Remove saved conversation?', confirmLabel: 'Remove', icon: '🗑️' }
+  );
+  if (!confirmed) return;
+
+  button.disabled = true;
+  if (!removeSavedFinderConversation(conversationId)) {
+    button.disabled = false;
+    return;
+  }
+  showToast('Saved conversation removed from this browser.');
+  await loadNotificationsIntoModal();
+  await loadMyNotifications();
+}
+
 async function markNotifRead(notifId, btn) {
   try {
     const res = await fetch(`/api/items/notifications/${notifId}/read`, { method: 'PATCH' });
@@ -2364,7 +2576,10 @@ async function markNotifRead(notifId, btn) {
 }
 
 async function loadMyNotifications() {
-  if (!currentUser) return;
+  if (!currentUser) {
+    refreshFinderNotificationsButton();
+    return;
+  }
   try {
     const res = await fetch('/api/items/my-notifications');
     if (!res.ok) throw new Error('Notification refresh request failed.');
@@ -2372,7 +2587,8 @@ async function loadMyNotifications() {
     if (!data.success) throw new Error(data.message || 'Notification refresh failed.');
     const badge = document.getElementById('notifCountBadge');
     if (badge) {
-      const unread = data.unreadCount || 0;
+      accountUnreadNotificationCount = data.unreadCount || 0;
+      const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
     }
