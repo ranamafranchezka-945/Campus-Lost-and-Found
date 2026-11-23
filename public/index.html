@@ -978,6 +978,7 @@
 
       <div class="no-print modal-actions">
         <button type="button" class="btn btn-outline" id="matchContactFinderBtn" style="display: none;" data-action="openClaimRequestModalFromMatch">📨 Contact Finder</button>
+        <button type="button" class="btn btn-primary" id="matchConversationBtn" style="display: none;" data-action="openClaimThreadModalFromMatch">💬 Open conversation</button>
         <button type="button" class="btn btn-primary" data-action="printMatchQr">🖨️ Print Match Reference</button>
       </div>
     </div>
@@ -989,7 +990,7 @@
       <div class="modal-header">
         <div>
           <h2 class="modal-title modal-heading modal-heading--flush">Contact Finder</h2>
-          <p class="modal-subtitle">Submit proof this is your item. An administrator reviews it before you can arrange a handover with the finder.</p>
+          <p class="modal-subtitle">Submit proof this is your item, then talk it over with the finder in a conversation to arrange the handover.</p>
         </div>
         <button type="button" class="modal-close" data-action="closeClaimRequestModal" aria-label="Close">&times;</button>
       </div>
@@ -1008,6 +1009,30 @@
           <button type="submit" class="btn btn-primary" id="claimRequestSubmit">Submit Claim</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- CLAIM CONVERSATION MODAL: message thread + location sharing + mutual confirm -->
+  <div class="slip-overlay" id="claimThreadModal" data-close="closeClaimThreadModal">
+    <div class="modal-card modal-card--sm thread-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title modal-heading modal-heading--flush" id="claimThreadTitle">Claim conversation</h2>
+          <p class="modal-subtitle" id="claimThreadSubtitle"></p>
+        </div>
+        <button type="button" class="modal-close" data-action="closeClaimThreadModal" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="thread-messages" id="claimThreadBody" aria-live="polite"></div>
+
+      <div class="thread-meetup" id="claimThreadMeetup"></div>
+
+      <form class="thread-compose" data-submit="sendClaimThreadMessage">
+        <input type="text" id="claimThreadInput" maxlength="500" placeholder="Type a message…" aria-label="Message" required />
+        <button type="submit" class="btn btn-primary btn-compact" id="claimThreadSendBtn">Send</button>
+      </form>
+
+      <div class="thread-confirm" id="claimThreadConfirm"></div>
     </div>
   </div>
 

@@ -1358,12 +1358,17 @@ async function handleAnonymousFinderSubmit(e) {
 // "Contact Finder" only ever submits a claim request for admin review - it never reveals
 // the finder's contact info directly, matching the privacy the status-only API response
 // already enforces (it strips location/contact for anyone but an admin or the owner).
-function updateMatchContactFinderButton(canRequestClaim, lostId, foundId) {
-  const button = document.getElementById('matchContactFinderBtn');
-  if (!button) return;
-  button.style.display = canRequestClaim ? '' : 'none';
-  button.dataset.lostId = lostId || '';
-  button.dataset.foundId = foundId || '';
+function updateMatchContactFinderButton(canRequestClaim, lostId, foundId, claimId) {
+  const contactButton = document.getElementById('matchContactFinderBtn');
+  const conversationButton = document.getElementById('matchConversationBtn');
+  if (!contactButton || !conversationButton) return;
+  // Once a claim exists for this match, there's nothing left to submit - the two
+  // parties take it from here in the conversation instead.
+  contactButton.style.display = canRequestClaim && !claimId ? '' : 'none';
+  contactButton.dataset.lostId = lostId || '';
+  contactButton.dataset.foundId = foundId || '';
+  conversationButton.style.display = claimId ? '' : 'none';
+  conversationButton.dataset.claimId = claimId || '';
 }
 
 async function openMatchQrModal(lostId, foundId) {
@@ -1379,7 +1384,7 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchContactFinderButton(data.canRequestClaim, lost.id, found.id);
+    updateMatchContactFinderButton(data.canRequestClaim, lost.id, found.id, data.claimId);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1445,7 +1450,8 @@ async function handleSubmitClaimRequest(event) {
     const data = await res.json();
     if (data.success) {
       closeClaimRequestModal();
-      showToast('Claim submitted. An administrator will review it.');
+      showToast(data.message || 'Claim submitted.');
+      if (data.claim?.id) openClaimThreadModal(data.claim.id);
     } else {
       errorBox.textContent = data.message || 'Could not submit the claim.';
       errorBox.style.display = 'block';
@@ -1531,7 +1537,7 @@ function meetupTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-function meetupNotificationHtml(n) {
+function meetupNotificationHtml(n, idPrefix = '') {
   const other = escapeHtml(n.otherName);
   const otherRole = n.role === 'owner' ? 'the finder' : 'the owner';
   const claimArg = actionArgs(n.claimId, '$el');
@@ -1541,7 +1547,7 @@ function meetupNotificationHtml(n) {
   const theirs = n.theirLocation || {};
   let theirsHtml;
   if (theirs.status === 'shared' && theirs.location) {
-    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId);
+    theirsHtml = meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix);
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -1577,8 +1583,8 @@ function meetupNotificationHtml(n) {
   }
 
   const intro = n.role === 'owner'
-    ? `Your claim was approved. Arrange where to meet ${otherRole}, ${other}.`
-    : `${other}'s claim for the item you found was approved. Arrange where to meet ${otherRole}, ${other}.`;
+    ? `Once you both agree the item matches, arrange where to meet ${otherRole}, ${other}.`
+    : `${other} has a claim open on the item you found. Once you both agree it matches, arrange where to meet ${otherRole}, ${other}.`;
   return `
     <p class="notif-msg"><strong>Handover meetup</strong> · ${intro}</p>
     ${mineHtml}
@@ -1592,11 +1598,11 @@ function meetupNotificationHtml(n) {
 // with the reading's accuracy as a circle and links to open it in a full map app.
 // The map itself is only a placeholder div here - initMeetupMaps() below turns every
 // one of these into an actual Leaflet instance once the markup is in the DOM.
-function meetupMapHtml(location, otherName, claimId) {
+function meetupMapHtml(location, otherName, claimId, idPrefix = '') {
   const lat = location.latitude.toFixed(6);
   const lng = location.longitude.toFixed(6);
   const name = escapeHtml(otherName);
-  const containerId = `meetup-map-${escapeHtml(String(claimId)).replace(/[^\w-]/g, '')}`;
+  const containerId = `meetup-map-${idPrefix}${escapeHtml(String(claimId)).replace(/[^\w-]/g, '')}`;
   return `
     <div class="meetup-map" id="${containerId}" aria-label="Map showing where ${name} is"
       data-meetup-map data-lat="${lat}" data-lng="${lng}" data-accuracy="${escapeHtml(String(location.accuracy))}"></div>
@@ -1618,9 +1624,9 @@ function destroyMeetupMaps() {
   activeMeetupMaps.clear();
 }
 
-function initMeetupMaps() {
-  if (typeof L === 'undefined') return;
-  document.querySelectorAll('#notificationsList [data-meetup-map]').forEach(container => {
+function initMeetupMaps(root = document.getElementById('notificationsList')) {
+  if (typeof L === 'undefined' || !root) return;
+  root.querySelectorAll('[data-meetup-map]').forEach(container => {
     const lat = Number(container.dataset.lat);
     const lng = Number(container.dataset.lng);
     const accuracy = Number(container.dataset.accuracy);
@@ -1673,6 +1679,7 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
     if (data.success) {
       await loadNotificationsIntoModal();
       await loadMyNotifications();
+      if (activeClaimThreadId === claimId) await refreshClaimThreadMeetup();
       return;
     }
   } catch (error) {
@@ -1726,6 +1733,156 @@ function shareMeetupLocation(claimId, button) {
     };
     showToast(messages[error.code] || 'Your location could not be read.', true);
   }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+}
+
+// ── Claim conversation: messages + location sharing + mutual confirm ───────
+// Opened once a claim request exists, so the claimant and the finder can agree the
+// item matches, share where to meet, and each confirm the handover themselves -
+// there is no separate admin approval step any more.
+let activeClaimThreadId = null;
+
+function openClaimThreadModalFromMatch() {
+  const button = document.getElementById('matchConversationBtn');
+  closeMatchQrModal();
+  openClaimThreadModal(button.dataset.claimId);
+}
+
+async function openClaimThreadModal(claimId) {
+  if (!claimId) return;
+  activeClaimThreadId = claimId;
+  document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading…</p>';
+  document.getElementById('claimThreadMeetup').innerHTML = '';
+  document.getElementById('claimThreadConfirm').innerHTML = '';
+  document.getElementById('claimThreadModal').classList.add('open');
+  await refreshClaimThread();
+}
+
+function closeClaimThreadModal() {
+  activeClaimThreadId = null;
+  document.getElementById('claimThreadModal').classList.remove('open');
+}
+
+function claimThreadMessageHtml(message) {
+  const time = new Date(message.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `
+    <div class="thread-msg ${message.mine ? 'thread-msg--mine' : 'thread-msg--theirs'}">
+      <p class="thread-msg-text">${escapeHtml(message.text)}</p>
+      <span class="thread-msg-time">${time}</span>
+    </div>`;
+}
+
+function renderClaimThread(thread) {
+  document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${thread.item.title}`;
+  document.getElementById('claimThreadSubtitle').textContent = `You and ${thread.otherName}`;
+
+  const body = document.getElementById('claimThreadBody');
+  const wasScrolledToEnd = body.scrollHeight - body.scrollTop - body.clientHeight < 16;
+  body.innerHTML = thread.messages.length
+    ? thread.messages.map(claimThreadMessageHtml).join('')
+    : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
+  if (wasScrolledToEnd) body.scrollTop = body.scrollHeight;
+
+  const confirmBox = document.getElementById('claimThreadConfirm');
+  if (thread.claim.status === 'approved') {
+    confirmBox.innerHTML = `
+      <p class="thread-resolved">✅ Both sides confirmed. Item marked as claimed.</p>
+      <button type="button" class="btn btn-outline btn-compact" data-action="deleteClaimThread">🗑️ Delete conversation</button>`;
+  } else if (thread.confirmedByMe) {
+    confirmBox.innerHTML = `<p class="thread-waiting">You confirmed. Waiting for ${escapeHtml(thread.otherName)} to confirm too…</p>`;
+  } else {
+    confirmBox.innerHTML = `
+      <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item received/returned</button>
+      ${thread.confirmedByOther ? `<p class="thread-waiting">${escapeHtml(thread.otherName)} already confirmed.</p>` : ''}`;
+  }
+}
+
+// The location-sharing section is driven by the same meetup notification the
+// inbox uses - reused here instead of duplicating that request/respond logic.
+async function refreshClaimThreadMeetup() {
+  if (!activeClaimThreadId) return;
+  try {
+    const res = await fetch('/api/items/my-notifications', { cache: 'no-store' });
+    const data = await res.json();
+    const notification = data.notifications?.find(n => n.notificationType === 'meetup' && n.claimId === activeClaimThreadId);
+    const meetupBox = document.getElementById('claimThreadMeetup');
+    meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-') : '';
+    initMeetupMaps(meetupBox);
+  } catch (error) {
+    // Location sharing is secondary to the conversation itself; fail quietly.
+  }
+}
+
+async function refreshClaimThread() {
+  const claimId = activeClaimThreadId;
+  if (!claimId) return;
+  try {
+    const res = await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/thread`, { cache: 'no-store' });
+    const thread = await res.json();
+    if (!res.ok || !thread.success) {
+      showToast(thread.message || 'This conversation is no longer available.', true);
+      closeClaimThreadModal();
+      return;
+    }
+    renderClaimThread(thread);
+    await refreshClaimThreadMeetup();
+  } catch (error) {
+    showToast('Could not load the conversation. Please try again.', true);
+  }
+}
+
+async function sendClaimThreadMessage(event) {
+  event.preventDefault();
+  const input = document.getElementById('claimThreadInput');
+  const text = input.value.trim();
+  if (!text || !activeClaimThreadId) return;
+  const button = document.getElementById('claimThreadSendBtn');
+  button.disabled = true;
+  try {
+    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not send that message.');
+    input.value = '';
+    renderClaimThread(data);
+  } catch (error) {
+    showToast(error.message || 'Network error. Please try again.', true);
+  } finally {
+    button.disabled = false;
+    input.focus();
+  }
+}
+
+async function confirmClaimThread() {
+  if (!activeClaimThreadId) return;
+  try {
+    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not confirm.');
+    renderClaimThread(data);
+    if (data.claim.status === 'approved') {
+      showToast('Item marked as claimed.');
+      fetchAndRenderItems();
+    }
+  } catch (error) {
+    showToast(error.message || 'Network error. Please try again.', true);
+  }
+}
+
+async function deleteClaimThread() {
+  if (!activeClaimThreadId) return;
+  if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
+  try {
+    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
+    showToast(data.message || 'Conversation deleted.');
+    closeClaimThreadModal();
+  } catch (error) {
+    showToast(error.message || 'Network error. Please try again.', true);
+  }
 }
 
 async function loadNotificationsIntoModal() {

@@ -235,6 +235,17 @@ function getMatchReferenceStatus(foundItem, claims) {
   return { key: 'pending', label: 'Pending Verification' };
 }
 
+// The claimant's own non-rejected claim on this found item, if any - used to send
+// them straight back to their claim conversation instead of the claim request form.
+function findOwnClaimId(foundItem, claims, userId) {
+  if (!userId) return null;
+  const claim = claims.find(entry =>
+    String(entry.itemId) === String(foundItem.id) &&
+    String(entry.claimantId) === String(userId) &&
+    entry.status !== 'rejected');
+  return claim ? claim.id : null;
+}
+
 // Helper: Smart Match & Reconciliation Detector
 function normalizeText(value) {
   return String(value || '')
@@ -662,10 +673,13 @@ function firstName(fullName, fallback) {
   return String(fullName || '').trim().split(/\s+/)[0] || fallback;
 }
 
-// Owner and finder of an approved claim from the last 7 days, both with accounts.
+// Owner and finder of a non-rejected claim from the last 7 days, both with accounts.
+// Location sharing is available as soon as a claim is filed (not gated behind
+// approval any more - the two parties sort that out between themselves in the
+// claim thread), and closes once the claim is rejected.
 function meetupParties(claim, items, users) {
-  if (claim.status !== 'approved') return null;
-  if (Date.now() - Date.parse(claim.reviewedAt || claim.createdAt) > MEETUP_WINDOW_MS) return null;
+  if (claim.status === 'rejected') return null;
+  if (Date.now() - Date.parse(claim.createdAt) > MEETUP_WINDOW_MS) return null;
   const item = items.find(entry => String(entry.id) === String(claim.itemId));
   const owner = users.find(user => String(user.id) === String(claim.claimantId));
   const finder = item && users.find(user => String(user.id) === String(item.reportedBy));
@@ -673,11 +687,11 @@ function meetupParties(claim, items, users) {
   return { owner, finder, item };
 }
 
-// Deletes expired locations and requests (and everything once the claim is no
-// longer approved). Returns true when the claim changed and needs saving.
+// Deletes expired locations and requests (and everything once the claim is
+// rejected). Returns true when the claim changed and needs saving.
 function pruneMeetup(claim, now = Date.now()) {
   if (!claim.meetup) return false;
-  if (claim.status !== 'approved') {
+  if (claim.status === 'rejected') {
     delete claim.meetup;
     return true;
   }
@@ -816,6 +830,129 @@ router.post('/claims/:claimId/meetup/stop', requireAuth, (req, res) => {
   request.respondedAt = new Date().toISOString();
   saveClaims(claims);
   res.json({ success: true, message: 'You stopped sharing your location. It has been deleted.' });
+});
+
+// ── Claim thread: direct messages + mutual confirmation ────────────────────
+// Lets the claimant and the finder of a (non-rejected) claim message each other to
+// agree the item matches, then each confirm the handover once it has happened.
+// Replaces the old admin-approval step: the item is marked claimed only once both
+// sides here have confirmed it.
+function loadClaimThread(req, res) {
+  const claims = getClaims();
+  const claim = claims.find(entry => entry.id === req.params.claimId);
+  const items = getItems();
+  const item = claim && items.find(entry => String(entry.id) === String(claim.itemId));
+  const users = item && readJsonArray(USERS_FILE);
+  const claimant = users && users.find(user => String(user.id) === String(claim.claimantId));
+  const finder = users && users.find(user => String(user.id) === String(item.reportedBy));
+  const userId = String(req.session.user.id);
+  if (!claim || claim.status === 'rejected' || !claimant || !finder ||
+      ![String(claimant.id), String(finder.id)].includes(userId)) {
+    res.status(404).json({ success: false, message: 'Claim conversation not found.' });
+    return null;
+  }
+  claim.messages = Array.isArray(claim.messages) ? claim.messages : [];
+  claim.confirmations = Array.isArray(claim.confirmations) ? claim.confirmations : [];
+  const me = userId === String(claimant.id) ? claimant : finder;
+  const other = me === claimant ? finder : claimant;
+  return { claims, claim, items, item, me, other };
+}
+
+function claimThreadView(claim, item, me, other) {
+  return {
+    success: true,
+    claim: { id: claim.id, status: claim.status },
+    item: { id: item.id, title: item.title },
+    otherName: other.fullName || 'The other person',
+    messages: claim.messages.map(entry => ({
+      id: entry.id,
+      text: entry.text,
+      mine: String(entry.senderId) === String(me.id),
+      createdAt: entry.createdAt
+    })),
+    confirmedByMe: claim.confirmations.includes(String(me.id)),
+    confirmedByOther: claim.confirmations.includes(String(other.id))
+  };
+}
+
+// GET /api/items/claims/:claimId/thread - Load the conversation for a claim.
+router.get('/claims/:claimId/thread', requireAuth, (req, res) => {
+  const context = loadClaimThread(req, res);
+  if (!context) return;
+  const { claim, item, me, other } = context;
+  res.json(claimThreadView(claim, item, me, other));
+});
+
+// POST /api/items/claims/:claimId/thread/messages - Send a message in the conversation.
+router.post('/claims/:claimId/thread/messages', requireAuth, (req, res) => {
+  const context = loadClaimThread(req, res);
+  if (!context) return;
+  const { claims, claim, item, me, other } = context;
+  const text = sanitizeString(req.body.text || '');
+  if (text.length < 1 || text.length > 500) {
+    return res.status(400).json({ success: false, message: 'Message must be 1-500 characters.' });
+  }
+  claim.messages.push({ id: `msg-${crypto.randomUUID()}`, senderId: me.id, text, createdAt: new Date().toISOString() });
+  saveClaims(claims);
+  res.status(201).json(claimThreadView(claim, item, me, other));
+});
+
+// POST /api/items/claims/:claimId/thread/confirm - Confirm the item has been handed over.
+// Once both the claimant and the finder have confirmed, the item is marked claimed.
+router.post('/claims/:claimId/thread/confirm', requireAuth, async (req, res) => {
+  const context = loadClaimThread(req, res);
+  if (!context) return;
+  const { claims, claim, items, item, me, other } = context;
+  if (!claim.confirmations.includes(String(me.id))) claim.confirmations.push(String(me.id));
+  const bothConfirmed = claim.confirmations.includes(String(claim.claimantId)) && claim.confirmations.includes(String(item.reportedBy));
+  const justResolved = bothConfirmed && claim.status !== 'approved';
+
+  if (justResolved) {
+    const now = new Date().toISOString();
+    item.claimed = true;
+    item.status = 'claimed';
+    item.claimedAt = now;
+    item.claimantProof = claim.proof;
+    claim.status = 'approved';
+    claim.reviewedAt = now;
+    claim.reviewedBy = 'mutual-confirmation';
+    claims.forEach(rival => {
+      if (rival.itemId === claim.itemId && rival.id !== claim.id && rival.status === 'pending') {
+        rival.status = 'rejected';
+        rival.reviewedAt = now;
+        rival.rejectionReason = 'The item was claimed by another claimant.';
+      }
+    });
+    addItemActivity(item, req, 'Claim confirmed by both parties', '');
+    saveItems(items);
+  }
+  saveClaims(claims);
+  await postgresStore.commitRequest();
+
+  if (justResolved && claim.claimantEmail) {
+    try {
+      await sendClaimStatusEmail({ fullName: claim.claimantName, email: claim.claimantEmail }, item, claim, 'approved');
+    } catch (error) {
+      console.error('Claim status email could not be sent:', error.message);
+    }
+  }
+
+  res.json(claimThreadView(claim, item, me, other));
+});
+
+// DELETE /api/items/claims/:claimId/thread - Clear the conversation once it's resolved.
+// The claim record itself (and the item's claimed status) is kept; only the back-and-forth
+// messages are wiped, since either side may ask for this once the handover is done.
+router.delete('/claims/:claimId/thread', requireAuth, (req, res) => {
+  const context = loadClaimThread(req, res);
+  if (!context) return;
+  const { claims, claim } = context;
+  if (claim.status !== 'approved') {
+    return res.status(409).json({ success: false, message: 'The conversation can be deleted once the claim is resolved.' });
+  }
+  claim.messages = [];
+  saveClaims(claims);
+  res.json({ success: true, message: 'Conversation deleted.' });
 });
 
 // Inbox entry describing both directions of a meetup for one person.
@@ -1175,7 +1312,7 @@ router.get('/my-notifications', requireAuth, (req, res) => {
     });
   });
 
-  // Handover meetup (location sharing) for approved claims this user is part of.
+  // Handover meetup (location sharing) for non-rejected claims this user is part of.
   const users = readJsonArray(USERS_FILE);
   let claimsChanged = false;
   claims.forEach(claim => {
@@ -1220,7 +1357,8 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
   const expiresAt = issuedAt + MATCH_REFERENCE_TTL_MS;
   const token = createMatchReferenceToken(lost.id, found.id, issuedAt);
   const referenceId = `MR-${issuedAt.toString(36).toUpperCase()}`;
-  const status = getMatchReferenceStatus(found, getClaims());
+  const claims = getClaims();
+  const status = getMatchReferenceStatus(found, claims);
   const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
   const url = `${baseUrl.replace(/\/$/, '')}/match-reference?token=${encodeURIComponent(token)}`;
   if (!isAdmin) {
@@ -1232,6 +1370,7 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
       referenceId,
       foundItemId: found.id,
       canRequestClaim: String(lost.reportedBy) === String(req.session.user.id) && !found.claimed,
+      claimId: findOwnClaimId(found, claims, req.session.user.id),
       issuedAt: new Date(issuedAt).toISOString(),
       expiresAt: new Date(expiresAt).toISOString(),
       status,
@@ -1284,6 +1423,7 @@ router.get('/match-reference/:token', (req, res) => {
       expiresAt: new Date(reference.expiresAt).toISOString(),
       referenceId,
       canRequestClaim: Boolean(req.session?.user) && String(lost.reportedBy) === String(req.session.user.id) && !found.claimed,
+      claimId: findOwnClaimId(found, claims, req.session?.user?.id),
       status,
       lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
       found: { id: found.id, title: found.title, refCode: found.refCode }
@@ -1528,7 +1668,7 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     }
   }
 
-  res.status(201).json({ success: true, message: 'Claim request submitted for moderator review.', claim: { id: claim.id, status: claim.status } });
+  res.status(201).json({ success: true, message: 'Claim request submitted. Open the conversation to talk with the finder.', claim: { id: claim.id, status: claim.status } });
 });
 
 // POST /api/items - Create item report

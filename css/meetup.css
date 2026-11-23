@@ -147,3 +147,37 @@
   font-size: 0.9375rem;
   font-style: italic;
 }
+
+/* ── Claim conversation modal (js/home-page.js's claim-thread functions) ──────── */
+.thread-card { display: flex; flex-direction: column; max-height: 85vh; }
+.thread-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 18rem;
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-main, #000) 3%, transparent);
+}
+.thread-empty { margin: auto; color: var(--text-muted); font-size: 0.875rem; text-align: center; }
+.thread-msg { max-width: 80%; padding: 0.5rem 0.75rem; border-radius: 14px; font-size: 0.9375rem; line-height: 1.45; }
+.thread-msg-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.thread-msg-time { display: block; margin-top: 0.2rem; color: inherit; opacity: 0.65; font-size: 0.75rem; }
+.thread-msg--theirs { align-self: flex-start; background: color-mix(in srgb, var(--border) 60%, transparent); color: var(--text-main); }
+.thread-msg--mine { align-self: flex-end; background: var(--blue-main); color: #fff; }
+.thread-meetup:not(:empty) { margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.thread-compose { display: flex; gap: 0.5rem; }
+.thread-compose input {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--field-border, var(--border));
+  border-radius: 10px;
+  background: var(--field-bg, transparent);
+  color: var(--text-main);
+}
+.thread-confirm { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); text-align: center; }
+.thread-confirm .thread-resolved { margin: 0; color: #22c55e; font-weight: 700; }
+.thread-confirm .thread-waiting { margin: 0.5rem 0 0; color: var(--text-muted); font-size: 0.875rem; }
