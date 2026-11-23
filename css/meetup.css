@@ -194,7 +194,15 @@
   color: var(--text-main);
 }
 .thread-msg--mine { align-self: flex-end; background: var(--blue-main); color: #fff; }
+:root[data-theme='light'] .thread-msg--mine {
+  background: #1e3a8a;
+  color: #fff;
+}
 :root:not([data-theme='light']) .thread-msg--mine { color: #0f172a; }
+:root[data-theme='light'] .thread-msg--mine .thread-msg-text,
+:root[data-theme='light'] .thread-msg--mine .thread-msg-time { color: #fff; }
+:root:not([data-theme='light']) .thread-msg--mine .thread-msg-text,
+:root:not([data-theme='light']) .thread-msg--mine .thread-msg-time { color: #0f172a; }
 .thread-meetup:not(:empty) { margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .thread-compose { display: flex; gap: 0.5rem; }
 .thread-compose input {
