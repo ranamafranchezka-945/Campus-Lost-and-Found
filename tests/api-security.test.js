@@ -849,6 +849,28 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
 });
 
+test('signed-in students using home aliases reach the portal report form', async () => {
+  const visitorPage = await fetch(`${baseUrl}/home`, { redirect: 'manual' });
+  assert.equal(visitorPage.status, 200);
+  assert.match(await visitorPage.text(), /Get Started/);
+
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  for (const route of ['/home', '/home.html']) {
+    const response = await fetch(`${baseUrl}${route}`, {
+      headers: { Cookie: studentCookie },
+      redirect: 'manual'
+    });
+    assert.equal(response.status, 302, route);
+    assert.equal(response.headers.get('location'), '/', route);
+  }
+
+  const portal = await fetch(`${baseUrl}/`, { headers: { Cookie: studentCookie } });
+  assert.equal(portal.status, 200);
+  const html = await portal.text();
+  assert.match(html, /class="location-input-wrap"/);
+  assert.match(html, /id="itemLocation" list="itemLocationOptions"/);
+});
+
 test('pages send a strict script policy and contain no inline scripts or handlers', async () => {
   for (const url of ['/', '/login', '/about.html']) {
     const response = await fetch(`${baseUrl}${url}`);

@@ -259,7 +259,10 @@ function createApp() {
   app.get('/report-lost.html', (req, res) => res.redirect(302, '/index.html?report=lost#itemForm'));
   app.get('/report-found.html', (req, res) => res.redirect(302, '/index.html?report=found#itemForm'));
   app.get(['/found', '/match-reference', '/index.html'], (req, res) => sendPage(res, page('index.html')));
-  app.get(['/home', '/home.html'], (req, res) => sendPage(res, page('home.html')));
+  app.get(['/home', '/home.html'], (req, res) => {
+    if (req.session?.user) return res.redirect(302, '/');
+    sendPage(res, page('home.html'));
+  });
   // Signed-in students and employees go straight to the portal; visitors see the public landing page.
   app.get('/', (req, res) => {
     const user = req.session?.user;
