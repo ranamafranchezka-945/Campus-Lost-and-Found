@@ -1957,6 +1957,12 @@ async function sendClaimThreadMessage(event) {
 
 async function confirmClaimThread() {
   if (!activeClaimThreadId) return;
+  const confirmed = await askConfirm('Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.', {
+    title: 'Confirm item received/returned?',
+    confirmLabel: 'Confirm',
+    icon: '✓'
+  });
+  if (!confirmed) return;
   try {
     const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
     const data = await res.json();
