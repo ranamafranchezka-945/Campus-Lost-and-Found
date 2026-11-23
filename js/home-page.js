@@ -860,7 +860,7 @@ function renderItemsGrid(items) {
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? `<span class="ref-code listing-ref" title="Reference code">${escapeHtml(item.refCode)}</span>` : ''}
+            ${item.refCode ? `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}">${escapeHtml(item.refCode)}</button>` : ''}
           </div>
           <h3 class="listing-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h3>
           <p class="listing-category">${escapeHtml(item.category || 'Uncategorized')}</p>

@@ -267,6 +267,24 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+:root .listing-card .listing-ref-button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+:root .listing-card .listing-ref-button:hover {
+  color: var(--blue-light);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+:root .listing-card .listing-ref-button:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--blue-light);
+  outline-offset: 3px;
+}
 :root .projects-grid .listing-card h3.listing-title {
   margin: 0.15rem 0 0;
   color: var(--text-main);
