@@ -12,19 +12,29 @@
 #confirmItemReturnedModal .confirm-item-returned-card {
   border: 2px solid var(--tone-success-strong) !important;
 }
-#confirmItemReturnedModal .modal-icon {
+#confirmItemReturnedModal .confirm-item-returned-card .modal-icon--success {
   color: var(--tone-success) !important;
+  -webkit-text-fill-color: var(--tone-success) !important;
 }
-#confirmItemReturnedModal .modal-confirm-title { color: var(--tone-success) !important; }
-#confirmItemReturnedModal .confirm-item-returned-button {
+#confirmItemReturnedModal .confirm-item-returned-card .modal-confirm-title--success {
+  color: var(--tone-success) !important;
+  -webkit-text-fill-color: var(--tone-success) !important;
+}
+#confirmItemReturnedModal .confirm-item-returned-card .modal-confirm-text {
+  color: var(--text-muted) !important;
+  -webkit-text-fill-color: var(--text-muted) !important;
+}
+#confirmItemReturnedModal .confirm-item-returned-card .modal-actions > .confirm-item-returned-button {
   border: 1px solid #15803d !important;
   background: #15803d !important;
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
-#confirmItemReturnedModal .confirm-item-returned-button:hover {
+#confirmItemReturnedModal .confirm-item-returned-card .modal-actions > .confirm-item-returned-button:hover {
   border-color: #166534 !important;
   background: #166534 !important;
   color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
 }
 
 :root {

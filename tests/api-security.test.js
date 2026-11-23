@@ -1018,6 +1018,7 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(html, /id="finderCopyConversationLinkBtn"/);
   assert.match(html, /id="finderOpenConversationBtn"/);
   assert.match(html, /id="confirmItemReturnedModal"/);
+  assert.match(html, /modal-card--success modal-card--center confirm-item-returned-card/);
   assert.match(html, /id="confirmItemReturnedTitle"/);
   assert.match(html, /id="confirmItemReturnedText"/);
   assert.match(html, /id="confirmItemReturnedButton"/);
