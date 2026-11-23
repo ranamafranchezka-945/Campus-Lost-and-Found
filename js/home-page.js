@@ -860,7 +860,7 @@ function renderItemsGrid(items) {
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}">${escapeHtml(item.refCode)}</button>` : ''}
+            ${item.refCode ? `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>` : ''}
           </div>
           <h3 class="listing-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h3>
           <p class="listing-category">${escapeHtml(item.category || 'Uncategorized')}</p>
@@ -1052,22 +1052,37 @@ async function openQrStickerModal(id) {
     try {
       const res = await fetch(`/api/items/${id}`);
       const data = await res.json();
-      if (data.success) item = data.item;
-    } catch (e) {}
+      if (!res.ok || !data.success) {
+        showToast(data.message || "Could not load this item's QR sticker.", true);
+        return;
+      }
+      item = data.item;
+    } catch (error) {
+      console.error('Failed to load item QR sticker:', error);
+      showToast("Could not load this item's QR sticker. Please try again.", true);
+      return;
+    }
   }
-  if (!item) return;
+  if (!item) {
+    showToast('This item is no longer available, so its QR sticker cannot be opened.', true);
+    return;
+  }
 
-  document.getElementById('qrItemTitle').innerText = item.title;
-  const refCode = item.refCode || `CSPC-LF-QR-${item.id}`;
-  document.getElementById('qrRefCode').innerText = refCode;
+  try {
+    document.getElementById('qrItemTitle').innerText = item.title;
+    const refCode = item.refCode || `CSPC-LF-QR-${item.id}`;
+    document.getElementById('qrRefCode').innerText = refCode;
 
-  // Keep the sticker on the same host serving this app.
-  const finderUrl = new URL('/found', window.location.origin);
-  finderUrl.searchParams.set('ref', refCode);
-  document.getElementById('qrCodeImage').src = qrImageUrl(finderUrl.toString());
+    const finderUrl = new URL('/found', window.location.origin);
+    finderUrl.searchParams.set('ref', refCode);
+    document.getElementById('qrCodeImage').src = qrImageUrl(finderUrl.toString());
 
-  toggleAnonymousDemo(false);
-  document.getElementById('qrModal').classList.add('open');
+    toggleAnonymousDemo(false);
+    document.getElementById('qrModal').classList.add('open');
+  } catch (error) {
+    console.error('Failed to generate item QR sticker:', error);
+    showToast("Could not generate this item's QR sticker. Please try again.", true);
+  }
 }
 
 // QR codes are drawn in the browser so links (and match tokens) never leave this site.
