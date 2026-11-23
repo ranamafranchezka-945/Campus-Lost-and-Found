@@ -192,7 +192,7 @@
       background:color-mix(in srgb, var(--blue-main) 14%, var(--control-bg));
       color:var(--text-main);
     }
-    .broadcast-template-clear { border-color:transparent; background:transparent; color:var(--text-muted); }
+    .broadcast-template-clear { border-color:transparent; background:transparent; color:var(--text-main); }
     .broadcast-template-menu {
       position:absolute;
       top:calc(100% + .4rem);
