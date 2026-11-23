@@ -316,17 +316,13 @@
           </div>
           <div class="broadcast-card">
             <div class="broadcast-template-tools">
-              <span class="broadcast-template-label">Quick templates:</span>
-              <div class="broadcast-template-pills" role="group" aria-label="Broadcast message templates">
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="unclaimed">/unclaimed</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="urgent">/urgent</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="hours">/hours</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="event">/event</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="policy">/policy</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="turnover">/turnover</button>
-                <button type="button" class="broadcast-template-pill" data-broadcast-template="recap">/recap</button>
+              <div class="broadcast-template-actions">
+                <button type="button" class="broadcast-template-dropdown-trigger" id="broadcastTemplateToggle" aria-haspopup="menu" aria-expanded="false" aria-controls="broadcastTemplateMenu">
+                  Templates <span aria-hidden="true">▾</span>
+                </button>
+                <button type="button" class="broadcast-template-clear" id="clearBroadcastBtn">Clear</button>
               </div>
-              <button type="button" class="broadcast-template-clear" id="clearBroadcastBtn">Clear</button>
+              <div class="broadcast-template-menu" id="broadcastTemplateMenu" role="menu" aria-label="Broadcast message templates" hidden></div>
             </div>
             <div class="broadcast-fields" id="broadcastFields">
               <label for="broadcastSubject">Subject</label>

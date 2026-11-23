@@ -1610,7 +1610,11 @@ let allowedEmails = [];
       const message = document.getElementById('broadcastMessage');
       const fields = document.getElementById('broadcastFields');
       const menu = document.getElementById('broadcastCommandMenu');
+      const templateToggle = document.getElementById('broadcastTemplateToggle');
+      const templateMenu = document.getElementById('broadcastTemplateMenu');
       let activeField = null;
+      let activeTemplate = null;
+      let activeSyncEdit = null;
       let matches = [];
       let selectedIndex = 0;
 
@@ -1624,6 +1628,11 @@ let allowedEmails = [];
         activeField = null;
         matches = [];
         selectedIndex = 0;
+      }
+
+      function closeTemplateMenu() {
+        templateMenu.hidden = true;
+        templateToggle.setAttribute('aria-expanded', 'false');
       }
 
       function positionMenu(field) {
@@ -1654,18 +1663,117 @@ let allowedEmails = [];
         }
       }
 
+      function selectedPlaceholder(field) {
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        if (start === end) return null;
+        const selected = /^\[([^\]]+)\]$/.exec(field.value.slice(start, end));
+        return selected ? { name: selected[1], start, end } : null;
+      }
+
+      function preparePlaceholderSync(event) {
+        const field = event.currentTarget;
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        if (activeSyncEdit && activeSyncEdit.field === field
+          && start >= activeSyncEdit.start
+          && end <= activeSyncEdit.start + activeSyncEdit.value.length) return;
+
+        const placeholder = selectedPlaceholder(field);
+        if (!placeholder) {
+          activeSyncEdit = null;
+          return;
+        }
+        const otherField = field === subject ? message : subject;
+        activeSyncEdit = {
+          field,
+          name: placeholder.name,
+          start: placeholder.start,
+          prefix: field.value.slice(0, placeholder.start),
+          suffix: field.value.slice(placeholder.end),
+          value: '',
+          otherField,
+          otherFieldValue: otherField.value
+        };
+      }
+
+      function syncEditedPlaceholder(field) {
+        if (!activeSyncEdit) return;
+        if (activeSyncEdit.field !== field) {
+          activeSyncEdit = null;
+          return;
+        }
+        const { prefix, suffix, name, otherField, otherFieldValue } = activeSyncEdit;
+        const valueEnd = field.value.length - suffix.length;
+        if (!field.value.startsWith(prefix) || !field.value.endsWith(suffix) || valueEnd < prefix.length) {
+          activeSyncEdit = null;
+          return;
+        }
+        const value = field.value.slice(prefix.length, valueEnd);
+        activeSyncEdit.value = value;
+        const token = `[${name}]`;
+        otherField.value = otherFieldValue.split(token).join(value || token);
+      }
+
+      function selectNextPlaceholder(field) {
+        const pattern = /\[[^\]]+\]/g;
+        function findNext(targetField, start) {
+          pattern.lastIndex = start;
+          const match = pattern.exec(targetField.value);
+          return match ? { field: targetField, match } : null;
+        }
+
+        const target = findNext(field, field.selectionEnd);
+        if (target) return target;
+        if (field === subject) {
+          return findNext(message, 0) || findNext(subject, 0);
+        }
+        return findNext(subject, 0) || findNext(message, 0);
+      }
+
+      function selectPlaceholderAtClick(event) {
+        const field = event.currentTarget;
+        const start = field.selectionStart;
+        const end = field.selectionEnd;
+        const pattern = /\[[^\]]+\]/g;
+        let match;
+        while ((match = pattern.exec(field.value)) !== null) {
+          const tokenEnd = match.index + match[0].length;
+          const caretInside = start === end && start >= match.index && start < tokenEnd;
+          const selectionInside = start < end && start >= match.index && end <= tokenEnd;
+          if (caretInside || selectionInside) {
+            field.setSelectionRange(match.index, tokenEnd);
+            return;
+          }
+        }
+      }
+
+      function handlePlaceholderTab(event) {
+        if (event.key !== 'Tab' || event.shiftKey) return;
+        const target = selectNextPlaceholder(event.currentTarget);
+        if (!target) return;
+        event.preventDefault();
+        target.field.focus();
+        target.field.setSelectionRange(target.match.index, target.match.index + target.match[0].length);
+      }
+
       function insertTemplate(template) {
         if (!template) return;
+        activeTemplate = template;
+        activeSyncEdit = null;
         subject.value = template.subject;
         message.value = template.message;
         closeMenu();
+        closeTemplateMenu();
 
         const subjectPlaceholder = /\[[^\]]+\]/.exec(subject.value);
         const messagePlaceholder = /\[[^\]]+\]/.exec(message.value);
-        const target = subjectPlaceholder ? subject : message;
-        const placeholder = subjectPlaceholder || messagePlaceholder;
-        target.focus();
-        if (placeholder) target.setSelectionRange(placeholder.index, placeholder.index + placeholder[0].length);
+        subject.focus();
+        if (subjectPlaceholder) subject.setSelectionRange(subjectPlaceholder.index, subjectPlaceholder.index + subjectPlaceholder[0].length);
+        else if (messagePlaceholder) {
+          message.focus();
+          message.setSelectionRange(messagePlaceholder.index, messagePlaceholder.index + messagePlaceholder[0].length);
+        }
       }
 
       function updateMenu(field) {
@@ -1744,30 +1852,97 @@ let allowedEmails = [];
       }
 
       [subject, message].forEach(field => {
-        field.addEventListener('input', () => updateMenu(field));
+        field.addEventListener('beforeinput', preparePlaceholderSync);
+        field.addEventListener('input', () => {
+          syncEditedPlaceholder(field);
+          updateMenu(field);
+        });
+        field.addEventListener('click', selectPlaceholderAtClick);
+        field.addEventListener('keydown', handlePlaceholderTab);
         field.addEventListener('keydown', handleMenuKeydown);
       });
       menu.addEventListener('keydown', handleMenuKeydown);
-      document.querySelectorAll('.broadcast-template-pill').forEach(button => {
-        button.addEventListener('click', () => {
-          insertTemplate(BROADCAST_TEMPLATES.find(template => template.id === button.dataset.broadcastTemplate));
-        });
+
+      BROADCAST_TEMPLATES.forEach(template => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'broadcast-command-option';
+        option.setAttribute('role', 'menuitem');
+        const heading = document.createElement('span');
+        heading.className = 'broadcast-command-option-heading';
+        const command = document.createElement('kbd');
+        command.textContent = template.command;
+        const title = document.createElement('strong');
+        title.textContent = template.title;
+        heading.append(command, title);
+        const description = document.createElement('small');
+        description.textContent = template.description;
+        option.append(heading, description);
+        option.addEventListener('click', () => insertTemplate(template));
+        templateMenu.append(option);
+      });
+      function focusTemplateOption(index) {
+        const options = [...templateMenu.querySelectorAll('[role="menuitem"]')];
+        if (!options.length) return;
+        const currentIndex = options.indexOf(document.activeElement);
+        const nextIndex = index === null ? 0
+          : currentIndex < 0 ? (index < 0 ? options.length - 1 : 0)
+            : (currentIndex + index + options.length) % options.length;
+        options[nextIndex].focus();
+      }
+
+      templateToggle.addEventListener('click', () => {
+        if (templateMenu.hidden) {
+          closeMenu();
+          templateMenu.hidden = false;
+          templateToggle.setAttribute('aria-expanded', 'true');
+        } else closeTemplateMenu();
+      });
+      templateToggle.addEventListener('keydown', event => {
+        if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+        event.preventDefault();
+        if (templateMenu.hidden) {
+          closeMenu();
+          templateMenu.hidden = false;
+          templateToggle.setAttribute('aria-expanded', 'true');
+        }
+        focusTemplateOption(event.key === 'ArrowDown' ? null : -1);
+      });
+      templateMenu.addEventListener('keydown', event => {
+        if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+          event.preventDefault();
+          focusTemplateOption(event.key === 'ArrowDown' ? 1 : -1);
+        } else if (event.key === 'Home' || event.key === 'End') {
+          event.preventDefault();
+          const options = templateMenu.querySelectorAll('[role="menuitem"]');
+          const option = event.key === 'Home' ? options[0] : options[options.length - 1];
+          if (option) option.focus();
+        }
       });
       document.getElementById('clearBroadcastBtn').addEventListener('click', () => {
         subject.value = '';
         message.value = '';
+        activeTemplate = null;
+        activeSyncEdit = null;
         closeMenu();
+        closeTemplateMenu();
         subject.focus();
       });
       document.addEventListener('pointerdown', event => {
-        if (menu.hidden || menu.contains(event.target) || event.target === subject || event.target === message) return;
-        closeMenu();
+        if (!menu.hidden && !menu.contains(event.target) && event.target !== subject && event.target !== message) closeMenu();
+        if (!templateMenu.hidden && !templateMenu.contains(event.target) && event.target !== templateToggle) closeTemplateMenu();
       });
       document.addEventListener('focusin', event => {
-        if (menu.hidden || event.target === activeField || menu.contains(event.target)) return;
-        closeMenu();
+        if (!menu.hidden && event.target !== activeField && !menu.contains(event.target)) closeMenu();
+        if (!templateMenu.hidden && event.target !== templateToggle && !templateMenu.contains(event.target)) closeTemplateMenu();
       });
       document.addEventListener('keydown', event => {
+        if (!templateMenu.hidden && event.key === 'Escape') {
+          event.preventDefault();
+          closeTemplateMenu();
+          templateToggle.focus();
+          return;
+        }
         if (!menu.hidden && event.altKey && !event.ctrlKey && !event.metaKey
           && (/^[1-8]$/.test(event.key) || event.key.toLowerCase() === 'e')) closeMenu();
       });
@@ -1777,8 +1952,24 @@ let allowedEmails = [];
     }
 
     async function sendBroadcast() {
-      const subject = document.getElementById('broadcastSubject').value.trim();
-      const message = document.getElementById('broadcastMessage').value.trim();
+      const subjectField = document.getElementById('broadcastSubject');
+      const messageField = document.getElementById('broadcastMessage');
+      const subject = subjectField.value.trim();
+      const message = messageField.value.trim();
+      const subjectPlaceholder = /\[[^\]]+\]/.exec(subjectField.value);
+      const messagePlaceholder = /\[[^\]]+\]/.exec(messageField.value);
+      const remainingPlaceholder = subjectPlaceholder
+        ? { field: subjectField, match: subjectPlaceholder }
+        : messagePlaceholder ? { field: messageField, match: messagePlaceholder } : null;
+      if (remainingPlaceholder) {
+        remainingPlaceholder.field.focus();
+        remainingPlaceholder.field.setSelectionRange(
+          remainingPlaceholder.match.index,
+          remainingPlaceholder.match.index + remainingPlaceholder.match[0].length
+        );
+        showToast('Fill in all bracketed placeholders before sending.', 'error');
+        return;
+      }
       if (subject.length < 3 || message.length < 5) return showToast('Enter a subject and message first.', 'error');
       if (!await openActionConfirm('Confirm Broadcast', 'Send this announcement to all registered students?')) return;
       const button = document.getElementById('sendBroadcastBtn');
