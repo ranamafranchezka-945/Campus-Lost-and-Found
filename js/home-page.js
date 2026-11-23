@@ -1704,6 +1704,17 @@ function shareMeetupLocation(claimId, button) {
 // Opened once a claim request exists, so the claimant and the finder can agree the
 // item matches, share where to meet, and each confirm the handover themselves -
 // there is no separate admin approval step any more.
+
+// Enter sends the message, same as clicking Send - delegated so it works whether
+// the input is in starter mode or a normal thread. The form would already submit
+// on Enter by default (it's a single text field plus a submit button), but this
+// makes it explicit instead of relying on that implicit-submission browser rule.
+document.addEventListener('keydown', event => {
+  if (event.target.id !== 'claimThreadInput' || event.key !== 'Enter') return;
+  event.preventDefault();
+  event.target.closest('form')?.requestSubmit();
+});
+
 let activeClaimThreadId = null;
 // Set instead of activeClaimThreadId while no claim exists yet for this match - the
 // first message the claimant sends doubles as the claim's ownership proof.
@@ -1914,7 +1925,12 @@ async function confirmClaimThread() {
 
 async function deleteClaimThread() {
   if (!activeClaimThreadId) return;
-  if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
+  const confirmed = await askConfirm('Delete this conversation? This cannot be undone.', {
+    title: 'Delete conversation?',
+    confirmLabel: 'Delete',
+    icon: '🗑️'
+  });
+  if (!confirmed) return;
   try {
     const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread`, { method: 'DELETE' });
     const data = await res.json();
@@ -2030,7 +2046,12 @@ function updateNotificationSelection() {
 async function deleteSelectedNotifications() {
   const notificationIds = [...document.querySelectorAll('#notificationsList .notification-select:checked')]
     .map(input => JSON.parse(input.value));
-  if (!notificationIds.length || !window.confirm(`Delete ${notificationIds.length} selected notification${notificationIds.length === 1 ? '' : 's'}?`)) return;
+  if (!notificationIds.length) return;
+  const confirmed = await askConfirm(
+    `Delete ${notificationIds.length} selected notification${notificationIds.length === 1 ? '' : 's'}?`,
+    { title: 'Delete notifications?', confirmLabel: 'Delete', icon: '🗑️' }
+  );
+  if (!confirmed) return;
 
   const button = document.getElementById('deleteSelectedNotifications');
   button.disabled = true;
@@ -2669,6 +2690,37 @@ function contactLinkHtml(value) {
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return `<a href="mailto:${escapeHtml(text)}">${escapeHtml(text)}</a>`;
   if (/^[+\d][\d\s().-]{6,}$/.test(text)) return `<a href="tel:${escapeHtml(text.replace(/[^\d+]/g, ''))}">${escapeHtml(text)}</a>`;
   return escapeHtml(text);
+}
+
+// ── Generic confirmation modal (replaces window.confirm(), which shows the
+// browser's own "this site says" chrome instead of the app's own styling) ──
+let genericConfirmResolve = null;
+
+function askConfirm(text, { title = 'Are you sure?', confirmLabel = 'Confirm', icon = '⚠️' } = {}) {
+  document.getElementById('genericConfirmTitle').textContent = title;
+  document.getElementById('genericConfirmText').textContent = text;
+  document.getElementById('genericConfirmIcon').textContent = icon;
+  document.getElementById('genericConfirmBtn').textContent = confirmLabel;
+  document.getElementById('genericConfirmModal').classList.add('open');
+  return new Promise(resolve => { genericConfirmResolve = resolve; });
+}
+
+function closeGenericConfirm() {
+  document.getElementById('genericConfirmModal').classList.remove('open');
+  if (genericConfirmResolve) {
+    const resolve = genericConfirmResolve;
+    genericConfirmResolve = null;
+    resolve(false);
+  }
+}
+
+function confirmGenericConfirm() {
+  document.getElementById('genericConfirmModal').classList.remove('open');
+  if (genericConfirmResolve) {
+    const resolve = genericConfirmResolve;
+    genericConfirmResolve = null;
+    resolve(true);
+  }
 }
 
 function showToast(msg, isError = false) {

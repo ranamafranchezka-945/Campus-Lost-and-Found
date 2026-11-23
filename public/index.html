@@ -516,6 +516,19 @@
     </div>
   </div>
 
+  <!-- GENERIC CONFIRMATION MODAL: reusable yes/no prompt, replaces window.confirm() -->
+  <div class="slip-overlay" id="genericConfirmModal" data-close="closeGenericConfirm">
+    <div class="modal-card modal-card--sm modal-card--danger modal-card--center">
+      <div class="modal-icon" id="genericConfirmIcon" aria-hidden="true">⚠️</div>
+      <h3 class="modal-confirm-title modal-confirm-title--danger" id="genericConfirmTitle">Are you sure?</h3>
+      <p class="modal-confirm-text" id="genericConfirmText"></p>
+      <div class="modal-actions modal-actions--center">
+        <button type="button" class="btn btn-outline btn-compact" data-action="closeGenericConfirm">Cancel</button>
+        <button type="button" class="btn btn-danger" id="genericConfirmBtn" data-action="confirmGenericConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CLAIM / UNCLAIM CONFIRMATION MODAL -->
   <div class="slip-overlay" id="claimConfirmModal" data-close="closeClaimModal">
     <div class="modal-card modal-card--md">
@@ -1002,7 +1015,7 @@
       <div class="thread-meetup" id="claimThreadMeetup"></div>
 
       <form class="thread-compose" data-submit="sendClaimThreadMessage">
-        <input type="text" id="claimThreadInput" maxlength="500" placeholder="Type a message…" aria-label="Message" required />
+        <input type="text" id="claimThreadInput" maxlength="500" placeholder="Type a message…" aria-label="Message" enterkeyhint="send" required />
         <button type="submit" class="btn btn-primary btn-compact" id="claimThreadSendBtn">Send</button>
       </form>
 
