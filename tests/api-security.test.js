@@ -1026,6 +1026,7 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   const scriptPath = html.match(/src="(\/js\/home-page\.js[^"]*)"/)[1];
   const script = await (await fetch(`${baseUrl}${scriptPath}`)).text();
   assert.match(script, /await askConfirmItemReturned\(isRegisteredConversation\)/);
+  assert.match(script, /notificationType === 'claim-conversation'/);
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
   assert.match(script, /setFinderConversationLink/);
   assert.match(script, /finderConversation=/);
@@ -1413,12 +1414,36 @@ test('owner and finder of an approved claim can share a one-time location, only 
     const claims = JSON.parse(originalClaims);
     claims.unshift({ id: 'claim-meetup-test', itemId: 90, itemTitle: 'Blue umbrella', itemRefCode: 'CSPC-LF-2026-090',
       claimantId: 'student-test', claimantName: 'Test Student', status: 'approved', proof: 'Initials on the handle.',
+      messages: [{ id: 'claim-meetup-message', senderId: 'student-test', text: 'Initials on the handle.', createdAt: new Date().toISOString() }],
       createdAt: new Date().toISOString(), reviewedAt: new Date().toISOString() });
     fs.writeFileSync(claimsPath, JSON.stringify(claims));
 
     const ownerCookie = await login('student@my.cspc.edu.ph', studentPassword);
     const finderCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
     const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
+    const claimConversationEntry = async cookie => {
+      const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
+      return (await response.json()).notifications.find(n =>
+        n.notificationType === 'claim-conversation' && n.claimId === 'claim-meetup-test'
+      );
+    };
+    const ownerConversation = await claimConversationEntry(ownerCookie);
+    const finderConversation = await claimConversationEntry(finderCookie);
+    assert.ok(ownerConversation, 'claimant can return to the conversation from Account Notifications');
+    assert.ok(finderConversation, 'finder can return to the conversation from Account Notifications');
+    assert.equal(ownerConversation.message, 'Initials on the handle.');
+    assert.equal(ownerConversation.read, true, 'the starter message is not unread for its sender');
+    assert.equal(finderConversation.unreadCount, 1, 'the starter message remains unread for the other participant');
+    assert.equal(await claimConversationEntry(adminCookie), undefined, 'unrelated accounts cannot see claim conversations');
+    for (const cookie of [ownerCookie, finderCookie]) {
+      const thread = await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, { headers: { Cookie: cookie } });
+      assert.equal(thread.status, 200);
+    }
+    assert.equal((await claimConversationEntry(ownerCookie)).read, true,
+      'opening the thread marks it read without removing its Account Notifications entry');
+    assert.equal((await claimConversationEntry(finderCookie)).read, true,
+      'both participants retain access after opening the thread');
+
     const meetupEntry = async cookie => {
       const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
       return (await response.json()).notifications.find(n => n.notificationType === 'meetup' && n.claimId === 'claim-meetup-test');

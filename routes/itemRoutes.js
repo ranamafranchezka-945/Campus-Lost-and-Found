@@ -863,6 +863,15 @@ function meetupParties(claim, items, users) {
   return { owner, finder, item };
 }
 
+function claimConversationParties(claim, items, users) {
+  if (claim.status === 'rejected') return null;
+  const item = items.find(entry => String(entry.id) === String(claim.itemId));
+  const owner = users.find(user => String(user.id) === String(claim.claimantId));
+  const finder = item && users.find(user => String(user.id) === String(item.reportedBy));
+  if (!item || !owner || !finder || String(owner.id) === String(finder.id)) return null;
+  return { owner, finder, item };
+}
+
 // Deletes expired locations and requests (and everything once the claim is
 // rejected). Returns true when the claim changed and needs saving.
 function pruneMeetup(claim, now = Date.now()) {
@@ -1019,7 +1028,7 @@ const CLAIM_THREAD_TTL_MS = 24 * 60 * 60 * 1000;
 // if neither bothers, it clears itself out a day after resolution - mirrors the
 // lazy, prune-on-access pattern pruneMeetup already uses for shared locations.
 function pruneClaimThread(claim, now = Date.now()) {
-  if (claim.status !== 'approved' || !claim.messages.length) return false;
+  if (claim.status !== 'approved' || !Array.isArray(claim.messages) || !claim.messages.length) return false;
   if (now - Date.parse(claim.reviewedAt || claim.createdAt) <= CLAIM_THREAD_TTL_MS) return false;
   claim.messages = [];
   return true;
@@ -1196,29 +1205,28 @@ function meetupNotification(claim, item, me, other, isOwner) {
   };
 }
 
-// Unread-messages inbox entry for one person - "unread" here means messages the
-// other side sent since this person last opened the conversation (loadClaimThread
-// stamps claim.lastReadAt on every open), not a per-message read receipt.
-function claimMessageNotification(claim, item, me, other) {
+// Persistent conversation entry for one participant. Unread means messages the
+// other side sent since this person last opened the conversation.
+function claimConversationNotification(claim, item, me, other) {
   const messages = Array.isArray(claim.messages) ? claim.messages : [];
   const lastRead = claim.lastReadAt?.[String(me.id)];
   const unread = messages.filter(entry =>
     String(entry.senderId) !== String(me.id) &&
     (!lastRead || Date.parse(entry.createdAt) > Date.parse(lastRead)));
-  if (!unread.length) return null;
-  const latest = unread[unread.length - 1];
+  const latest = messages[messages.length - 1];
   return {
-    id: `claim-message-${claim.id}`,
-    notificationType: 'claim-message',
+    id: `claim-conversation-${claim.id}`,
+    notificationType: 'claim-conversation',
     claimId: claim.id,
     itemId: item.id,
     itemTitle: item.title,
     refCode: item.refCode,
     otherName: firstName(other.fullName, 'The other person'),
-    message: latest.text,
+    message: latest?.text || '',
     unreadCount: unread.length,
-    timestamp: latest.createdAt,
-    read: false
+    status: claim.status,
+    timestamp: latest?.createdAt || claim.createdAt,
+    read: unread.length === 0
   };
 }
 
@@ -1780,6 +1788,17 @@ router.get('/my-notifications', requireAuth, (req, res) => {
   let claimsChanged = false;
   claims.forEach(claim => {
     if (pruneMeetup(claim)) claimsChanged = true;
+    if (pruneClaimThread(claim)) claimsChanged = true;
+    const conversationParties = claimConversationParties(claim, items, users);
+    if (conversationParties) {
+      const isOwner = String(conversationParties.owner.id) === String(userId);
+      if (isOwner || String(conversationParties.finder.id) === String(userId)) {
+        const me = isOwner ? conversationParties.owner : conversationParties.finder;
+        const other = isOwner ? conversationParties.finder : conversationParties.owner;
+        notifications.push(claimConversationNotification(claim, conversationParties.item, me, other));
+      }
+    }
+
     const parties = meetupParties(claim, items, users);
     if (!parties) return;
     const isOwner = String(parties.owner.id) === String(userId);
@@ -1787,8 +1806,6 @@ router.get('/my-notifications', requireAuth, (req, res) => {
     const me = isOwner ? parties.owner : parties.finder;
     const other = isOwner ? parties.finder : parties.owner;
     notifications.push(meetupNotification(claim, parties.item, me, other, isOwner));
-    const messageNotification = claimMessageNotification(claim, parties.item, me, other);
-    if (messageNotification) notifications.push(messageNotification);
   });
   if (claimsChanged) saveClaims(claims);
 

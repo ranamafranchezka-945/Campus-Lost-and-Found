@@ -1729,7 +1729,7 @@ function refreshOpenNotifications() {
   // Never wipe a note being typed, a pending action or a selection in progress.
   const busy = [...list.querySelectorAll('.meetup-note')].some(input => input.value || input === document.activeElement) ||
     list.querySelector('button:disabled[data-busy]') || list.querySelector('.notification-select:checked');
-  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--finder-conversation, .notif-item--guest-finder-conversation')) {
+  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--claim-conversation, .notif-item--finder-conversation, .notif-item--guest-finder-conversation')) {
     loadNotificationsIntoModal();
   }
 }
@@ -2407,6 +2407,20 @@ async function loadNotificationsIntoModal() {
           ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
           : '<p class="notif-contact">This conversation has expired.</p>'}
         <button type="button" class="btn-delete-conversation" data-action="deleteRegisteredConversationNotification" data-args="${actionArgs(n.id, n.itemId, '$el')}">Delete conversation</button>
+      </div>
+    ` : n.notificationType === 'claim-conversation' ? `
+      <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+        <div class="notif-header">
+          <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
+        </div>
+        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount
+          ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
+          : n.status === 'approved' ? ' · handover confirmed' : ' · conversation in progress'}</p>
+        ${n.message
+          ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
+          : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'}
+        <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
       </div>
     ` : n.notificationType === 'meetup' ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
