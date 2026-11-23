@@ -112,6 +112,23 @@
   --dash-solid: var(--clay-surface);
 }
 
+:root #itemLocation {
+  color-scheme: dark;
+  background-color: var(--field-bg);
+  border-color: var(--form-outline);
+  color: var(--text-main);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+:root[data-theme='light'] #itemLocation {
+  color-scheme: light;
+}
+
+:root #itemLocation:focus {
+  border-color: var(--blue-main);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue-main) 20%, transparent);
+}
+
 :root:not([data-theme='light']) .btn-primary,
 :root:not([data-theme='light']) button.btn-primary,
 :root:not([data-theme='light']) .admin-app .seg-btn.active {
