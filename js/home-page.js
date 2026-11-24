@@ -817,8 +817,9 @@ function renderItemsGrid(items) {
       `;
     }
 
+    const isClaimed = isItemClaimed(item);
     let badgeHtml = '';
-    if (item.claimed) {
+    if (isClaimed) {
       badgeHtml = '<span class="item-badge badge-claimed">Claimed</span>';
     } else if (item.type === 'lost') {
       badgeHtml = '<span class="item-badge badge-lost">Lost</span>';
@@ -864,7 +865,10 @@ function renderItemsGrid(items) {
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>` : ''}
+            ${item.refCode ? isClaimed
+              ? `<span class="ref-code listing-ref listing-ref-code" title="Reference code">${escapeHtml(item.refCode)}</span>`
+              : `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>`
+              : ''}
           </div>
           <h3 class="listing-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h3>
           <p class="listing-category">${escapeHtml(item.category || 'Uncategorized')}</p>
@@ -884,6 +888,10 @@ function renderItemsGrid(items) {
   renderItemsPagination(totalPages);
   updateItemsSummary(items.length, (currentPage - 1) * itemsPerPage + 1, (currentPage - 1) * itemsPerPage + pageItems.length);
   updateDescriptionToggles(grid);
+}
+
+function isItemClaimed(item) {
+  return Boolean(item && (item.claimed || item.status === 'claimed'));
 }
 
 // Category name → icon symbol defined in index.html (#category-icon-*).
@@ -1069,6 +1077,10 @@ async function openQrStickerModal(id) {
   }
   if (!item) {
     showToast('This item is no longer available, so its QR sticker cannot be opened.', true);
+    return;
+  }
+  if (isItemClaimed(item)) {
+    showToast('This item has been claimed, so its QR sticker is no longer available.', true);
     return;
   }
 
