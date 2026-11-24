@@ -429,18 +429,18 @@
 
         <!-- Scannable QR Code -->
         <div class="print-qr-frame">
-          <img id="qrCodeImage" src="" alt="Found Item QR Code" class="print-qr-img" />
+          <img id="qrCodeImage" src="" alt="Lost or Found Item QR Code" class="print-qr-img" />
         </div>
 
         <div class="print-cta">SCAN WITH PHONE IF FOUND</div>
-        <div class="print-hint">Paste onto laptops, tumblers, notebooks, or binder folders.</div>
+        <div class="print-hint">Attach this sticker to the reported item to open its listing.</div>
       </div>
 
       <!-- Feature Details (How it works & Why it's useful) -->
       <div class="qr-feature-details feature-notes">
         <div class="feature-note">
           <strong class="feature-note-title">📌 How it works:</strong>
-          <span class="feature-note-text">Generate an anonymous QR sticker for your belongings. If found, someone can scan it and message you without seeing your contact details.</span>
+          <span class="feature-note-text">QR stickers are available for unclaimed lost and found reports. Scanning one opens the listing without revealing private contact details.</span>
         </div>
 
         <div class="feature-note feature-note--success">
@@ -701,7 +701,7 @@
       <form id="deleteAccountForm" data-submit="handleDeleteAccount">
         <p class="modal-body-text">This cannot be undone. Deleting your account will:</p>
         <ul class="account-delete-list">
-          <li><strong>Delete</strong> your registered belongings and their QR stickers, your lost-item reports, your pending claims and your notifications.</li>
+          <li><strong>Delete</strong> your registered belongings, your lost-item reports, your pending claims and your notifications.</li>
           <li><strong>Keep, without your name or contact details,</strong> found items you reported (so their owners can still claim them) and claims that were already decided.</li>
         </ul>
         <div class="input-field modal-field">
@@ -774,7 +774,7 @@
         <div>
           <span class="modal-badge-pill">Preventive Student Vault</span>
           <h2 class="modal-title modal-heading" id="registerModalTitle">Register Valuable Belonging</h2>
-          <p class="modal-subtitle" id="registerModalSubtitle">Register your laptop, tumbler, or binder before it gets lost to generate an anonymous recovery QR sticker.</p>
+          <p class="modal-subtitle" id="registerModalSubtitle">Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.</p>
         </div>
         <button type="button" class="modal-close" data-action="closeRegisterBelongingModal" aria-label="Close">&times;</button>
       </div>
@@ -822,13 +822,13 @@
 
           <div class="input-field modal-field">
             <label for="regInstructions">Default Note for Finder (Optional)</label>
-            <textarea id="regInstructions" rows="2" placeholder="e.g. If found, please scan this QR to notify me or leave with the library front counter."></textarea>
+            <textarea id="regInstructions" rows="2" placeholder="e.g. If found, please message me or leave it with the library front counter."></textarea>
           </div>
         </details>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeRegisterBelongingModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="regSubmitBtn">Register &amp; Generate QR Sticker</button>
+          <button type="submit" class="btn btn-primary" id="regSubmitBtn">Save Belonging</button>
         </div>
       </form>
     </div>

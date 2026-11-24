@@ -744,7 +744,7 @@ function renderItemsGrid(items) {
           <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏷️</div>
           <h3 style="font-size: 1.15rem; font-weight: 800; color: #93c5fd; margin-bottom: 0.4rem;">Your Belongings Vault is Empty</h3>
           <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 480px; margin: 0 auto 1.25rem; line-height: 1.5;">
-            Register your personal laptops, tumblers, water bottles, and binder folders before they get lost to generate your unique, anonymous QR recovery sticker!
+            Save your personal belongings here for private record keeping. Report an item as lost or found to make it eligible for a QR sticker.
           </p>
           <button class="btn btn-primary" data-action="handleOpenRegisterBelonging">+ Register a Belonging Now</button>
         </div>
@@ -798,7 +798,7 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="registered-belonging-protection">
-            🛡️ <strong>Preventive Protection Active:</strong> Paste QR sticker onto this item. If someone scans it, an anonymous notification goes straight to your account.
+            🛡️ <strong>Private Belongings Vault:</strong> These items stay private. Report an item as lost or found if you need to create a QR sticker for its listing.
           </div>
 
           <p class="item-card-description" style="margin-top: 0.25rem;">${escapeHtml(item.desc)}</p>
@@ -810,7 +810,6 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="card-actions" style="margin-top: 1rem;">
-            <button class="btn-sm btn-qr" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}">QR Sticker</button>
             <button class="btn-sm btn-outline btn-finder-test" data-action="openAnonymousFinderModal" data-args="${actionArgs(item.refCode)}">Test Finder Screen</button>
           </div>
         </div>
@@ -865,7 +864,7 @@ function renderItemsGrid(items) {
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? isClaimed
+            ${item.refCode ? !canShowItemQr(item)
               ? `<span class="ref-code listing-ref listing-ref-code" title="Reference code">${escapeHtml(item.refCode)}</span>`
               : `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>`
               : ''}
@@ -892,6 +891,10 @@ function renderItemsGrid(items) {
 
 function isItemClaimed(item) {
   return Boolean(item && (item.claimed || item.status === 'claimed'));
+}
+
+function canShowItemQr(item) {
+  return Boolean(item && ['lost', 'found'].includes(item.type) && !isItemClaimed(item));
 }
 
 // Category name → icon symbol defined in index.html (#category-icon-*).
@@ -1057,7 +1060,7 @@ function setLocationFilter(loc) {
   fetchAndRenderItems();
 }
 
-// FEATURE: Digital "Found" QR Code Stickers (Preventive Add-on Feature)
+// Digital QR stickers are available only for unclaimed lost/found reports.
 async function openQrStickerModal(id) {
   let item = loadedItems.find(i => String(i.id) === String(id));
   if (!item) {
@@ -1079,8 +1082,8 @@ async function openQrStickerModal(id) {
     showToast('This item is no longer available, so its QR sticker cannot be opened.', true);
     return;
   }
-  if (isItemClaimed(item)) {
-    showToast('This item has been claimed, so its QR sticker is no longer available.', true);
+  if (!canShowItemQr(item)) {
+    showToast('QR stickers are available only for unclaimed lost or found reports.', true);
     return;
   }
 
@@ -1155,8 +1158,8 @@ function closeRegisterBelongingModal() {
   if (moreDetails) moreDetails.open = false;
   editingBelongingId = null;
   document.getElementById('registerModalTitle').textContent = 'Register Valuable Belonging';
-  document.getElementById('registerModalSubtitle').textContent = 'Register your laptop, tumbler, or binder before it gets lost to generate an anonymous recovery QR sticker.';
-  document.getElementById('regSubmitBtn').textContent = 'Register & Generate QR Sticker';
+  document.getElementById('registerModalSubtitle').textContent = 'Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.';
+  document.getElementById('regSubmitBtn').textContent = 'Save Belonging';
 }
 
 let activeCategoryField = '';
@@ -1272,12 +1275,7 @@ async function handleRegisterBelongingSubmit(e) {
     }
 
     closeRegisterBelongingModal();
-    showToast('✅ Belonging registered! Your QR sticker is ready.');
-
-    if (isEditing) showToast('Belonging details updated.');
-
-    // Open QR sticker modal for the newly registered item
-    if (!isEditing) openQrStickerModal(data.item.id);
+    showToast(isEditing ? 'Belonging details updated.' : 'Belonging saved in your private vault.');
 
     // Refresh belonging count chip
     fetchMyBelongingsCount();
