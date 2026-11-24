@@ -381,8 +381,11 @@ function findOwnClaimId(foundItem, claims, userId) {
 // item's reporter) can open the claim conversation - whichever one this viewer is.
 function matchRequesterRole(lost, found, userId) {
   if (!userId) return null;
-  if (String(lost.reportedBy) === String(userId)) return 'owner';
-  if (String(found.reportedBy) === String(userId)) return 'finder';
+  const isOwner = String(lost.reportedBy) === String(userId);
+  const isFinder = String(found.reportedBy) === String(userId);
+  if (isOwner && isFinder) return null;
+  if (isOwner) return 'owner';
+  if (isFinder) return 'finder';
   return null;
 }
 
@@ -2125,6 +2128,9 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
   const userId = String(req.session.user.id);
   const isOwner = lostItem && String(lostItem.reportedBy) === userId;
   const isFinder = String(item.reportedBy) === userId;
+  if (isOwner && isFinder) {
+    return res.status(403).json({ success: false, message: 'You cannot start a conversation with yourself.' });
+  }
   if (!isPotentialMatch || (!isOwner && !isFinder)) {
     return res.status(403).json({ success: false, message: "Only the lost item's owner or the found item's finder can start this conversation." });
   }

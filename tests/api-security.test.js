@@ -1187,6 +1187,48 @@ test('claim requests are private and require moderator review', async () => {
   assert.equal((await readNotificationsResponse.json()).unreadCount, 0);
 });
 
+test('a student cannot start a claim conversation with themself as owner and finder', async () => {
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  const pair = {
+    title: 'Self-reported blue insulated bottle',
+    category: 'Others',
+    location: 'Library',
+    contact: 'student@my.cspc.edu.ph',
+    desc: 'Blue insulated bottle with a silver cap and a small star sticker.'
+  };
+  const lostResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie },
+    body: reportFormData(null, { ...pair, type: 'lost' })
+  });
+  assert.equal(lostResponse.status, 201);
+  const lost = (await lostResponse.json()).item;
+
+  const foundResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie },
+    body: reportFormData(null, { ...pair, type: 'found' })
+  });
+  assert.equal(foundResponse.status, 201);
+  const found = (await foundResponse.json()).item;
+
+  const referenceResponse = await fetch(
+    `${baseUrl}/api/items/match-reference-token?lostId=${lost.id}&foundId=${found.id}`,
+    { headers: { Cookie: studentCookie } }
+  );
+  assert.equal(referenceResponse.status, 200);
+  const reference = await referenceResponse.json();
+  assert.equal(reference.requesterRole, null);
+  assert.equal(reference.canRequestClaim, false);
+
+  const conversationResponse = await fetch(`${baseUrl}/api/items/${found.id}/claim-requests`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proof: 'I reported both matching items myself.', lostId: lost.id })
+  });
+  assert.equal(conversationResponse.status, 403);
+});
+
 test('rejected claims restore availability and notify the claimant', async () => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const claimResponse = await fetch(`${baseUrl}/api/items/14/claim-requests`, {
