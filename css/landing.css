@@ -8,6 +8,15 @@ body.landing-page {
   display: flex;
   flex-direction: column;
 }
+/* responsive.css's plain `body { min-height: 100dvh }` fallback loses to this rule's
+   higher specificity (a class beats a bare tag), so mobile Safari's 100vh - which is
+   taller than what's actually visible until the address bar collapses - leaks through
+   here specifically. Repeat the same dvh fallback at matching specificity. */
+@supports (height: 100dvh) {
+  body.landing-page {
+    min-height: 100dvh;
+  }
+}
 
 /* ── HERO ── */
 :root .landing-hero {
@@ -103,6 +112,9 @@ body.landing-page {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   white-space: nowrap;
+  /* On the narrowest phones the clamped headline size leaves no room for this
+     phrase to stay on one line; let it break instead of clipping off-screen. */
+  overflow-wrap: anywhere;
 }
 
 .landing-tagline {

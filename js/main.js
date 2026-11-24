@@ -255,7 +255,7 @@ function initializeMobileDrawer(navbar) {
     closeButton.type = 'button';
     closeButton.className = 'mobile-drawer-close';
     closeButton.setAttribute('aria-label', 'Close navigation menu');
-    closeButton.textContent = '\u00d7';
+    closeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>';
   }
 
   let drawerHeader = links.querySelector('.mobile-drawer-header');
@@ -419,20 +419,10 @@ function syncMobileDrawerAccount(navbar) {
   }
 
   footer.replaceChildren();
-  const changePassword = account?.querySelector('.user-name-btn, .user-account-menu-item[data-action="openChangePasswordModal"]');
-  if (changePassword) {
-    const drawerPassword = changePassword.cloneNode(false);
-    drawerPassword.className = 'mobile-drawer-password';
-    drawerPassword.textContent = 'Change Password';
-    footer.append(drawerPassword);
-  }
   const logout = account?.querySelector('.user-pill-logout, .user-account-menu-item[data-action="handleLogout"]');
   if (logout) {
-    const drawerLogout = logout.cloneNode(true);
-    drawerLogout.className = 'mobile-drawer-logout';
-    drawerLogout.textContent = 'Logout';
-    drawerLogout.title = 'Sign out of account';
-    footer.append(drawerLogout);
+    // Signed-in users still shouldn't see the "Sign In" link below, even
+    // though the drawer footer no longer gets its own Logout button.
     return;
   }
 

@@ -84,17 +84,38 @@
   }
 }
 
-@media (max-width: 767px) {
+/* 768px, not 767px: every other breakpoint in the site (navbar, hero, nav drawer)
+   switches to its mobile layout at max-width: 768px. The 1px mismatch left this
+   footer alone in its 3-column desktop grid - brand flush left, address flush
+   right with no room to breathe - on exactly that common device width. */
+@media (max-width: 768px) {
   :root { --footer-space: 10rem; }
   :root .site-footer .footer-container {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
-    gap: 0.85rem;
+    gap: 1rem;
     text-align: center;
   }
   .footer-location {
     grid-column: auto;
     text-align: center;
+  }
+
+  /* Stacked and centered reads as cramped at the base desktop sizes, so scale the
+     logo and text up rather than just reusing the desktop numbers. */
+  .footer-brand img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .footer-name {
+    font-size: 1.0625rem;
+  }
+
+  .footer-tagline,
+  .footer-location {
+    font-size: 0.9375rem;
+    line-height: 1.55;
   }
 }
 

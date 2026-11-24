@@ -141,7 +141,10 @@ input[type='submit'] {
   .navbar-container {
     width: 100%;
     min-width: 0;
-    padding-inline: max(.75rem, env(safe-area-inset-left));
+    /* A landscape notch can sit on either side depending on which way the phone is
+       rotated - padding-inline with a single value only ever covered the left one. */
+    padding-left: max(.75rem, env(safe-area-inset-left));
+    padding-right: max(.75rem, env(safe-area-inset-right));
   }
 
   .nav-logo {
@@ -759,6 +762,27 @@ input[type='submit'] {
     width: 20px;
     min-width: 20px;
     margin-inline: .05rem;
+  }
+
+  /* On the narrowest phones, this pill shares a nowrap row with the theme toggle,
+     notification bell and hamburger - all fixed-width - so a long name can still
+     push the row past the screen edge even after the width caps added elsewhere.
+     Shed the chevron and shrink the avatar to buy back the room that needs. */
+  .user-account-trigger {
+    max-width: min(7rem, 30vw);
+    gap: .3rem;
+    padding-right: .35rem;
+  }
+
+  .user-account-avatar {
+    flex-basis: 1.6rem;
+    width: 1.6rem;
+    height: 1.6rem;
+    font-size: 0.6875rem;
+  }
+
+  .user-account-chevron {
+    display: none;
   }
 
   .nav-signin-btn {
@@ -1488,8 +1512,8 @@ input[type='submit'] {
     align-items: stretch;
     justify-content: flex-start;
     gap: .1rem !important;
-    width: 50vw !important;
-    max-width: 18rem;
+    width: 78vw !important;
+    max-width: 22rem;
     height: 100vh;
     height: 100dvh;
     max-height: none;
@@ -1569,6 +1593,17 @@ input[type='submit'] {
     font-size: 1.4rem;
     line-height: 1;
     cursor: pointer;
+  }
+
+  .nav-links .mobile-drawer-close svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
 
   .mobile-drawer-header {
@@ -1792,7 +1827,8 @@ input[type='submit'] {
     cursor: pointer;
   }
 
-  .mobile-drawer-footer:has(> .mobile-drawer-signin:only-child) {
+  .mobile-drawer-footer:has(> .mobile-drawer-signin:only-child),
+  .mobile-drawer-footer:empty {
     display: none;
   }
 
@@ -1908,6 +1944,43 @@ button {
 .form-group input,
 .form-group select {
   max-width: 100%;
+}
+
+/* The toast notification is anchored with a fixed `right` offset plus a fixed
+   max-width (or no width limit at all - home.css's copy), so a long message on
+   a narrow phone (<=360px) pushes its left edge past x=0. html/body's
+   overflow-x: hidden above stops that from opening a horizontal scrollbar, but
+   it still silently clips part of the message off-screen. Pinning both edges
+   keeps it fully on screen at any width instead. */
+@media (max-width: 480px) {
+  .toast {
+    left: 1rem;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    width: auto;
+    max-width: none;
+  }
+}
+
+/* .user-account-menu is anchored with `right: 0` against its own trigger button
+   (.user-account-wrap, position: relative), not the viewport. On phones the
+   trigger can sit well left of the true right edge, so the menu's up-to-
+   near-full-width box opens leftward from there and its left edge pushes past
+   x=0 - clipped off-screen the same way the toast above was. Pinning it to the
+   viewport with position: fixed guarantees it always stays fully on screen;
+   .nav-links already does the same thing nested under this same .navbar, so
+   its backdrop-filter is confirmed not to break a fixed descendant here. */
+@media (max-width: 480px) {
+  .user-account-menu {
+    position: fixed;
+    top: calc(var(--navbar-height) + .5rem);
+    right: 1rem;
+    left: auto;
+    width: min(16rem, calc(100vw - 2rem));
+    max-width: none;
+    max-height: calc(100dvh - var(--navbar-height) - 1.5rem);
+    overflow-y: auto;
+  }
 }
 
 @media (max-width: 768px) {

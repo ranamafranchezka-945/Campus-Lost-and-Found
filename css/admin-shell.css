@@ -34,7 +34,7 @@
   --side-edge: rgba(148, 180, 255, 0.14);
   --side-shadow: 10px 0 40px rgba(2, 6, 23, 0.35);
   --topbar-bg: rgba(12, 16, 28, 0.72);
-  --sidebar-width: 17rem;
+  --sidebar-width: 20rem;
 }
 :root[data-theme='light'] .admin-app {
   --viz-lost: #4169e1;
@@ -835,7 +835,7 @@
     top: 0;
     bottom: 0;
     left: 0;
-    width: min(84vw, 19rem);
+    width: min(84vw, 22rem);
     height: auto;
     transform: translateX(-102%);
     /* Hidden once it has slid away, so keyboard focus cannot land inside a closed drawer. */

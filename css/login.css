@@ -18,6 +18,11 @@ body.auth-checking > .site-footer {
       color: var(--text-muted);
       font-size: 1rem;
     }
+    @supports (height: 100dvh) {
+      body.auth-checking > .auth-checking-state {
+        min-height: 100dvh;
+      }
+    }
 
 .auth-container {
       min-height: calc(100vh - 120px);
