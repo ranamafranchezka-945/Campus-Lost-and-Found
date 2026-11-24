@@ -1035,6 +1035,7 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(script, /openSavedFinderConversation/);
   assert.match(script, /btn-delete-conversation/);
   assert.match(script, /deleteRegisteredConversationNotification/);
+  assert.match(script, /deleteClaimConversationNotification/);
 });
 
 test('signed-in students using home aliases reach the portal report form', async () => {
@@ -1443,6 +1444,40 @@ test('owner and finder of an approved claim can share a one-time location, only 
       'opening the thread marks it read without removing its Account Notifications entry');
     assert.equal((await claimConversationEntry(finderCookie)).read, true,
       'both participants retain access after opening the thread');
+
+    const deleteOwnerConversation = await fetch(`${baseUrl}/api/items/notifications`, {
+      method: 'DELETE',
+      headers: { Cookie: ownerCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{
+          kind: 'claim-conversation',
+          recordId: 'claim-meetup-test',
+          id: 'claim-conversation-claim-meetup-test'
+        }]
+      })
+    });
+    assert.equal(deleteOwnerConversation.status, 200);
+    assert.equal((await deleteOwnerConversation.json()).deletedCount, 1);
+    assert.equal(await claimConversationEntry(ownerCookie), undefined,
+      'deleting the entry removes it from only the requesting participant’s Account Notifications');
+    assert.ok(await claimConversationEntry(finderCookie),
+      'the other participant keeps their Account Notifications entry');
+    assert.equal((await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, {
+      headers: { Cookie: ownerCookie }
+    })).status, 200, 'deleting the notification does not delete the shared conversation');
+    assert.equal((await fetch(`${baseUrl}/api/items/notifications`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{
+          kind: 'claim-conversation',
+          recordId: 'claim-meetup-test',
+          id: 'claim-conversation-claim-meetup-test'
+        }]
+      })
+    })).status, 200);
+    assert.equal((await claimConversationEntry(finderCookie)).claimId, 'claim-meetup-test',
+      'an unrelated account cannot remove a participant’s entry');
 
     const meetupEntry = async cookie => {
       const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });

@@ -1793,9 +1793,14 @@ router.get('/my-notifications', requireAuth, (req, res) => {
     if (conversationParties) {
       const isOwner = String(conversationParties.owner.id) === String(userId);
       if (isOwner || String(conversationParties.finder.id) === String(userId)) {
-        const me = isOwner ? conversationParties.owner : conversationParties.finder;
-        const other = isOwner ? conversationParties.finder : conversationParties.owner;
-        notifications.push(claimConversationNotification(claim, conversationParties.item, me, other));
+        const deletedBy = Array.isArray(claim.conversationNotificationDeletedBy)
+          ? claim.conversationNotificationDeletedBy
+          : [];
+        if (!deletedBy.includes(String(userId))) {
+          const me = isOwner ? conversationParties.owner : conversationParties.finder;
+          const other = isOwner ? conversationParties.finder : conversationParties.owner;
+          notifications.push(claimConversationNotification(claim, conversationParties.item, me, other));
+        }
       }
     }
 
@@ -1984,7 +1989,7 @@ router.delete('/notifications', requireAuth, (req, res) => {
   const notificationIds = req.body?.notificationIds;
   if (!Array.isArray(notificationIds) || notificationIds.length < 1 || notificationIds.length > 1000
     || notificationIds.some(reference => !reference || typeof reference !== 'object'
-      || !['item', 'claim'].includes(reference.kind)
+      || !['item', 'claim', 'claim-conversation'].includes(reference.kind)
       || typeof reference.recordId !== 'string' || !reference.recordId.trim() || reference.recordId.length > 200
       || typeof reference.id !== 'string' || !reference.id.trim() || reference.id.length > 200)) {
     return res.status(400).json({ success: false, message: 'Select between 1 and 1000 valid notifications.' });
@@ -1994,6 +1999,7 @@ router.delete('/notifications', requireAuth, (req, res) => {
   const userId = String(req.session.user.id);
   const items = getItems();
   const claims = getClaims();
+  const users = readJsonArray(USERS_FILE);
   let deletedCount = 0;
 
   items.forEach(item => {
@@ -2008,9 +2014,20 @@ router.delete('/notifications', requireAuth, (req, res) => {
   });
 
   claims.forEach(claim => {
-    if (String(claim.claimantId) !== userId || !claim.notification
-      || !identities.has(`claim:${claim.id}:${claim.notification.id}`)) return;
-    claim.notification = null;
+    if (String(claim.claimantId) === userId && claim.notification
+      && identities.has(`claim:${claim.id}:${claim.notification.id}`)) {
+      claim.notification = null;
+      deletedCount += 1;
+    }
+
+    if (!identities.has(`claim-conversation:${claim.id}:claim-conversation-${claim.id}`)) return;
+    const parties = claimConversationParties(claim, items, users);
+    if (!parties || ![String(parties.owner.id), String(parties.finder.id)].includes(userId)) return;
+    claim.conversationNotificationDeletedBy = Array.isArray(claim.conversationNotificationDeletedBy)
+      ? claim.conversationNotificationDeletedBy
+      : [];
+    if (claim.conversationNotificationDeletedBy.includes(userId)) return;
+    claim.conversationNotificationDeletedBy.push(userId);
     deletedCount += 1;
   });
 
