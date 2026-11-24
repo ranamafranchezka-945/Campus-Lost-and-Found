@@ -288,6 +288,52 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+:root .listing-card .listing-ref-button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--blue-main) 42%, transparent);
+  border-radius: 0.4rem;
+  padding: 0.2rem 0.45rem;
+  background: color-mix(in srgb, var(--blue-main) 9%, transparent);
+  color: var(--blue-main);
+  -webkit-text-fill-color: currentColor;
+  cursor: pointer;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+:root .listing-card .listing-ref-code {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+:root .listing-card .listing-ref-action {
+  flex: none;
+  border-left: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  padding-left: 0.35rem;
+  font-family: var(--font-brand);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+:root .listing-card .listing-ref-button:hover {
+  border-color: var(--blue-main);
+  background: color-mix(in srgb, var(--blue-main) 18%, transparent);
+  color: var(--blue-main);
+}
+:root .listing-card .listing-ref-button:focus-visible {
+  border-radius: 0.2rem;
+  outline: 2px solid var(--blue-main);
+  outline-offset: 3px;
+}
+:root #items .projects-grid > .project-card.listing-card:hover {
+  transform: none;
+}
 :root .projects-grid .listing-card h3.listing-title {
   margin: 0.15rem 0 0;
   color: var(--text-main);

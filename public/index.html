@@ -275,8 +275,20 @@
         <div class="form-row">
           <div class="input-field">
             <label for="itemLocation">CSPC Office / Campus Location *</label>
-            <input type="text" id="itemLocation" list="itemLocationOptions" required
-                   placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+            <div class="location-input-wrap">
+              <span class="location-input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                  <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                  <circle cx="12" cy="10" r="2.5" />
+                </svg>
+              </span>
+              <input type="text" id="itemLocation" role="combobox" aria-autocomplete="list"
+                     aria-controls="itemLocationSuggestions" aria-expanded="false"
+                     aria-haspopup="listbox" required
+                     placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
+              <div class="location-suggestions" id="itemLocationSuggestions" role="listbox"
+                   aria-label="Campus location suggestions" hidden></div>
+            </div>
             <datalist id="itemLocationOptions">
               <option value="College of Computer Studies (CCS)"></option>
               <option value="College of Engineering and Architecture (CEA)"></option>
@@ -525,6 +537,19 @@
       <div class="modal-actions modal-actions--center">
         <button type="button" class="btn btn-outline btn-compact" data-action="closeGenericConfirm">Cancel</button>
         <button type="button" class="btn btn-danger" id="genericConfirmBtn" data-action="confirmGenericConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- POSITIVE CONFIRMATION: confirm that an item was received or returned -->
+  <div class="slip-overlay" id="confirmItemReturnedModal" data-close="closeConfirmItemReturned">
+    <div class="modal-card modal-card--sm modal-card--success modal-card--center confirm-item-returned-card">
+      <div class="modal-icon modal-icon--success" aria-hidden="true">✓</div>
+      <h3 class="modal-confirm-title modal-confirm-title--success" id="confirmItemReturnedTitle">Confirm item received/returned?</h3>
+      <p class="modal-confirm-text" id="confirmItemReturnedText">Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.</p>
+      <div class="modal-actions modal-actions--center">
+        <button type="button" class="btn btn-outline btn-compact" data-action="closeConfirmItemReturned">Cancel</button>
+        <button type="button" class="btn btn-success confirm-item-returned-button" id="confirmItemReturnedButton" data-action="confirmItemReturned">Confirm</button>
       </div>
     </div>
   </div>
@@ -917,6 +942,8 @@
 
         <div class="modal-actions">
           <button type="button" class="btn btn-outline" data-action="closeAnonymousFinderModal">Cancel</button>
+          <button type="button" class="btn btn-outline" id="finderCopyConversationLinkBtn" data-action="copyFinderConversationLink" hidden>Copy secure link</button>
+          <button type="button" class="btn btn-primary" id="finderOpenConversationBtn" data-action="openFinderConversationFromModal" hidden>Open conversation</button>
           <button type="submit" class="btn btn-success" id="finderSendBtn">🚀 Send to Owner</button>
         </div>
       </form>
@@ -930,8 +957,8 @@
         <div class="modal-header-group">
           <span class="modal-header-icon" aria-hidden="true">🔔</span>
           <div>
-            <h3 class="modal-heading modal-heading--sm modal-heading--plain">Account Notifications</h3>
-            <span class="modal-subtitle">Finder alerts and claim request updates</span>
+            <h3 class="modal-heading modal-heading--sm modal-heading--plain" id="notificationsHeading">Account Notifications</h3>
+            <span class="modal-subtitle" id="notificationsSubtitle">Finder alerts and claim request updates</span>
           </div>
         </div>
         <button type="button" class="notifications-modal-close" data-action="closeNotificationsModal" aria-label="Close notifications">&times;</button>

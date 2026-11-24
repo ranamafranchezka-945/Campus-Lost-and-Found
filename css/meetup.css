@@ -186,9 +186,38 @@
 .thread-empty { margin: auto; color: var(--text-muted); font-size: 0.875rem; text-align: center; }
 .thread-msg { max-width: 80%; padding: 0.5rem 0.75rem; border-radius: 14px; font-size: 0.9375rem; line-height: 1.45; }
 .thread-msg-text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.thread-msg-time { display: block; margin-top: 0.2rem; color: inherit; opacity: 0.65; font-size: 0.75rem; }
-.thread-msg--theirs { align-self: flex-start; background: color-mix(in srgb, var(--border) 60%, transparent); color: var(--text-main); }
+.thread-msg-time { display: block; margin-top: 0.2rem; color: inherit; font-size: 0.75rem; }
+.thread-msg--theirs {
+  align-self: flex-start;
+  border: 1px solid var(--well-border);
+  background: var(--well-bg);
+  color: var(--text-main);
+}
 .thread-msg--mine { align-self: flex-end; background: var(--blue-main); color: #fff; }
+:root[data-theme='light'] .thread-msg--mine {
+  background: #1e3a8a;
+  color: #fff;
+}
+:root:not([data-theme='light']) .thread-msg--mine { color: #0f172a; }
+.thread-msg--theirs .thread-msg-text {
+  color: var(--text-main) !important;
+  -webkit-text-fill-color: var(--text-main);
+}
+:root[data-theme='light'] .thread-msg--mine .thread-msg-text {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+:root:not([data-theme='light']) .thread-msg--mine .thread-msg-text {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+:root[data-theme='light'] .thread-msg--mine .thread-msg-time { color: #fff; }
+:root:not([data-theme='light']) .thread-msg--mine .thread-msg-time { color: #0f172a; }
+#claimThreadModal .thread-msg.thread-msg--mine > p.thread-msg-text {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  opacity: 1;
+}
 .thread-meetup:not(:empty) { margin-bottom: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
 .thread-compose { display: flex; gap: 0.5rem; }
 .thread-compose input {

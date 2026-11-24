@@ -496,8 +496,39 @@
       border-color: #991b1b;
     }
     .btn-delete-notifications:disabled {
-      opacity: 0.45;
+      background: #7f1d1d;
+      border-color: #7f1d1d;
+      color: #ffffff;
+      opacity: 1;
       cursor: not-allowed;
+    }
+    .btn-delete-conversation {
+      display: block;
+      margin-top: 0.5rem;
+      padding: 0.2rem 0.5rem;
+      border: 1px solid #b91c1c;
+      border-radius: 6px;
+      background: transparent;
+      color: #b91c1c;
+      font: inherit;
+      font-size: 0.8125rem;
+      cursor: pointer;
+    }
+    .btn-delete-conversation:hover:not(:disabled) {
+      background: #b91c1c;
+      color: #ffffff;
+    }
+    .btn-delete-conversation:disabled {
+      opacity: 0.65;
+      cursor: wait;
+    }
+    :root:not([data-theme='light']) .btn-delete-conversation {
+      color: #fca5a5;
+      border-color: #f87171;
+    }
+    :root:not([data-theme='light']) .btn-delete-conversation:hover:not(:disabled) {
+      background: #b91c1c;
+      color: #ffffff;
     }
     .notif-time {
       font-size: 0.8125rem;

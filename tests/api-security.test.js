@@ -686,6 +686,177 @@ test('registered belongings are private except through QR reference lookup', asy
   assert.equal(Object.hasOwn(item, 'ownerEmail'), false);
 });
 
+test('registered QR alerts create a secure owner-finder conversation with messaging, meetup, and mutual return confirmation', async t => {
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  const otherStudentCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
+  const token = 'a'.repeat(64);
+  const submissionKey = 'registered-conversation-test-01';
+  let conversationId;
+  t.after(() => {
+    if (!conversationId) return;
+    const itemsPath = path.join(dataDir, 'items.json');
+    const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+    const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
+    if (item) item.notifications = item.notifications.filter(notification => notification.id !== conversationId);
+    fs.writeFileSync(itemsPath, JSON.stringify(items));
+  });
+
+  const alertResponse = await fetch(`${baseUrl}/api/items/anonymous-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
+    body: JSON.stringify({
+      refCode: 'CSPC-REG-QR-0012',
+      message: 'I found the laptop by the library entrance.',
+      locationFound: 'Library entrance',
+      conversationToken: token
+    })
+  });
+  assert.equal(alertResponse.status, 200);
+  const alert = await alertResponse.json();
+  conversationId = alert.conversation.id;
+  assert.equal(alert.conversation.token, token);
+  assert.equal(Object.hasOwn(alert.notification, 'tokenHash'), false);
+  assert.equal(Object.hasOwn(alert.notification.conversation, 'tokenHash'), false);
+
+  const guestHeaders = { Authorization: `Bearer ${token}` };
+  const noTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`);
+  assert.equal(noTokenResponse.status, 401);
+  const invalidTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: { Authorization: `Bearer ${'b'.repeat(64)}` }
+  });
+  assert.equal(invalidTokenResponse.status, 404);
+  const otherOwnerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: otherStudentCookie }
+  });
+  assert.equal(otherOwnerResponse.status, 404);
+
+  const ownerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal(ownerResponse.status, 200);
+  const ownerThread = await ownerResponse.json();
+  assert.equal(ownerThread.messages[0].mine, false);
+  assert.equal(ownerThread.role, 'owner');
+
+  const inboxResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
+    headers: { Cookie: studentCookie }
+  });
+  const inbox = await inboxResponse.json();
+  const ownerEntry = inbox.notifications.find(notification => notification.conversationId === conversationId);
+  assert.equal(ownerEntry.notificationType, 'finder-conversation');
+  assert.equal(Object.hasOwn(ownerEntry, 'tokenHash'), false);
+  assert.equal(Object.hasOwn(ownerEntry, 'conversationToken'), false);
+
+  const ownerMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({ text: 'I can meet at the student center.' })
+  });
+  assert.equal(ownerMessageResponse.status, 201);
+  const ownerMessage = await ownerMessageResponse.json();
+  assert.equal(ownerMessage.messages.at(-1).mine, true);
+
+  const guestMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({ text: 'That works. I will be there at noon.' })
+  });
+  assert.equal(guestMessageResponse.status, 201);
+  const guestMessage = await guestMessageResponse.json();
+  assert.equal(guestMessage.messages.at(-1).mine, true);
+
+  const requestLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/meetup/request`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({})
+  });
+  assert.equal(requestLocationResponse.status, 200);
+  const guestPendingResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: guestHeaders
+  });
+  const guestPending = await guestPendingResponse.json();
+  assert.equal(guestPending.meetupNotification.myLocation.status, 'pending');
+
+  const shareLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/meetup/respond`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({
+      action: 'share',
+      latitude: 13.416,
+      longitude: 123.412,
+      accuracy: 18,
+      note: 'By the library entrance'
+    })
+  });
+  assert.equal(shareLocationResponse.status, 200);
+  const sharedLocation = await shareLocationResponse.json();
+  assert.equal(sharedLocation.conversation.meetupNotification.myLocation.location.latitude, 13.416);
+
+  const ownerConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/confirm`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal((await ownerConfirmResponse.json()).conversation.status, 'open');
+  const guestConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/confirm`, {
+    method: 'POST',
+    headers: guestHeaders
+  });
+  assert.equal((await guestConfirmResponse.json()).conversation.status, 'returned');
+
+  const resolvedMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...guestHeaders },
+    body: JSON.stringify({ text: 'One more message after resolution.' })
+  });
+  assert.equal(resolvedMessageResponse.status, 409);
+
+  const retryResponse = await fetch(`${baseUrl}/api/items/anonymous-notify`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
+    body: JSON.stringify({
+      refCode: 'CSPC-REG-QR-0012',
+      message: 'I found the laptop by the library entrance.',
+      locationFound: 'Library entrance',
+      conversationToken: token
+    })
+  });
+  const retry = await retryResponse.json();
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.conversation.id, conversationId);
+  assert.equal(retry.conversation.token, token);
+
+  const itemsPath = path.join(dataDir, 'items.json');
+  const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
+  const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
+  item.notifications.find(notification => notification.id === conversationId).conversation.expiresAt =
+    new Date(Date.now() - 1000).toISOString();
+  fs.writeFileSync(itemsPath, JSON.stringify(items));
+  const expiredResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
+    headers: guestHeaders
+  });
+  assert.equal(expiredResponse.status, 410);
+
+  const notificationReference = [{ kind: 'item', recordId: '12', id: conversationId }];
+  const otherOwnerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Cookie: otherStudentCookie },
+    body: JSON.stringify({ notificationIds: notificationReference })
+  });
+  assert.equal((await otherOwnerDeleteResponse.json()).deletedCount, 0);
+
+  const ownerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+    body: JSON.stringify({ notificationIds: notificationReference })
+  });
+  assert.equal(ownerDeleteResponse.status, 200);
+  assert.equal((await ownerDeleteResponse.json()).deletedCount, 1);
+  const deletedConversationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
+    headers: { Cookie: studentCookie }
+  });
+  assert.equal(deletedConversationResponse.status, 404);
+});
+
 test('finder QR alerts appear in the owner inbox and are emailed to the owner', async t => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const smtp = await startSmtpCaptureServer();
@@ -844,9 +1015,51 @@ test('finder QR landing URL serves the app for the anonymous finder screen', asy
   assert.match(response.headers.get('content-type'), /text\/html/);
   const html = await response.text();
   assert.match(html, /id="anonymousFinderModal"/);
+  assert.match(html, /id="finderCopyConversationLinkBtn"/);
+  assert.match(html, /id="finderOpenConversationBtn"/);
+  assert.match(html, /id="confirmItemReturnedModal"/);
+  assert.match(html, /modal-card--success modal-card--center confirm-item-returned-card/);
+  assert.match(html, /id="confirmItemReturnedTitle"/);
+  assert.match(html, /id="confirmItemReturnedText"/);
+  assert.match(html, /id="confirmItemReturnedButton"/);
+  assert.match(html, /class="btn btn-success confirm-item-returned-button"/);
   const scriptPath = html.match(/src="(\/js\/home-page\.js[^"]*)"/)[1];
   const script = await (await fetch(`${baseUrl}${scriptPath}`)).text();
+  assert.match(script, /await askConfirmItemReturned\(isRegisteredConversation\)/);
+  assert.match(script, /notificationType === 'claim-conversation'/);
   assert.match(script, /openAnonymousFinderModal\(finderRef\)/);
+  assert.match(script, /setFinderConversationLink/);
+  assert.match(script, /finderConversation=/);
+  assert.match(script, /back2youFinderConversations/);
+  assert.match(script, /guest-finder-conversation/);
+  assert.match(script, /openSavedFinderConversation/);
+  assert.match(script, /btn-delete-conversation/);
+  assert.match(script, /deleteRegisteredConversationNotification/);
+  assert.match(script, /deleteClaimConversationNotification/);
+});
+
+test('signed-in students using home aliases reach the portal report form', async () => {
+  const visitorPage = await fetch(`${baseUrl}/home`, { redirect: 'manual' });
+  assert.equal(visitorPage.status, 200);
+  assert.match(await visitorPage.text(), /Get Started/);
+
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  for (const route of ['/home', '/home.html']) {
+    const response = await fetch(`${baseUrl}${route}`, {
+      headers: { Cookie: studentCookie },
+      redirect: 'manual'
+    });
+    assert.equal(response.status, 302, route);
+    assert.equal(response.headers.get('location'), '/', route);
+  }
+
+  const portal = await fetch(`${baseUrl}/`, { headers: { Cookie: studentCookie } });
+  assert.equal(portal.status, 200);
+  const html = await portal.text();
+  assert.match(html, /class="location-input-wrap"/);
+  assert.match(html, /id="itemLocation" role="combobox"/);
+  assert.match(html, /id="itemLocationSuggestions" role="listbox"/);
+  assert.match(html, /<datalist id="itemLocationOptions">/);
 });
 
 test('pages send a strict script policy and contain no inline scripts or handlers', async () => {
@@ -1202,12 +1415,70 @@ test('owner and finder of an approved claim can share a one-time location, only 
     const claims = JSON.parse(originalClaims);
     claims.unshift({ id: 'claim-meetup-test', itemId: 90, itemTitle: 'Blue umbrella', itemRefCode: 'CSPC-LF-2026-090',
       claimantId: 'student-test', claimantName: 'Test Student', status: 'approved', proof: 'Initials on the handle.',
+      messages: [{ id: 'claim-meetup-message', senderId: 'student-test', text: 'Initials on the handle.', createdAt: new Date().toISOString() }],
       createdAt: new Date().toISOString(), reviewedAt: new Date().toISOString() });
     fs.writeFileSync(claimsPath, JSON.stringify(claims));
 
     const ownerCookie = await login('student@my.cspc.edu.ph', studentPassword);
     const finderCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
     const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
+    const claimConversationEntry = async cookie => {
+      const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
+      return (await response.json()).notifications.find(n =>
+        n.notificationType === 'claim-conversation' && n.claimId === 'claim-meetup-test'
+      );
+    };
+    const ownerConversation = await claimConversationEntry(ownerCookie);
+    const finderConversation = await claimConversationEntry(finderCookie);
+    assert.ok(ownerConversation, 'claimant can return to the conversation from Account Notifications');
+    assert.ok(finderConversation, 'finder can return to the conversation from Account Notifications');
+    assert.equal(ownerConversation.message, 'Initials on the handle.');
+    assert.equal(ownerConversation.read, true, 'the starter message is not unread for its sender');
+    assert.equal(finderConversation.unreadCount, 1, 'the starter message remains unread for the other participant');
+    assert.equal(await claimConversationEntry(adminCookie), undefined, 'unrelated accounts cannot see claim conversations');
+    for (const cookie of [ownerCookie, finderCookie]) {
+      const thread = await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, { headers: { Cookie: cookie } });
+      assert.equal(thread.status, 200);
+    }
+    assert.equal((await claimConversationEntry(ownerCookie)).read, true,
+      'opening the thread marks it read without removing its Account Notifications entry');
+    assert.equal((await claimConversationEntry(finderCookie)).read, true,
+      'both participants retain access after opening the thread');
+
+    const deleteOwnerConversation = await fetch(`${baseUrl}/api/items/notifications`, {
+      method: 'DELETE',
+      headers: { Cookie: ownerCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{
+          kind: 'claim-conversation',
+          recordId: 'claim-meetup-test',
+          id: 'claim-conversation-claim-meetup-test'
+        }]
+      })
+    });
+    assert.equal(deleteOwnerConversation.status, 200);
+    assert.equal((await deleteOwnerConversation.json()).deletedCount, 1);
+    assert.equal(await claimConversationEntry(ownerCookie), undefined,
+      'deleting the entry removes it from only the requesting participant’s Account Notifications');
+    assert.ok(await claimConversationEntry(finderCookie),
+      'the other participant keeps their Account Notifications entry');
+    assert.equal((await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, {
+      headers: { Cookie: ownerCookie }
+    })).status, 200, 'deleting the notification does not delete the shared conversation');
+    assert.equal((await fetch(`${baseUrl}/api/items/notifications`, {
+      method: 'DELETE',
+      headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [{
+          kind: 'claim-conversation',
+          recordId: 'claim-meetup-test',
+          id: 'claim-conversation-claim-meetup-test'
+        }]
+      })
+    })).status, 200);
+    assert.equal((await claimConversationEntry(finderCookie)).claimId, 'claim-meetup-test',
+      'an unrelated account cannot remove a participant’s entry');
+
     const meetupEntry = async cookie => {
       const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
       return (await response.json()).notifications.find(n => n.notificationType === 'meetup' && n.claimId === 'claim-meetup-test');
