@@ -421,8 +421,8 @@ async function refreshMessengerAlertsSection() {
     }
     messengerAlertsLinked = Boolean(data.linked);
     statusText.textContent = messengerAlertsLinked
-      ? 'Possible-match and location-request alerts are being sent to your Messenger.'
-      : 'Get possible-match and location-request alerts on Messenger too.';
+      ? 'QR scan, possible-match, and location-request alerts are being sent to your Messenger.'
+      : 'Get QR scan, possible-match, and location-request alerts on Messenger too.';
     button.textContent = messengerAlertsLinked ? 'Disconnect Messenger' : 'Connect Messenger';
   } catch (err) {
     section.hidden = true;

@@ -1430,16 +1430,22 @@ router.post('/anonymous-notify', async (req, res) => {
     recordAttempt(finderAlertItems, String(item.id), FINDER_ALERT_ITEM_LIMIT);
     await postgresStore.commitRequest();
 
+    const owner = item.ownerEmail
+      ? { email: item.ownerEmail, fullName: item.ownerName }
+      : readJsonArray(USERS_FILE).find(user => String(user.id) === String(item.reportedBy));
+
     let emailSent = false;
     try {
-      const owner = item.ownerEmail
-        ? { email: item.ownerEmail, fullName: item.ownerName }
-        : readJsonArray(USERS_FILE).find(user => String(user.id) === String(item.reportedBy));
       if (!owner?.email) throw new Error('Registered item has no owner email address.');
       await sendFinderNotificationEmail(owner, item, newNotification);
       emailSent = true;
     } catch (error) {
       console.error('Finder alert email could not be sent:', error.message);
+    }
+    if (owner?.messengerPsid) {
+      messenger.sendMessengerText(owner.messengerPsid,
+        `Someone scanned the QR code on your item "${item.title}" (${item.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
+      ).catch(error => console.error('QR scan Messenger alert could not be sent:', error.message));
     }
 
     res.json({
@@ -1728,6 +1734,11 @@ router.post('/match-reference-notify', async (req, res) => {
       emailSent = true;
     } catch (error) {
       console.error(`Match finder alert email could not be sent to ${owner.email}:`, error.message);
+    }
+    if (owner.messengerPsid) {
+      messenger.sendMessengerText(owner.messengerPsid,
+        `Someone scanned the QR match reference for your lost report "${lost.title}" (${lost.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
+      ).catch(error => console.error('QR match-reference Messenger alert could not be sent:', error.message));
     }
 
     return res.json({
