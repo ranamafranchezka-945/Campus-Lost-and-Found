@@ -653,6 +653,17 @@ body::after {
   transform: translateY(-1px);
 }
 
+.notif-bell-btn svg.is-swaying {
+  animation: notification-bell-sway 700ms ease-in-out;
+  transform-origin: 50% 12%;
+}
+
+@keyframes notification-bell-sway {
+  0%, 100% { transform: rotate(0); }
+  15%, 45%, 75% { transform: rotate(12deg); }
+  30%, 60%, 90% { transform: rotate(-12deg); }
+}
+
 [data-theme='light'] .notif-bell-btn {
   background: rgba(37, 99, 235, 0.08);
   border-color: rgba(37, 99, 235, 0.25);
@@ -1158,6 +1169,10 @@ h2 {
   }
   .btn-match-qr.potential-match-badge svg,
   .potential-match-shimmer {
+    animation: none;
+  }
+
+  .notif-bell-btn svg.is-swaying {
     animation: none;
   }
 }

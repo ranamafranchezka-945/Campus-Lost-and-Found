@@ -14,6 +14,7 @@ const FEED_FILTERS = ['all', 'lost', 'found', 'claimed', 'registered'];
 const FEED_SORTS = ['newest', 'oldest', 'title'];
 const FINDER_CONVERSATIONS_STORAGE_KEY = 'back2youFinderConversations';
 let accountUnreadNotificationCount = 0;
+let lastDisplayedUnreadNotificationCount = null;
 
 function clearStoredAuth() {
   ['adminToken', 'currentUser', 'userRole'].forEach(key => {
@@ -46,7 +47,10 @@ function renderAuthenticatedHeader(user) {
   if (slot) {
     slot.innerHTML = `
       <button type="button" id="notifBellBtn" data-action="openNotificationsModal" class="notif-bell-btn" title="View QR Recovery Alerts">
-        <span class="notif-icon" aria-hidden="true">🔔</span><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
+        <svg class="notif-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
       </button>
       <div class="user-account-wrap" data-role="${roleLabel}">
         <button type="button" class="user-account-trigger" id="userProfileBtn" data-action="toggleUserProfileMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="userProfileMenu" aria-label="Account menu for ${escapeHtml(displayName)}">
@@ -2481,6 +2485,7 @@ async function loadNotificationsIntoModal() {
       const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+      swayNotificationBellIfNew(unread);
     }
     refreshFinderNotificationsButton();
   } catch (err) {
@@ -2646,10 +2651,22 @@ async function loadMyNotifications() {
       const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+      swayNotificationBellIfNew(unread);
     }
   } catch (error) {
     console.error('Could not refresh notification count:', error);
   }
+}
+
+function swayNotificationBellIfNew(unreadCount) {
+  if (lastDisplayedUnreadNotificationCount !== null && unreadCount > lastDisplayedUnreadNotificationCount) {
+    document.querySelectorAll('.notif-bell-btn:not(#finderNotificationsBtn) svg').forEach(icon => {
+      icon.classList.remove('is-swaying');
+      void icon.getBoundingClientRect();
+      icon.classList.add('is-swaying');
+    });
+  }
+  lastDisplayedUnreadNotificationCount = unreadCount;
 }
 
 function getItemPhotoUrl(item) {
