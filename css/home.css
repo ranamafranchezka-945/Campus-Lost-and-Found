@@ -846,7 +846,7 @@ label {
   }
 }
 
-/* ── Items feed: loading, empty and sort states ─────────────────────── */
+/* ── Items feed: loading, empty and sort states ── */
 .items-grid {
   min-height: 0;
   height: auto;

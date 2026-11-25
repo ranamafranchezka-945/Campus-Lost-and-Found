@@ -249,7 +249,7 @@
   padding: clamp(1rem, 2.5vw, 1.75rem) !important;
 }
 
-/* ── Cards inside panels ────────────────────────────────────────────────── */
+/* ── Cards inside panels ── */
 :root .project-card,
 :root .stat-box,
 :root .simple-card,
@@ -330,7 +330,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
-/* ── Status badges: readable pills in both themes ───────────────────────── */
+/* ── Status badges: readable pills in both themes ── */
 :root .item-badge {
   padding: 0.22rem 0.62rem;
   border-radius: 999px;
@@ -363,7 +363,7 @@
   border: 1px solid var(--badge-vault-border);
 }
 
-/* ── Pills: buttons, chips, tabs, pages, search ─────────────────────────── */
+/* ── Pills: buttons, chips, tabs, pages, search ── */
 :root .btn,
 :root .btn-danger,
 :root .btn-success {
@@ -481,7 +481,7 @@
   border: 1px solid var(--control-border);
 }
 
-/* ── Floating layers: bars, popups, dropdowns, toasts (real blur) ───────── */
+/* ── Floating layers: bars, popups, dropdowns, toasts (real blur) ── */
 :root .navbar,
 :root .site-footer {
   background: var(--bar-bg);
@@ -557,7 +557,7 @@
   backdrop-filter: blur(var(--blur-float)) saturate(170%);
 }
 
-/* ── Accessibility and fallbacks ────────────────────────────────────────── */
+/* ── Accessibility and fallbacks ── */
 /* People who ask for less transparency get solid surfaces in the same layout. */
 @media (prefers-reduced-transparency: reduce) {
   :root {
