@@ -81,13 +81,12 @@ function assetVersion(urlPath) {
 const pageCache = new Map();
 function sendPage(res, file) {
   if (!cacheAssetInfo() || !pageCache.has(file)) {
-    const html = fs.readFileSync(file, 'utf8').replace(
-      /(src|href)="(\/(?:css|js|vendor)\/[\w.-]+|\/icons\.js)(?:\?v=[^"]*)?"/g,
-      (whole, attr, urlPath) => {
+    const html = fs
+      .readFileSync(file, 'utf8')
+      .replace(/(src|href)="(\/(?:css|js|vendor)\/[\w.-]+|\/icons\.js)(?:\?v=[^"]*)?"/g, (whole, attr, urlPath) => {
         const version = assetVersion(urlPath);
         return version ? `${attr}="${urlPath}?v=${version}"` : whole;
-      }
-    );
+      });
     pageCache.set(file, html);
   }
   res.set('Cache-Control', 'no-cache');
@@ -145,12 +144,12 @@ function createApp() {
         "font-src 'self' https://fonts.gstatic.com",
         "img-src 'self' data: blob: https://tile.openstreetmap.org",
         "connect-src 'self' https://accounts.google.com",
-        "frame-src https://accounts.google.com",
+        'frame-src https://accounts.google.com',
         "object-src 'none'",
         "base-uri 'self'",
         "form-action 'self'",
-        "frame-ancestors 'none'"
-      ].join('; ')
+        "frame-ancestors 'none'",
+      ].join('; '),
     });
     if (isProduction) res.set('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
     next();
@@ -164,19 +163,21 @@ function createApp() {
     ? new PgSessionStore({ pool: postgresStore.getPool(), tableName: 'app_sessions', createTableIfMissing: true })
     : new FileStore({ path: path.join(dataDir, 'sessions'), ttl: 86400, retries: 0 });
 
-  app.use(session({
-    name: 'cspc.sid',
-    secret: sessionSecret,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: isProduction,
-      maxAge: 1000 * 60 * 60 * 24
-    }
-  }));
+  app.use(
+    session({
+      name: 'cspc.sid',
+      secret: sessionSecret,
+      store: sessionStore,
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProduction,
+        maxAge: 1000 * 60 * 60 * 24,
+      },
+    })
+  );
 
   // A session whose account was deleted starts over as a signed-out visitor.
   app.use((req, res, next) => {
@@ -197,7 +198,7 @@ function createApp() {
   const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
   app.use(async (req, res, next) => {
     if (req.session?.user?.role === 'admin') return next();
-    if (allowlistExemptPaths.has(req.path) || allowlistExemptPrefixes.some(prefix => req.path.startsWith(prefix))) {
+    if (allowlistExemptPaths.has(req.path) || allowlistExemptPrefixes.some((prefix) => req.path.startsWith(prefix))) {
       return next();
     }
     let allowedEmails;
@@ -210,7 +211,7 @@ function createApp() {
     if (allowedEmails.length === 0) return next();
 
     const sessionEmail = req.session?.user?.email ? String(req.session.user.email).trim().toLowerCase() : null;
-    if (sessionEmail && allowedEmails.some(entry => entry.email === sessionEmail)) return next();
+    if (sessionEmail && allowedEmails.some((entry) => entry.email === sessionEmail)) return next();
 
     const sendUnavailable = () => {
       if (req.path.startsWith('/api/')) {
@@ -247,7 +248,7 @@ function createApp() {
   app.use('/api/stats', (req, res) => res.redirect('/api/items/stats'));
   app.use('/uploads', express.static(path.join(dataDir, 'uploads'), { fallthrough: false, maxAge: '7d' }));
 
-  const page = name => path.join(__dirname, 'public', name);
+  const page = (name) => path.join(__dirname, 'public', name);
 
   app.get('/admin.html', (req, res) => {
     if (!req.session?.user) return res.redirect('/login?redirect=/admin.html');
@@ -281,10 +282,13 @@ function createApp() {
   // Serve only browser assets from the project root; server code, scripts and data stay private.
   app.use('/css', express.static(path.join(__dirname, 'css'), { setHeaders: setAssetCacheHeaders }));
   app.use('/js', express.static(path.join(__dirname, 'js'), { setHeaders: setAssetCacheHeaders }));
-  app.get(['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js', '/vendor/leaflet.js', '/vendor/leaflet.css'], (req, res) => {
-    setAssetCacheHeaders(res);
-    res.sendFile(assetFile(req.path));
-  });
+  app.get(
+    ['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js', '/vendor/leaflet.js', '/vendor/leaflet.css'],
+    (req, res) => {
+      setAssetCacheHeaders(res);
+      res.sendFile(assetFile(req.path));
+    }
+  );
 
   app.use('/api/*', (req, res) => res.status(404).json({ success: false, message: 'API endpoint not found.' }));
 
@@ -294,7 +298,8 @@ function createApp() {
       return res.status(413).json({ success: false, message: 'Image must be 5 MB or smaller.' });
     }
     if (err.name === 'MulterError' || err.status || err.type === 'entity.too.large') {
-      return res.status(err.status === 413 || err.type === 'entity.too.large' ? 413 : (err.status || 400))
+      return res
+        .status(err.status === 413 || err.type === 'entity.too.large' ? 413 : err.status || 400)
         .json({ success: false, message: err.message || 'Invalid upload.' });
     }
     if (req.path.startsWith('/api/')) {
@@ -323,8 +328,11 @@ async function initializeDatabaseWithRetry(attempts = 5, baseDelayMs = 500) {
       const retryable = /tuple concurrently updated|deadlock detected/i.test(error.message);
       if (!retryable || attempt === attempts) throw error;
       const delay = baseDelayMs * attempt + Math.random() * baseDelayMs;
-      console.warn(`Database setup hit a transient conflict (attempt ${attempt}/${attempts}), retrying in ${Math.round(delay)}ms:`, error.message);
-      await new Promise(resolve => setTimeout(resolve, delay));
+      console.warn(
+        `Database setup hit a transient conflict (attempt ${attempt}/${attempts}), retrying in ${Math.round(delay)}ms:`,
+        error.message
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
@@ -349,7 +357,7 @@ async function startServer() {
 }
 
 if (process.env.NODE_ENV !== 'test') {
-  startServer().catch(error => {
+  startServer().catch((error) => {
     console.error('Server startup failed:', error.message);
     process.exitCode = 1;
   });

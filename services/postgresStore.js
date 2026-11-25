@@ -8,7 +8,7 @@ const collections = {
   items: { table: 'app_items' },
   claims: { table: 'app_claims' },
   blockedEmails: { table: 'app_blocked_emails' },
-  allowedEmails: { table: 'app_allowed_emails' }
+  allowedEmails: { table: 'app_allowed_emails' },
 };
 const MESSENGER_CONFIG_TABLE = 'app_messenger_config';
 const contextStorage = new AsyncLocalStorage();
@@ -22,7 +22,7 @@ function getConfig() {
     ssl: process.env.DATABASE_SSL === 'false' ? false : { rejectUnauthorized: false },
     max: 5,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000
+    connectionTimeoutMillis: 10_000,
   };
 }
 
@@ -50,7 +50,9 @@ function getPool() {
     pool = new Pool(config);
     // An idle client can be dropped by the network (e.g. Supabase connection blips) and pg
     // emits that as an 'error' event; without a listener here, Node crashes the whole process.
-    pool.on('error', error => console.error(`Postgres pool idle client error (${connectionTarget()}):`, error.message));
+    pool.on('error', (error) =>
+      console.error(`Postgres pool idle client error (${connectionTarget()}):`, error.message)
+    );
   }
   return pool;
 }
@@ -66,7 +68,7 @@ async function withConnectRetry(fn, attempts = 3, baseDelayMs = 300) {
       return await fn();
     } catch (error) {
       if (attempt >= attempts) throw error;
-      await new Promise(resolve => setTimeout(resolve, baseDelayMs * attempt));
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * attempt));
     }
   }
 }
@@ -77,8 +79,10 @@ async function withConnectRetry(fn, attempts = 3, baseDelayMs = 300) {
 // database) means no restriction is in effect.
 async function getAllowedEmailsDirect() {
   if (!isConfigured()) return [];
-  const result = await withConnectRetry(() => getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`));
-  return result.rows.map(row => row.payload);
+  const result = await withConnectRetry(() =>
+    getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`)
+  );
+  return result.rows.map((row) => row.payload);
 }
 
 // The connected Facebook Page's token, read/written directly against the pool rather than
@@ -87,7 +91,9 @@ async function getAllowedEmailsDirect() {
 // token is needed there is no transaction left to read it from.
 async function getMessengerConfigDirect() {
   if (!isConfigured()) return null;
-  const result = await withConnectRetry(() => getPool().query(`SELECT payload FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`));
+  const result = await withConnectRetry(() =>
+    getPool().query(`SELECT payload FROM ${MESSENGER_CONFIG_TABLE} WHERE config_id = 1`)
+  );
   return result.rows[0]?.payload || null;
 }
 
@@ -123,7 +129,7 @@ function writeCollection(filePath, value) {
   if (!context) throw new Error('PostgreSQL data can only be changed within a database transaction.');
   // After commitRequest() (or once the response has ended) nothing more can be saved;
   // failing loudly beats silently dropping the change.
-  if (context.done) throw new Error('This request\'s database transaction has already been committed.');
+  if (context.done) throw new Error("This request's database transaction has already been committed.");
   const name = getCollectionName(filePath);
   context.data[name] = value;
   context.dirty.add(name);
@@ -149,9 +155,7 @@ async function createTables(connection) {
       lock_id SMALLINT PRIMARY KEY
     )
   `);
-  await connection.query(
-    'INSERT INTO app_store_lock (lock_id) VALUES (1) ON CONFLICT (lock_id) DO NOTHING'
-  );
+  await connection.query('INSERT INTO app_store_lock (lock_id) VALUES (1) ON CONFLICT (lock_id) DO NOTHING');
   await connection.query(`
     CREATE TABLE IF NOT EXISTS ${MESSENGER_CONFIG_TABLE} (
       config_id SMALLINT PRIMARY KEY,
@@ -162,7 +166,16 @@ async function createTables(connection) {
   // These tables are used only by the server through its direct PostgreSQL
   // connection. They must not be reachable through Supabase's Data API.
   // RLS also protects the tables if API grants are accidentally reintroduced.
-  for (const table of ['app_users', 'app_items', 'app_claims', 'app_blocked_emails', 'app_allowed_emails', 'app_migrations', 'app_store_lock', MESSENGER_CONFIG_TABLE]) {
+  for (const table of [
+    'app_users',
+    'app_items',
+    'app_claims',
+    'app_blocked_emails',
+    'app_allowed_emails',
+    'app_migrations',
+    'app_store_lock',
+    MESSENGER_CONFIG_TABLE,
+  ]) {
     await connection.query(`ALTER TABLE public.${table} ENABLE ROW LEVEL SECURITY`);
   }
 
@@ -208,7 +221,7 @@ async function loadData(connection) {
   const data = {};
   for (const [name, definition] of Object.entries(collections)) {
     const result = await connection.query(`SELECT payload FROM ${definition.table}`);
-    data[name] = result.rows.map(row => row.payload);
+    data[name] = result.rows.map((row) => row.payload);
   }
   return data;
 }
@@ -220,10 +233,10 @@ async function saveCollection(connection, name, rows) {
     if (!row || row.id === undefined || row.id === null) {
       throw new TypeError(`Every ${name} record must have an id.`);
     }
-    await connection.query(
-      `INSERT INTO ${table} (record_id, payload) VALUES ($1, $2::jsonb)`,
-      [String(row.id), JSON.stringify(row)]
-    );
+    await connection.query(`INSERT INTO ${table} (record_id, payload) VALUES ($1, $2::jsonb)`, [
+      String(row.id),
+      JSON.stringify(row),
+    ]);
   }
 }
 
@@ -233,9 +246,7 @@ async function acquireContext() {
   try {
     await connection.query('BEGIN');
     transactionStarted = true;
-    const lockResult = await connection.query(
-      'SELECT lock_id FROM app_store_lock WHERE lock_id = 1 FOR UPDATE'
-    );
+    const lockResult = await connection.query('SELECT lock_id FROM app_store_lock WHERE lock_id = 1 FOR UPDATE');
     if (!lockResult.rowCount) throw new Error('The Supabase application lock row is missing.');
     return { connection, data: await loadData(connection), dirty: new Set(), finished: false };
   } catch (error) {
@@ -277,7 +288,7 @@ async function withTransaction(callback) {
     await finishContext(context, true);
     return result;
   } catch (error) {
-    await finishContext(context, false).catch(rollbackError => {
+    await finishContext(context, false).catch((rollbackError) => {
       console.error('Could not finish the Back2You database transaction:', rollbackError.message);
     });
     throw error;
@@ -315,7 +326,7 @@ function requestMiddleware() {
     const originalEnd = res.end;
     const rollbackOnClose = () => {
       if (!res.writableFinished && !context.finished) {
-        finishContext(context, false).catch(error =>
+        finishContext(context, false).catch((error) =>
           console.error('Could not close the abandoned Supabase transaction:', error.message)
         );
       }
@@ -326,19 +337,21 @@ function requestMiddleware() {
       if (ending) return this;
       ending = true;
       // Already settled when the handler called commitRequest(); then this only waits for it.
-      finishContext(context, res.statusCode < 500).then(() => {
-        res.removeListener('close', rollbackOnClose);
-        originalEnd.apply(res, args);
-      }).catch(error => {
-        console.error('Could not persist the Supabase request:', error.message);
-        res.removeListener('close', rollbackOnClose);
-        if (!res.headersSent) {
-          res.statusCode = 500;
-          originalEnd.call(res, JSON.stringify({ success: false, message: 'Could not save application data.' }));
-        } else {
-          originalEnd.call(res);
-        }
-      });
+      finishContext(context, res.statusCode < 500)
+        .then(() => {
+          res.removeListener('close', rollbackOnClose);
+          originalEnd.apply(res, args);
+        })
+        .catch((error) => {
+          console.error('Could not persist the Supabase request:', error.message);
+          res.removeListener('close', rollbackOnClose);
+          if (!res.headersSent) {
+            res.statusCode = 500;
+            originalEnd.call(res, JSON.stringify({ success: false, message: 'Could not save application data.' }));
+          } else {
+            originalEnd.call(res);
+          }
+        });
       return this;
     };
     contextStorage.run(context, () => next());
@@ -375,27 +388,33 @@ async function importJsonFiles(dataDir) {
   await withTransaction(async () => {
     const context = contextStorage.getStore();
     const migration = await context.connection.query(
-      'SELECT migration_key FROM app_migrations WHERE migration_key = $1', ['json-data-import-v1']
+      'SELECT migration_key FROM app_migrations WHERE migration_key = $1',
+      ['json-data-import-v1']
     );
     if (migration.rowCount) throw new Error('JSON data has already been imported into this database.');
 
-    const existingAdmin = context.data.users.length === 1 && context.data.items.length === 0
-      && context.data.claims.length === 0 && context.data.users[0].role === 'admin'
-      && context.data.users[0].email.toLowerCase() === (process.env.ADMIN_EMAIL || 'admin@cspc.edu.ph').trim().toLowerCase()
-      ? context.data.users[0] : null;
-    if (Object.values(context.data).some(rows => rows.length) && !existingAdmin) {
+    const existingAdmin =
+      context.data.users.length === 1 &&
+      context.data.items.length === 0 &&
+      context.data.claims.length === 0 &&
+      context.data.users[0].role === 'admin' &&
+      context.data.users[0].email.toLowerCase() ===
+        (process.env.ADMIN_EMAIL || 'admin@cspc.edu.ph').trim().toLowerCase()
+        ? context.data.users[0]
+        : null;
+    if (Object.values(context.data).some((rows) => rows.length) && !existingAdmin) {
       throw new Error('The database is not empty; refusing to overwrite existing records.');
     }
     if (existingAdmin) {
-      const importedAdmin = importedData.users.find(user => user.email.toLowerCase() === existingAdmin.email.toLowerCase());
+      const importedAdmin = importedData.users.find(
+        (user) => user.email.toLowerCase() === existingAdmin.email.toLowerCase()
+      );
       if (!importedAdmin) importedData.users.unshift(existingAdmin);
       else importedAdmin.passwordHash = existingAdmin.passwordHash;
     }
     Object.assign(context.data, importedData);
-    Object.keys(collections).forEach(name => context.dirty.add(name));
-    await context.connection.query(
-      'INSERT INTO app_migrations (migration_key) VALUES ($1)', ['json-data-import-v1']
-    );
+    Object.keys(collections).forEach((name) => context.dirty.add(name));
+    await context.connection.query('INSERT INTO app_migrations (migration_key) VALUES ($1)', ['json-data-import-v1']);
   });
   return Object.fromEntries(Object.entries(importedData).map(([name, rows]) => [name, rows.length]));
 }
@@ -422,5 +441,5 @@ module.exports = {
   requestMiddleware,
   saveMessengerConfigDirect,
   withTransaction,
-  writeCollection
+  writeCollection,
 };

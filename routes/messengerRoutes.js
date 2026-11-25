@@ -64,10 +64,11 @@ router.post('/webhook', async (req, res) => {
         const text = typeof event?.message?.text === 'string' ? event.message.text.trim() : '';
         if (!psid || !text) continue;
 
-        const user = users.find(candidate =>
-          candidate.messengerLinkCode === text &&
-          candidate.messengerLinkCodeExpiresAt &&
-          new Date(candidate.messengerLinkCodeExpiresAt).getTime() > now
+        const user = users.find(
+          (candidate) =>
+            candidate.messengerLinkCode === text &&
+            candidate.messengerLinkCodeExpiresAt &&
+            new Date(candidate.messengerLinkCodeExpiresAt).getTime() > now
         );
 
         if (user) {
@@ -75,9 +76,15 @@ router.post('/webhook', async (req, res) => {
           delete user.messengerLinkCode;
           delete user.messengerLinkCodeExpiresAt;
           changed = true;
-          replies.push({ psid, text: "You're connected! Back2You will send your possible-match and location-request alerts here from now on." });
+          replies.push({
+            psid,
+            text: "You're connected! Back2You will send your possible-match and location-request alerts here from now on.",
+          });
         } else {
-          replies.push({ psid, text: "That code wasn't recognized or has expired. Generate a new one from your Back2You account menu and send it here again." });
+          replies.push({
+            psid,
+            text: "That code wasn't recognized or has expired. Generate a new one from your Back2You account menu and send it here again.",
+          });
         }
       }
     }
@@ -89,7 +96,9 @@ router.post('/webhook', async (req, res) => {
 
   res.sendStatus(200);
   for (const { psid, text } of replies) {
-    messenger.sendMessengerText(psid, text).catch(error => console.error('Messenger reply could not be sent:', error.message));
+    messenger
+      .sendMessengerText(psid, text)
+      .catch((error) => console.error('Messenger reply could not be sent:', error.message));
   }
 });
 
@@ -101,7 +110,7 @@ router.post('/link-code', requireAuth, async (req, res) => {
   }
 
   const users = getUsers();
-  const user = users.find(candidate => String(candidate.id) === String(req.session.user.id));
+  const user = users.find((candidate) => String(candidate.id) === String(req.session.user.id));
   if (!user) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
 
   const code = generateLinkCode();
@@ -113,21 +122,21 @@ router.post('/link-code', requireAuth, async (req, res) => {
     success: true,
     code,
     expiresInMinutes: LINK_CODE_TTL_MS / 60000,
-    pageUrl: process.env.MESSENGER_PAGE_URL || null
+    pageUrl: process.env.MESSENGER_PAGE_URL || null,
   });
 });
 
 // GET /api/messenger/status - Whether the signed-in student already has Messenger linked.
 router.get('/status', requireAuth, (req, res) => {
   const users = getUsers();
-  const user = users.find(candidate => String(candidate.id) === String(req.session.user.id));
+  const user = users.find((candidate) => String(candidate.id) === String(req.session.user.id));
   res.json({ success: true, linked: Boolean(user?.messengerPsid) });
 });
 
 // POST /api/messenger/unlink - Disconnects Messenger alerts for the signed-in student.
 router.post('/unlink', requireAuth, (req, res) => {
   const users = getUsers();
-  const user = users.find(candidate => String(candidate.id) === String(req.session.user.id));
+  const user = users.find((candidate) => String(candidate.id) === String(req.session.user.id));
   if (user) {
     delete user.messengerPsid;
     delete user.messengerLinkCode;
@@ -175,10 +184,11 @@ router.get('/oauth/callback', requireRole('admin'), async (req, res) => {
   const expectedState = req.session.messengerOAuthState;
   delete req.session.messengerOAuthState;
 
-  const fail = message => res.redirect(`/admin.html?connectError=${encodeURIComponent(message)}#messenger`);
+  const fail = (message) => res.redirect(`/admin.html?connectError=${encodeURIComponent(message)}#messenger`);
 
   if (oauthError) return fail(oauthErrorDescription || String(oauthError));
-  if (!state || !expectedState || state !== expectedState) return fail('This connection request expired or was tampered with. Please try again.');
+  if (!state || !expectedState || state !== expectedState)
+    return fail('This connection request expired or was tampered with. Please try again.');
   if (!code) return fail('Facebook did not return an authorization code.');
 
   try {
@@ -186,16 +196,19 @@ router.get('/oauth/callback', requireRole('admin'), async (req, res) => {
     const shortLivedToken = await messenger.exchangeCodeForUserToken(code, redirectUri);
     const userToken = await messenger.exchangeForLongLivedUserToken(shortLivedToken);
     const pages = await messenger.listManagedPages(userToken);
-    if (!pages.length) return fail('No Facebook Page is available to this account. Make sure you are an admin of the Back2You Page and try again.');
+    if (!pages.length)
+      return fail(
+        'No Facebook Page is available to this account. Make sure you are an admin of the Back2You Page and try again.'
+      );
 
-    const page = pages.find(entry => entry.name === process.env.MESSENGER_PAGE_NAME) || pages[0];
+    const page = pages.find((entry) => entry.name === process.env.MESSENGER_PAGE_NAME) || pages[0];
     await messenger.subscribePageWebhookFields(page.id, page.access_token);
     await messenger.saveStoredConfig({
       pageId: page.id,
       pageName: page.name,
       pageAccessToken: page.access_token,
       connectedAt: new Date().toISOString(),
-      connectedByName: req.session.user.fullName || req.session.user.email
+      connectedByName: req.session.user.fullName || req.session.user.email,
     });
 
     res.redirect(`/admin.html?connected=${encodeURIComponent(page.name)}#messenger`);
@@ -211,7 +224,14 @@ router.get('/page/connection', requireRole('admin'), async (req, res) => {
   res.json({
     success: true,
     connected: Boolean(stored),
-    page: stored ? { pageId: stored.pageId, pageName: stored.pageName, connectedAt: stored.connectedAt, connectedByName: stored.connectedByName } : null
+    page: stored
+      ? {
+          pageId: stored.pageId,
+          pageName: stored.pageName,
+          connectedAt: stored.connectedAt,
+          connectedByName: stored.connectedByName,
+        }
+      : null,
   });
 });
 

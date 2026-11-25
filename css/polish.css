@@ -9,7 +9,9 @@
 }
 
 /* ── Page frame: the footer ends the page instead of covering it ────────── */
-:root body { padding-bottom: 0; }
+:root body {
+  padding-bottom: 0;
+}
 
 :root .site-footer {
   position: relative;
@@ -84,22 +86,47 @@
   }
 }
 
-@media (max-width: 767px) {
-  :root { --footer-space: 10rem; }
+/* 768px, not 767px: every other breakpoint in the site (navbar, hero, nav drawer)
+   switches to its mobile layout at max-width: 768px. The 1px mismatch left this
+   footer alone in its 3-column desktop grid - brand flush left, address flush
+   right with no room to breathe - on exactly that common device width. */
+@media (max-width: 768px) {
+  :root {
+    --footer-space: 10rem;
+  }
   :root .site-footer .footer-container {
     grid-template-columns: minmax(0, 1fr);
     justify-items: center;
-    gap: 0.85rem;
+    gap: 1rem;
     text-align: center;
   }
   .footer-location {
     grid-column: auto;
     text-align: center;
   }
+
+  /* Stacked and centered reads as cramped at the base desktop sizes, so scale the
+     logo and text up rather than just reusing the desktop numbers. */
+  .footer-brand img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .footer-name {
+    font-size: 1.0625rem;
+  }
+
+  .footer-tagline,
+  .footer-location {
+    font-size: 0.9375rem;
+    line-height: 1.55;
+  }
 }
 
 /* ── Home: hero ─────────────────────────────────────────────────────────── */
-:root .hero-name { margin-bottom: 0.35rem; }
+:root .hero-name {
+  margin-bottom: 0.35rem;
+}
 :root .hero-tagline {
   max-width: 34rem;
   margin-bottom: 1.4rem;
@@ -122,8 +149,12 @@
 }
 /* The hero centres its text from 768px down (styles.css); the new parts follow. */
 @media (max-width: 768px) {
-  :root .hero-tagline { margin-inline: auto; }
-  :root .hero-actions { justify-content: center; }
+  :root .hero-tagline {
+    margin-inline: auto;
+  }
+  :root .hero-actions {
+    justify-content: center;
+  }
 }
 @media (max-width: 480px) {
   :root .hero-actions .btn {
@@ -133,7 +164,9 @@
 }
 
 /* A <button class="btn btn-primary"> otherwise shows the browser's default grey border. */
-:root button.btn-primary { border: 0; }
+:root button.btn-primary {
+  border: 0;
+}
 
 /* ── Home: section headers (same type scale as the About page) ──────────── */
 :root .section-head {
@@ -179,7 +212,9 @@
   font-size: 0.9375rem;
   font-weight: 600;
 }
-:root .section-meta:empty { display: none; }
+:root .section-meta:empty {
+  display: none;
+}
 
 /* ── Home: item cards ───────────────────────────────────────────────────── */
 :root #items .projects-grid.items-grid:not(.registered-belongings-grid) {
@@ -220,9 +255,7 @@
 }
 :root #items .listing-card .item-photo-frame[data-photo-state='empty'],
 :root #items .listing-card .item-photo-frame[data-photo-state='error'] {
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(59, 130, 246, 0.16), transparent 70%),
-    var(--well-bg);
+  background: radial-gradient(120% 90% at 50% 0%, rgba(59, 130, 246, 0.16), transparent 70%), var(--well-bg);
 }
 :root .listing-card .item-photo-status {
   gap: 0.4rem;
@@ -240,7 +273,9 @@
   stroke-linejoin: round;
 }
 .item-photo-frame[data-photo-state='loading'] .listing-placeholder-icon,
-.item-photo-frame[data-photo-state='loaded'] .listing-placeholder-icon { display: none; }
+.item-photo-frame[data-photo-state='loaded'] .listing-placeholder-icon {
+  display: none;
+}
 
 .listing-body {
   display: flex;
@@ -283,7 +318,9 @@
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.15em;
-  transition: background-color 140ms ease, border-color 140ms ease;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
 }
 :root .listing-card .listing-ref-code {
   min-width: 0;
@@ -366,13 +403,17 @@
   font-weight: 700;
   cursor: pointer;
 }
-.listing-more:hover { text-decoration: underline; }
+.listing-more:hover {
+  text-decoration: underline;
+}
 .listing-more:focus-visible {
   outline: 2px solid var(--blue-light);
   outline-offset: 2px;
   border-radius: 4px;
 }
-.listing-more[hidden] { display: none !important; }
+.listing-more[hidden] {
+  display: none !important;
+}
 
 /* Location and time sit at the bottom so they line up across a row. */
 .listing-facts {
@@ -442,7 +483,9 @@
     column-gap: 0.85rem;
     padding: 0.85rem;
   }
-  :root #items .listing-card .listing-media { border-radius: 14px; }
+  :root #items .listing-card .listing-media {
+    border-radius: 14px;
+  }
   :root #items .listing-card .item-photo-frame {
     aspect-ratio: 1 / 1;
     border: 1px solid var(--well-border);
@@ -456,7 +499,9 @@
     gap: 0.3rem;
     padding: 0;
   }
-  :root .projects-grid .listing-card h3.listing-title { font-size: 1rem; }
+  :root .projects-grid .listing-card h3.listing-title {
+    font-size: 1rem;
+  }
   .listing-facts {
     margin-top: 0.25rem;
     padding-top: 0.55rem;
@@ -477,7 +522,9 @@
   background: none;
   box-shadow: none;
 }
-:root .photo-upload-icon { color: var(--blue-main); }
+:root .photo-upload-icon {
+  color: var(--blue-main);
+}
 
 #itemForm[aria-busy='true'] button[type='submit'] {
   cursor: wait;
@@ -516,7 +563,13 @@
   inset: 12%;
   z-index: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(15, 23, 42, 0.22) 0%, rgba(30, 58, 138, 0.18) 34%, rgba(37, 99, 235, 0.07) 54%, transparent 72%);
+  background: radial-gradient(
+    circle,
+    rgba(15, 23, 42, 0.22) 0%,
+    rgba(30, 58, 138, 0.18) 34%,
+    rgba(37, 99, 235, 0.07) 54%,
+    transparent 72%
+  );
   filter: blur(3px);
   pointer-events: none;
 }
@@ -535,7 +588,9 @@
   cursor: grab;
   touch-action: none;
 }
-.portal-hero-stage canvas:active { cursor: grabbing; }
+.portal-hero-stage canvas:active {
+  cursor: grabbing;
+}
 .portal-hero-shadow {
   position: absolute;
   left: 50%;
@@ -549,17 +604,30 @@
   pointer-events: none;
 }
 @keyframes portal-hero-bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 @media (max-width: 768px) {
-  .portal-hero-avatar { flex: 0 0 auto; }
-  .portal-hero-globe { --portal-globe-size: min(82vw, 340px); }
+  .portal-hero-avatar {
+    flex: 0 0 auto;
+  }
+  .portal-hero-globe {
+    --portal-globe-size: min(82vw, 340px);
+  }
   :root .landing-hero,
-  :root #portalHero { overflow: visible; }
+  :root #portalHero {
+    overflow: visible;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .portal-hero-stage { animation: none; }
+  .portal-hero-stage {
+    animation: none;
+  }
 }
 
 /* ── Sign-in and register forms: same label style as the rest of the site ─ */
@@ -575,7 +643,9 @@
   margin-bottom: 1.25rem;
 }
 @media (min-width: 641px) {
-  :root .claims-tab-intro { align-items: flex-end; }
+  :root .claims-tab-intro {
+    align-items: flex-end;
+  }
 }
 :root .claims-tab-intro h2 {
   margin: 0;
@@ -595,14 +665,20 @@
 /* ── Admin: items table ─────────────────────────────────────────────────── */
 /* Text columns read left to right; only the row number and actions are centred. */
 :root #adminItemsTable th,
-:root #adminItemsTable td { text-align: left; }
+:root #adminItemsTable td {
+  text-align: left;
+}
 :root #adminItemsTable th:first-child,
 :root #adminItemsTable td:first-child,
 :root #adminItemsTable th:last-child,
-:root #adminItemsTable td:last-child { text-align: center; }
+:root #adminItemsTable td:last-child {
+  text-align: center;
+}
 
 /* Reporter name on one line, contact underneath in a muted style. */
-:root #adminItemsTable .reporter-cell .admin-cell-wrap { display: block; }
+:root #adminItemsTable .reporter-cell .admin-cell-wrap {
+  display: block;
+}
 :root #adminItemsTable .reporter-cell .reporter-contact {
   margin-top: 0.15rem;
   overflow: hidden;
@@ -645,13 +721,17 @@
   margin-top: 0;
   padding: clamp(1rem, 2.5vw, 1.5rem);
 }
-:root .broadcast-card label:not(:first-child) { margin-top: 0.5rem; }
+:root .broadcast-card label:not(:first-child) {
+  margin-top: 0.5rem;
+}
 :root .broadcast-card .form-control,
 :root .broadcast-card textarea {
   width: 100%;
   margin-top: 0;
 }
-:root .broadcast-card .btn { margin-top: 0; }
+:root .broadcast-card .btn {
+  margin-top: 0;
+}
 .broadcast-actions {
   display: flex;
   justify-content: flex-end;
@@ -663,12 +743,16 @@
    From 1100px the items take the remaining width and the form gets a fixed
    column on the right. Everything lines up with the navbar's content edges:
    1100px wide, or 1320px on large screens (navbar and footer widen to match). */
-:root { --home-content-width: 1100px; }
+:root {
+  --home-content-width: 1100px;
+}
 
 /* responsive.css gives body overflow-x: hidden, which makes body a scroll container
    and stops the sticky report form from sticking. clip trims sideways overflow the
    same way without that; browsers without clip keep hidden. */
-:root body { overflow-x: clip; }
+:root body {
+  overflow-x: clip;
+}
 
 @media (min-width: 1100px) {
   :root .hero-section {
@@ -713,17 +797,31 @@
   :root .browse-report-layout > .tools-section {
     padding: 1.5rem !important;
   }
-  :root #report .section-head { margin-bottom: 1rem; }
-  :root #report .report-type-selection { margin-bottom: 0.9rem !important; }
-  :root #report .type-switcher .type-option { min-height: 2.6rem; }
+  :root #report .section-head {
+    margin-bottom: 1rem;
+  }
+  :root #report .report-type-selection {
+    margin-bottom: 0.9rem !important;
+  }
+  :root #report .type-switcher .type-option {
+    min-height: 2.6rem;
+  }
   :root #report .form-row {
     gap: 0.75rem;
     margin-bottom: 0.75rem;
   }
-  :root #report #itemForm > .input-field { margin-bottom: 0.9rem !important; }
-  :root #report #itemDesc { min-height: 4rem; }
-  :root #report .report-more { margin-bottom: 0.9rem; }
-  :root #report .report-more > summary { padding-block: 0.6rem; }
+  :root #report #itemForm > .input-field {
+    margin-bottom: 0.9rem !important;
+  }
+  :root #report #itemDesc {
+    min-height: 4rem;
+  }
+  :root #report .report-more {
+    margin-bottom: 0.9rem;
+  }
+  :root #report .report-more > summary {
+    padding-block: 0.6rem;
+  }
 }
 
 /* Large screens: the content follows the window (2rem margin each side) up to
@@ -786,8 +884,12 @@
 }
 /* The badge colours are readable on glass in both themes. !important beats the
    theme-wide label colours, which are themselves !important (home.css, styles.css). */
-:root .type-switcher .type-option.active-lost { color: var(--badge-lost-fg) !important; }
-:root .type-switcher .type-option.active-found { color: var(--badge-found-fg) !important; }
+:root .type-switcher .type-option.active-lost {
+  color: var(--badge-lost-fg) !important;
+}
+:root .type-switcher .type-option.active-found {
+  color: var(--badge-found-fg) !important;
+}
 
 /* ── Report form: optional fields folded under "Add more details" ───────── */
 .report-more {
@@ -807,7 +909,9 @@
   list-style: none;
   cursor: pointer;
 }
-.report-more > summary::-webkit-details-marker { display: none; }
+.report-more > summary::-webkit-details-marker {
+  display: none;
+}
 /* Chevron: points down when closed, up when open. */
 .report-more > summary::after {
   content: '';
@@ -821,8 +925,12 @@
   transform: translateY(-70%) rotate(45deg);
   transition: transform 0.2s ease;
 }
-.report-more[open] > summary::after { transform: translateY(-30%) rotate(-135deg); }
-.report-more > summary:hover .report-more-title { text-decoration: underline; }
+.report-more[open] > summary::after {
+  transform: translateY(-30%) rotate(-135deg);
+}
+.report-more > summary:hover .report-more-title {
+  text-decoration: underline;
+}
 .report-more > summary:focus-visible {
   outline: 2px solid var(--blue-light);
   outline-offset: 2px;
@@ -836,8 +944,12 @@
   color: var(--text-muted);
   font-size: 0.875rem;
 }
-.report-more > .input-field { padding: 0 1rem; }
-.report-more[open] > summary { margin-bottom: 0.25rem; }
+.report-more > .input-field {
+  padding: 0 1rem;
+}
+.report-more[open] > summary {
+  margin-bottom: 0.25rem;
+}
 
 /* Keep no-photo frames the same size as photo frames so card content aligns. */
 @media (min-width: 600px) {
@@ -866,8 +978,13 @@
   white-space: nowrap;
   cursor: pointer;
 }
-.report-actions .report-cancel { flex: 1 1 0; }
-.report-actions .report-submit { flex: 2 1 0; border: none; }
+.report-actions .report-cancel {
+  flex: 1 1 0;
+}
+.report-actions .report-submit {
+  flex: 2 1 0;
+  border: none;
+}
 
 /* ── Text sizes ─────────────────────────────────────────────────────────── */
 /* Scale: 16px body text and fields, 15px buttons, links and card text, 14px
@@ -883,15 +1000,25 @@
 }
 
 @media (min-width: 769px) {
-  :root .navbar .nav-links a { font-size: 0.9375rem; }
+  :root .navbar .nav-links a {
+    font-size: 0.9375rem;
+  }
 }
 
 @media (max-width: 768px) {
-  :root .filter-chips .chip { font-size: 0.875rem !important; }
+  :root .filter-chips .chip {
+    font-size: 0.875rem !important;
+  }
   :root .input-field label,
-  :root .form-group label { font-size: 0.875rem !important; }
-  :root .type-switcher .type-option { font-size: 0.9375rem !important; }
-  :root .mobile-header-signin { font-size: 0.875rem !important; }
+  :root .form-group label {
+    font-size: 0.875rem !important;
+  }
+  :root .type-switcher .type-option {
+    font-size: 0.9375rem !important;
+  }
+  :root .mobile-header-signin {
+    font-size: 0.875rem !important;
+  }
 }
 
 /* ── Fit and readability fixes ──────────────────────────────────────────── */
@@ -899,7 +1026,9 @@
    students) no longer fit beside it, they move to their own row instead of
    squeezing the box down to a few letters. */
 @media (min-width: 640px) {
-  :root .filter-row { flex-wrap: wrap; }
+  :root .filter-row {
+    flex-wrap: wrap;
+  }
   :root .filter-row .search-box {
     flex: 1 1 15rem;
     min-width: min(100%, 15rem);
@@ -908,7 +1037,9 @@
 
 /* The end of a reference code is the part that tells two items apart, so the
    code is never cut off: on a narrow card it moves below the status badge. */
-:root .listing-topline { flex-wrap: wrap; }
+:root .listing-topline {
+  flex-wrap: wrap;
+}
 :root .listing-card .listing-ref {
   overflow: visible;
   text-overflow: clip;
@@ -924,7 +1055,9 @@
 
 /* Admin: status badges stay on one line, and the amber / red ones are dark enough
    to read on the light theme's white rows. */
-:root #adminItemsTable .status-cell .badge.admin-status-pending { white-space: nowrap; }
+:root #adminItemsTable .status-cell .badge.admin-status-pending {
+  white-space: nowrap;
+}
 [data-theme='light'] .admin-status-pending {
   color: #92400e !important;
   border-color: rgba(217, 119, 6, 0.5) !important;
@@ -938,6 +1071,15 @@
 
 /* Admin, light theme: the outlined action buttons use darker greens and reds; the
    dark theme's bright shades are too faint on white. */
-[data-theme='light'] .action-btn-claim { color: #15803d; border-color: rgba(21, 128, 61, 0.5); }
-[data-theme='light'] .action-btn-delete { color: #b91c1c; border-color: rgba(185, 28, 28, 0.45); }
-[data-theme='light'] .action-btn-outline { color: #334155; border-color: rgba(51, 65, 85, 0.45); }
+[data-theme='light'] .action-btn-claim {
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.5);
+}
+[data-theme='light'] .action-btn-delete {
+  color: #b91c1c;
+  border-color: rgba(185, 28, 28, 0.45);
+}
+[data-theme='light'] .action-btn-outline {
+  color: #334155;
+  border-color: rgba(51, 65, 85, 0.45);
+}

@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════ */
 
 const STORAGE_KEY = 'cspc_lostfound_items';
-const CLAIMS_KEY  = 'cspc_lostfound_claims';
+const CLAIMS_KEY = 'cspc_lostfound_claims';
 /* ── Categories ── */
 const CATEGORIES = [
   'Electronics',
@@ -41,7 +41,9 @@ const LOCATIONS = [
 function getItems() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function saveItems(items) {
@@ -51,7 +53,9 @@ function saveItems(items) {
 function getClaims() {
   try {
     return JSON.parse(localStorage.getItem(CLAIMS_KEY)) || [];
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 function saveClaims(claims) {
@@ -59,7 +63,7 @@ function saveClaims(claims) {
 }
 
 function getItemById(id) {
-  return getItems().find(i => i.id === id) || null;
+  return getItems().find((i) => i.id === id) || null;
 }
 
 function addItem(item) {
@@ -73,7 +77,7 @@ function addItem(item) {
 
 function updateItemStatus(id, status) {
   const items = getItems();
-  const idx = items.findIndex(i => i.id === id);
+  const idx = items.findIndex((i) => i.id === id);
   if (idx !== -1) {
     items[idx].status = status;
     items[idx].updatedAt = new Date().toISOString();
@@ -84,7 +88,7 @@ function updateItemStatus(id, status) {
 }
 
 function deleteItem(id) {
-  const items = getItems().filter(i => String(i.id) !== String(id));
+  const items = getItems().filter((i) => String(i.id) !== String(id));
   saveItems(items);
 }
 
@@ -100,7 +104,7 @@ function addClaim(claim) {
 
 function updateClaimStatus(id, status) {
   const claims = getClaims();
-  const idx = claims.findIndex(c => c.id === id);
+  const idx = claims.findIndex((c) => c.id === id);
   if (idx !== -1) {
     claims[idx].claimStatus = status;
     saveClaims(claims);
@@ -113,7 +117,7 @@ function updateClaimStatus(id, status) {
 
 function initSeeds() {
   const items = getItems();
-  const userItems = items.filter(item => !String(item.id).startsWith('seed-'));
+  const userItems = items.filter((item) => !String(item.id).startsWith('seed-'));
   if (userItems.length !== items.length) saveItems(userItems);
 }
 
@@ -130,21 +134,21 @@ function formatDate(dateStr) {
 function timeAgo(isoStr) {
   if (!isoStr) return '';
   const diff = Date.now() - new Date(isoStr).getTime();
-  const mins  = Math.floor(diff / 60000);
+  const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
-  if (mins < 1)   return 'Just now';
-  if (mins < 60)  return `${mins}m ago`;
+  const days = Math.floor(diff / 86400000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
   return `${days}d ago`;
 }
 
 function statusBadge(status) {
   const map = {
-    lost:    { label: 'Lost',    cls: 'badge-lost'    },
-    found:   { label: 'Found',   cls: 'badge-found'   },
+    lost: { label: 'Lost', cls: 'badge-lost' },
+    found: { label: 'Found', cls: 'badge-found' },
     claimed: { label: 'Claimed', cls: 'badge-claimed' },
-    active:  { label: 'Active',  cls: 'badge-active'  },
+    active: { label: 'Active', cls: 'badge-active' },
   };
   const b = map[status] || { label: status, cls: '' };
   return `<span class="badge ${b.cls}">${b.label}</span>`;
@@ -157,16 +161,16 @@ function typeBadge(type) {
 
 function categoryIcon(cat) {
   const icons = {
-    'Electronics': '📱',
+    Electronics: '📱',
     'Clothing & Accessories': '👕',
     'Books & Documents': '📚',
     'Bags & Wallets': '🎒',
-    'Keys': '🔑',
-    'Jewelry': '💍',
+    Keys: '🔑',
+    Jewelry: '💍',
     'Sports Equipment': '⚽',
     'School Supplies': '✏️',
     'ID / Cards': '🪪',
-    'Others': '📦',
+    Others: '📦',
   };
   return icons[cat] || '📦';
 }
@@ -197,17 +201,17 @@ function showToast(message, type = 'success') {
 
 function renderNav(activePage = '') {
   const pages = [
-    { href: 'index.html',       label: 'Dashboard' },
-    { href: 'browse.html',      label: 'Browse'    },
-    { href: 'report-lost.html', label: 'Report Lost'  },
-    { href: 'report-found.html',label: 'Report Found' },
-    { href: 'about.html',       label: 'About'     },
-    { href: 'admin.html',       label: 'Admin'     },
+    { href: 'index.html', label: 'Dashboard' },
+    { href: 'browse.html', label: 'Browse' },
+    { href: 'report-lost.html', label: 'Report Lost' },
+    { href: 'report-found.html', label: 'Report Found' },
+    { href: 'about.html', label: 'About' },
+    { href: 'admin.html', label: 'Admin' },
   ];
 
-  const links = pages.map(p =>
-    `<a href="${p.href}" class="${activePage === p.href ? 'nav-active' : ''}">${p.label}</a>`
-  ).join('');
+  const links = pages
+    .map((p) => `<a href="${p.href}" class="${activePage === p.href ? 'nav-active' : ''}">${p.label}</a>`)
+    .join('');
 
   return `
   <nav class="navbar">
@@ -232,11 +236,9 @@ function renderNav(activePage = '') {
   </nav>`;
 }
 
-
-
 function escHtml(str) {
   if (str === null || str === undefined) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 /* Shared data initialization */

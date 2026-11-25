@@ -22,7 +22,7 @@ function fakeFile(overrides = {}) {
   return {
     mimetype: 'image/png',
     buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -33,7 +33,10 @@ function claudeReply(text) {
 test('skips the check and allows the upload when no API key is configured', async () => {
   delete process.env.ANTHROPIC_API_KEY;
   let called = false;
-  global.fetch = async () => { called = true; return claudeReply('{"appropriate": false}'); };
+  global.fetch = async () => {
+    called = true;
+    return claudeReply('{"appropriate": false}');
+  };
 
   const result = await moderation.moderateImage(fakeFile());
   assert.equal(result.allowed, true);
@@ -71,7 +74,9 @@ test('strips a code fence around the JSON reply', async () => {
 
 test('fails open when the API call rejects', async () => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
-  global.fetch = async () => { throw new Error('network down'); };
+  global.fetch = async () => {
+    throw new Error('network down');
+  };
 
   const result = await moderation.moderateImage(fakeFile());
   assert.equal(result.allowed, true);
@@ -99,7 +104,10 @@ test('fails open when the HTTP response itself is not ok', async () => {
 test('skips files with no buffer without calling the API', async () => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   let called = false;
-  global.fetch = async () => { called = true; return claudeReply('{"appropriate": false}'); };
+  global.fetch = async () => {
+    called = true;
+    return claudeReply('{"appropriate": false}');
+  };
 
   const result = await moderation.moderateImage(null);
   assert.equal(result.allowed, true);

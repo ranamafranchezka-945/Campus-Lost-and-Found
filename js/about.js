@@ -32,20 +32,21 @@ window.closeUserProfileMenu = () => {
   menu.hidden = true;
 };
 
-document.addEventListener('click', event => {
+document.addEventListener('click', (event) => {
   const accountMenu = document.querySelector('.user-account-wrap');
   if (accountMenu && !accountMenu.contains(event.target)) window.closeUserProfileMenu();
 });
 
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event) => {
   const button = document.getElementById('userProfileBtn');
   if (event.key !== 'Escape' || !button || button.getAttribute('aria-expanded') !== 'true') return;
   window.closeUserProfileMenu();
   button.focus();
 });
 
-document.addEventListener('keydown', event => {
-  if (event.key !== '?' || event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey) return;
+document.addEventListener('keydown', (event) => {
+  if (event.key !== '?' || event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey)
+    return;
   const target = event.target instanceof Element ? event.target : null;
   if (target && target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]')) return;
   event.preventDefault();
@@ -70,11 +71,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Same markup/classes as js/home-page.js's renderAuthenticatedHeader (index.html), so
   // the header looks identical on both pages - the bell/Settings actions are the only
   // difference (see the window.goTo* functions above).
-  const renderAuthenticatedNavigation = user => {
+  const renderAuthenticatedNavigation = (user) => {
     const isAdmin = user.role === 'admin';
-    const roleLabel = isAdmin ? 'Administrator' : (user.role === 'employee' ? 'Employee' : 'Student');
-    const displayName = isAdmin ? 'Admin' : (user.fullName || 'Account');
-    const initials = displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+    const roleLabel = isAdmin ? 'Administrator' : user.role === 'employee' ? 'Employee' : 'Student';
+    const displayName = isAdmin ? 'Admin' : user.fullName || 'Account';
+    const initials = displayName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
 
     userNavSlot.innerHTML = `
       <button type="button" id="notifBellBtn" class="notif-bell-btn" data-action="goToNotifications" title="View your notifications">
@@ -122,7 +129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'same-origin'
+        credentials: 'same-origin',
       });
       if (!response.ok) throw new Error(`Logout request failed (${response.status}).`);
       renderGuestNavigation();
@@ -139,8 +146,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let cachedUser = null;
   try {
     const stored = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
-    if (stored && ['admin', 'student', 'employee'].includes(stored.role)
-      && sessionStorage.getItem('userRole') === stored.role) {
+    if (
+      stored &&
+      ['admin', 'student', 'employee'].includes(stored.role) &&
+      sessionStorage.getItem('userRole') === stored.role
+    ) {
       cachedUser = stored;
       renderAuthenticatedNavigation(cachedUser);
     }
@@ -152,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch('/api/auth/me', {
         cache: 'no-store',
-        credentials: 'same-origin'
+        credentials: 'same-origin',
       });
       if (!response.ok) throw new Error(`Session check failed (${response.status}).`);
       const data = await response.json();

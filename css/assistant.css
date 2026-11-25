@@ -144,12 +144,24 @@
   animation: assistant-bounce 1.1s infinite ease-in-out;
 }
 
-.assistant-typing i:nth-child(2) { animation-delay: 0.15s; }
-.assistant-typing i:nth-child(3) { animation-delay: 0.3s; }
+.assistant-typing i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.assistant-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
 
 @keyframes assistant-bounce {
-  0%, 70%, 100% { transform: translateY(0); opacity: 0.45; }
-  35%           { transform: translateY(-4px); opacity: 1; }
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  35% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 /* ── Extracted-field chips ────────────────────────────────────────────────── */
@@ -344,8 +356,13 @@
 }
 
 @keyframes assistant-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35); }
-  50%      { box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+  }
 }
 
 .assistant-send {
@@ -401,9 +418,18 @@
 }
 
 @keyframes assistant-flash {
-  0%   { background: var(--stat-active-bg); box-shadow: 0 0 0 3px var(--stat-active-ring); }
-  70%  { background: var(--stat-active-bg); box-shadow: 0 0 0 3px transparent; }
-  100% { background: transparent; box-shadow: none; }
+  0% {
+    background: var(--stat-active-bg);
+    box-shadow: 0 0 0 3px var(--stat-active-ring);
+  }
+  70% {
+    background: var(--stat-active-bg);
+    box-shadow: 0 0 0 3px transparent;
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -415,11 +441,21 @@
 }
 
 @media (max-width: 640px) {
-  .assistant-card { padding: 1rem; }
-  .assistant-log { max-height: 260px; }
-  .assistant-msg { max-width: 94%; }
-  .assistant-send { padding: 0.7rem 0.85rem; }
-  .assistant-head { flex-wrap: wrap; }
+  .assistant-card {
+    padding: 1rem;
+  }
+  .assistant-log {
+    max-height: 260px;
+  }
+  .assistant-msg {
+    max-width: 94%;
+  }
+  .assistant-send {
+    padding: 0.7rem 0.85rem;
+  }
+  .assistant-head {
+    flex-wrap: wrap;
+  }
 }
 
 /* ── The report form starts folded away behind this button, so the assistant above
@@ -441,7 +477,9 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .manual-report-toggle:hover,
@@ -481,4 +519,6 @@
   transition: transform 0.2s ease;
 }
 
-.manual-report-toggle.is-open::after { transform: translateY(-30%) rotate(-135deg); }
+.manual-report-toggle.is-open::after {
+  transform: translateY(-30%) rotate(-135deg);
+}

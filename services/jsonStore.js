@@ -33,7 +33,7 @@ function writeJsonArray(filePath, value) {
   fs.writeFileSync(temporaryPath, JSON.stringify(value, null, 2), {
     encoding: 'utf8',
     flag: 'wx',
-    mode: 0o600
+    mode: 0o600,
   });
   fs.renameSync(temporaryPath, filePath);
 }

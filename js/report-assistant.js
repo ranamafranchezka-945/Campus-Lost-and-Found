@@ -27,7 +27,7 @@
     location: 'Campus location',
     locationDetails: 'Specific spot',
     when: 'When',
-    desc: 'Description'
+    desc: 'Description',
   };
 
   const state = {
@@ -41,7 +41,7 @@
     // Which field the assistant's last question was about ('desc' when it just asked
     // "Can you describe it..."), so the very next reply can be taken as a direct answer
     // to that question even without the usual "description is ..." cue.
-    pendingField: ''
+    pendingField: '',
   };
 
   function el(id) {
@@ -82,7 +82,10 @@
   }
 
   function addThinking() {
-    return addBubble('bot', '<span class="assistant-typing" aria-label="Reading your message"><i></i><i></i><i></i></span>');
+    return addBubble(
+      'bot',
+      '<span class="assistant-typing" aria-label="Reading your message"><i></i><i></i><i></i></span>'
+    );
   }
 
   function friendlyWhen(iso) {
@@ -90,14 +93,23 @@
     const date = new Date(iso);
     if (Number.isNaN(date.getTime())) return '';
     return date.toLocaleString('en-PH', {
-      month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
     });
   }
 
   function chipHtml(field, value, uncertain) {
-    const display = field === 'when' ? friendlyWhen(value)
-      : field === 'type' ? (value === 'lost' ? 'Lost item' : 'Found item')
-      : value;
+    const display =
+      field === 'when'
+        ? friendlyWhen(value)
+        : field === 'type'
+          ? value === 'lost'
+            ? 'Lost item'
+            : 'Found item'
+          : value;
     if (!display) return '';
     const icon = field === 'category' ? iconFor(value) : '';
     return `<span class="assistant-chip${uncertain ? ' assistant-chip--guess' : ''}">
@@ -221,7 +233,7 @@
       const input = el('itemLocation');
       const datalist = el('itemLocationOptions');
       if (input && datalist) {
-        const option = [...datalist.options].find(entry => entry.value === state.draft.location);
+        const option = [...datalist.options].find((entry) => entry.value === state.draft.location);
         if (option) {
           input.value = option.value;
           flash(input);
@@ -257,15 +269,15 @@
 
   function summaryHtml(applied, uncertain, question, matches) {
     const chips = applied
-      .filter(field => field !== 'desc')
-      .map(field => chipHtml(field, state.draft[field], uncertain.includes(field)))
+      .filter((field) => field !== 'desc')
+      .map((field) => chipHtml(field, state.draft[field], uncertain.includes(field)))
       .filter(Boolean)
       .join('');
 
     const parts = [];
 
     if (chips) {
-      const count = applied.filter(field => field !== 'desc').length;
+      const count = applied.filter((field) => field !== 'desc').length;
       parts.push(`<p>Filled in ${count} ${count === 1 ? 'field' : 'fields'} for you:</p>`);
       parts.push(`<div class="assistant-chips">${chips}</div>`);
     } else if (!question) {
@@ -273,14 +285,18 @@
     }
 
     if (uncertain.length) {
-      const names = uncertain.map(field => (FIELD_LABELS[field] || field).toLowerCase());
-      parts.push(`<p class="assistant-note">I guessed the ${names.join(' and ')}. Please check ${uncertain.length === 1 ? 'it' : 'them'} before submitting.</p>`);
+      const names = uncertain.map((field) => (FIELD_LABELS[field] || field).toLowerCase());
+      parts.push(
+        `<p class="assistant-note">I guessed the ${names.join(' and ')}. Please check ${uncertain.length === 1 ? 'it' : 'them'} before submitting.</p>`
+      );
     }
 
     if (question) {
       parts.push(`<p class="assistant-ask">${escape(question)}</p>`);
     } else if (chips) {
-      parts.push('<p class="assistant-note">Review the form below, add a photo if you have one, then press <strong>Submit Report</strong>.</p>');
+      parts.push(
+        '<p class="assistant-note">Review the form below, add a photo if you have one, then press <strong>Submit Report</strong>.</p>'
+      );
     }
 
     if (matches.length) {
@@ -296,7 +312,9 @@
   /* ── Sending ──────────────────────────────────────────────────────────────── */
 
   async function send(message) {
-    const text = String(message || '').trim().slice(0, MAX_MESSAGE);
+    const text = String(message || '')
+      .trim()
+      .slice(0, MAX_MESSAGE);
     if (!text || state.busy) return;
 
     state.busy = true;
@@ -312,13 +330,16 @@
       const response = await fetch('/api/items/assistant/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text })
+        body: JSON.stringify({ message: text }),
       });
       const data = await response.json().catch(() => ({}));
       if (thinking) thinking.remove();
 
       if (!response.ok || !data.success) {
-        addBubble('bot', `<p>${escape(data.message || 'I could not read that. Please fill in the form directly.')}</p>`);
+        addBubble(
+          'bot',
+          `<p>${escape(data.message || 'I could not read that. Please fill in the form directly.')}</p>`
+        );
         return;
       }
 
@@ -331,7 +352,7 @@
       // student can see the fields light up instead of finding them already filled.
       if (changed.length && typeof window.openManualReportForm === 'function') window.openManualReportForm();
       const applied = applyDraft(changed);
-      const uncertain = (data.uncertain || []).filter(field => applied.includes(field));
+      const uncertain = (data.uncertain || []).filter((field) => applied.includes(field));
       addBubble('bot', summaryHtml(applied, uncertain, data.question || '', data.matches || []));
 
       if (applied.length) {
@@ -378,21 +399,24 @@
     recognition.continuous = false;
     recognition.maxAlternatives = 1;
 
-    recognition.onresult = event => {
+    recognition.onresult = (event) => {
       let transcript = '';
       for (let index = event.resultIndex; index < event.results.length; index += 1) {
         transcript += event.results[index][0].transcript;
       }
       input.value = transcript.trim().slice(0, MAX_MESSAGE);
     };
-    recognition.onerror = event => {
+    recognition.onerror = (event) => {
       stopListening();
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         // Three different causes produce this one error code, so name the likely one:
         // an insecure origin, a page-level Permissions-Policy, or a denied prompt.
-        notify(window.isSecureContext
-          ? 'Microphone access was blocked by the browser. Check the site permissions, or type your report instead.'
-          : 'Dictation needs a secure connection (https:// or localhost). Type your report instead.', true);
+        notify(
+          window.isSecureContext
+            ? 'Microphone access was blocked by the browser. Check the site permissions, or type your report instead.'
+            : 'Dictation needs a secure connection (https:// or localhost). Type your report instead.',
+          true
+        );
       } else if (event.error === 'network') {
         // Chrome's speech recognition runs in the cloud, so dictation alone needs the network.
         notify('Dictation needs an internet connection. Typing still works offline.', true);
@@ -474,10 +498,13 @@
   /* ── Start-up ─────────────────────────────────────────────────────────────── */
 
   function greet() {
-    addBubble('bot', [
-      '<p>Tell me what happened in your own words — English or Filipino, typed or spoken.</p>',
-      '<p class="assistant-note">I will fill in the report form below. Nothing is submitted until you press Submit Report.</p>'
-    ].join(''));
+    addBubble(
+      'bot',
+      [
+        '<p>Tell me what happened in your own words — English or Filipino, typed or spoken.</p>',
+        '<p class="assistant-note">I will fill in the report form below. Nothing is submitted until you press Submit Report.</p>',
+      ].join('')
+    );
   }
 
   function init() {
@@ -491,7 +518,7 @@
 
     const input = el('assistantInput');
     if (input) {
-      input.addEventListener('keydown', event => {
+      input.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey) {
           event.preventDefault();
           window.assistantSubmit(event);

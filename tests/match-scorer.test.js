@@ -14,7 +14,9 @@ const matchScorer = require('../services/matchScorer');
 const originalFetch = global.fetch;
 const originalKey = process.env.ANTHROPIC_API_KEY;
 let nextId = 1;
-function id() { return `test-${nextId++}`; }
+function id() {
+  return `test-${nextId++}`;
+}
 
 test.afterEach(() => {
   global.fetch = originalFetch;
@@ -23,10 +25,26 @@ test.afterEach(() => {
 });
 
 function lostItem(overrides = {}) {
-  return { id: id(), type: 'lost', title: 'Blue Jansport Bag', category: 'Bags & Wallets', desc: 'A blue backpack', location: 'Library', ...overrides };
+  return {
+    id: id(),
+    type: 'lost',
+    title: 'Blue Jansport Bag',
+    category: 'Bags & Wallets',
+    desc: 'A blue backpack',
+    location: 'Library',
+    ...overrides,
+  };
 }
 function foundItem(overrides = {}) {
-  return { id: id(), type: 'found', title: 'Navy Backpack', category: 'Bags & Wallets', desc: 'Found near the gym', location: 'Gymnasium', ...overrides };
+  return {
+    id: id(),
+    type: 'found',
+    title: 'Navy Backpack',
+    category: 'Bags & Wallets',
+    desc: 'Found near the gym',
+    location: 'Gymnasium',
+    ...overrides,
+  };
 }
 
 function claudeReply(text) {
@@ -37,7 +55,7 @@ async function waitUntil(predicate, timeoutMs = 2000) {
   const start = Date.now();
   while (!predicate()) {
     if (Date.now() - start > timeoutMs) throw new Error('Timed out waiting for condition');
-    await new Promise(resolve => setTimeout(resolve, 5));
+    await new Promise((resolve) => setTimeout(resolve, 5));
   }
 }
 
@@ -49,12 +67,15 @@ test('getCachedScore returns null when nothing has been scored yet', () => {
 test('queueScoring does nothing when no API key is configured', async () => {
   delete process.env.ANTHROPIC_API_KEY;
   let called = false;
-  global.fetch = async () => { called = true; return claudeReply('{"score": 0.9, "reason": "same bag"}'); };
+  global.fetch = async () => {
+    called = true;
+    return claudeReply('{"score": 0.9, "reason": "same bag"}');
+  };
 
   const lost = lostItem();
   const found = foundItem();
   matchScorer.queueScoring(lost, found);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 20));
 
   assert.equal(called, false);
   assert.equal(matchScorer.getCachedScore(lost, found), null);
@@ -109,7 +130,9 @@ test('does not call the API twice for the same pair while the first call is in f
   let resolveFetch;
   global.fetch = () => {
     calls += 1;
-    return new Promise(resolve => { resolveFetch = () => resolve(claudeReply('{"score": 0.5, "reason": "maybe"}')); });
+    return new Promise((resolve) => {
+      resolveFetch = () => resolve(claudeReply('{"score": 0.5, "reason": "maybe"}'));
+    });
   };
 
   const lost = lostItem();
@@ -117,7 +140,7 @@ test('does not call the API twice for the same pair while the first call is in f
   matchScorer.queueScoring(lost, found);
   matchScorer.queueScoring(lost, found);
   matchScorer.queueScoring(lost, found);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 20));
 
   assert.equal(calls, 1);
   resolveFetch();
@@ -131,7 +154,7 @@ test('fails open (no cached score, but no throw) when Claude replies with a bad 
   const lost = lostItem();
   const found = foundItem();
   matchScorer.queueScoring(lost, found);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 20));
 
   assert.equal(matchScorer.getCachedScore(lost, found), null);
 });
@@ -139,16 +162,19 @@ test('fails open (no cached score, but no throw) when Claude replies with a bad 
 test('does not retry a pair again immediately after a failure (cooldown)', async () => {
   process.env.ANTHROPIC_API_KEY = 'test-key';
   let calls = 0;
-  global.fetch = async () => { calls += 1; throw new Error('network down'); };
+  global.fetch = async () => {
+    calls += 1;
+    throw new Error('network down');
+  };
 
   const lost = lostItem();
   const found = foundItem();
   matchScorer.queueScoring(lost, found);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(calls, 1);
 
   matchScorer.queueScoring(lost, found);
-  await new Promise(resolve => setTimeout(resolve, 20));
+  await new Promise((resolve) => setTimeout(resolve, 20));
   assert.equal(calls, 1, 'a second attempt right after a failure should be skipped by the cooldown');
 });
 

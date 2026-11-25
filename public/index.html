@@ -1,57 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Back2You | CSPC Lost &amp; Found</title>
-  <link rel="icon" type="image/png" href="/cspc-logo.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/styles.css" />
-  <link rel="stylesheet" href="/css/home.css" />
-  <link rel="stylesheet" href="/css/modals.css" />
-  <link rel="stylesheet" href="/css/responsive.css" />
-  <link rel="stylesheet" href="/css/glass.css" />
-  <link rel="stylesheet" href="/css/polish.css" />
-  <link rel="stylesheet" href="/css/splash.css" />
-  <link rel="stylesheet" href="/css/lightbox.css" />
-  <link rel="stylesheet" href="/css/meetup.css" />
-  <link rel="stylesheet" href="/vendor/leaflet.css" />
-  <link rel="stylesheet" href="/css/brand.css" />
-  <link rel="stylesheet" href="/css/assistant.css" />
-  <link rel="stylesheet" href="/css/theme.css" />
-  <script src="/js/main.js"></script>
-  <script src="/js/ui.js"></script>
-  <script src="/vendor/qrcode.js"></script>
-</head>
-<body>
-
-  <!-- INTRO SCREEN: CSPC seal and BACK2YOU animate in, then fade to the page (css/splash.css).
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Back2You | CSPC Lost &amp; Found</title>
+    <link rel="icon" type="image/png" href="/cspc-logo.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/home.css" />
+    <link rel="stylesheet" href="/css/modals.css" />
+    <link rel="stylesheet" href="/css/responsive.css" />
+    <link rel="stylesheet" href="/css/glass.css" />
+    <link rel="stylesheet" href="/css/polish.css" />
+    <link rel="stylesheet" href="/css/splash.css" />
+    <link rel="stylesheet" href="/css/lightbox.css" />
+    <link rel="stylesheet" href="/css/meetup.css" />
+    <link rel="stylesheet" href="/vendor/leaflet.css" />
+    <link rel="stylesheet" href="/css/brand.css" />
+    <link rel="stylesheet" href="/css/assistant.css" />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <script src="/js/main.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/vendor/qrcode.js"></script>
+  </head>
+  <body>
+    <!-- INTRO SCREEN: CSPC seal and BACK2YOU animate in, then fade to the page (css/splash.css).
        Shown once per browser session; a click, tap or key press skips it (js/main.js). -->
-  <div class="app-splash" id="appSplash" aria-hidden="true">
-    <div class="splash-content">
-      <div class="splash-logo">
-        <div class="splash-logo-float">
-          <div class="splash-3d-logo" data-cspc-logo-scene>
-            <span class="splash-3d-glow" aria-hidden="true"></span>
-            <div class="splash-3d-stage" data-cspc-logo-stage role="img" aria-label="Animated 3D CSPC globe logo."></div>
-            <span class="splash-3d-shadow" aria-hidden="true"></span>
+    <div class="app-splash" id="appSplash" aria-hidden="true">
+      <div class="splash-content">
+        <div class="splash-logo">
+          <div class="splash-logo-float">
+            <div class="splash-3d-logo" data-cspc-logo-scene>
+              <span class="splash-3d-glow" aria-hidden="true"></span>
+              <div
+                class="splash-3d-stage"
+                data-cspc-logo-stage
+                role="img"
+                aria-label="Animated 3D CSPC globe logo."
+              ></div>
+              <span class="splash-3d-shadow" aria-hidden="true"></span>
+            </div>
           </div>
         </div>
+        <svg class="splash-wordmark" viewBox="6 29 542 73" aria-hidden="true" focusable="false">
+          <path
+            class="splash-letter"
+            style="--i: 0"
+            d="M62.5 79.0L62.5 79.0Q62.5 83.3 60.8 87.2Q59.2 91.0 56.3 93.8Q53.5 96.7 49.7 98.3Q45.8 100 41.5 100L41.5 100L6.5 100L6.5 30.0L41.5 30.0Q45.8 30.0 49.7 31.6Q53.5 33.3 56.3 36.2Q59.2 39.0 60.8 42.8Q62.5 46.6 62.5 51.0L62.5 51.0Q62.5 52.9 62.0 55.0Q61.4 57.0 60.4 58.9Q59.5 60.8 58.1 62.4Q56.7 64.0 55.1 65.0L55.1 65.0Q56.8 65.9 58.2 67.5Q59.5 69.1 60.5 71.0Q61.5 72.9 62.0 75.0Q62.5 77.1 62.5 79.0ZM20.5 72.0L20.5 86.0L41.5 86.0Q43.0 86.0 44.2 85.4Q45.5 84.9 46.5 84.0Q47.4 83.0 47.9 81.7Q48.5 80.5 48.5 79.0L48.5 79.0Q48.5 77.5 47.9 76.3Q47.4 75 46.5 74.0Q45.5 73.1 44.2 72.6Q43.0 72.0 41.5 72.0L41.5 72.0L20.5 72.0ZM20.5 44.0L20.5 58.0L41.5 58.0Q43.0 58.0 44.2 57.5Q45.5 56.9 46.5 56.0Q47.4 55.0 47.9 53.7Q48.5 52.4 48.5 51.0L48.5 51.0Q48.5 49.5 47.9 48.2Q47.4 47.0 46.5 46.0Q45.5 45.1 44.2 44.5Q43.0 44.0 41.5 44.0L41.5 44.0L20.5 44.0Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 1"
+            d="M90.3 72.0L118.3 72.0L118.3 58.0Q118.3 55.1 117.2 52.6Q116.1 50 114.2 48.1Q112.3 46.2 109.7 45.1Q107.2 44.0 104.3 44.0L104.3 44.0Q101.4 44.0 98.8 45.1Q96.3 46.2 94.4 48.1Q92.5 50 91.4 52.6Q90.3 55.1 90.3 58.0L90.3 58.0L90.3 72.0ZM132.3 58.0L132.3 100L118.3 100L118.3 86.0L90.3 86.0L90.3 100L76.3 100L76.3 58.0Q76.3 52.2 78.5 47.1Q80.7 42.0 84.5 38.2Q88.3 34.4 93.4 32.2Q98.5 30.0 104.3 30.0L104.3 30.0Q110.1 30.0 115.2 32.2Q120.3 34.4 124.1 38.2Q127.9 42.0 130.1 47.1Q132.3 52.2 132.3 58.0L132.3 58.0Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 2"
+            d="M197.0 80.6L204.4 92.8Q199.5 97.0 193.4 99.3Q187.4 101.5 180.9 101.5L180.9 101.5Q175.9 101.5 171.3 100.2Q166.7 98.9 162.7 96.6Q158.6 94.2 155.3 90.9Q152.0 87.5 149.6 83.5Q147.3 79.5 146.0 74.9Q144.7 70.3 144.7 65.3L144.7 65.3Q144.7 60.3 146.0 55.7Q147.3 51.0 149.6 47.0Q152.0 43.0 155.3 39.6Q158.6 36.3 162.7 34.0Q166.7 31.6 171.3 30.3Q175.9 29.0 180.9 29.0L180.9 29.0Q187.4 29.0 193.4 31.2Q199.5 33.4 204.4 37.7L204.4 37.7L197.0 49.9Q193.9 46.6 189.7 44.8Q185.5 43.0 180.9 43.0L180.9 43.0Q176.3 43.0 172.2 44.8Q168.2 46.5 165.1 49.5Q162.1 52.5 160.3 56.6Q158.6 60.7 158.6 65.3L158.6 65.3Q158.6 69.9 160.3 73.9Q162.1 77.9 165.1 81.0Q168.2 84.0 172.2 85.7Q176.3 87.5 180.9 87.5L180.9 87.5Q185.5 87.5 189.7 85.7Q193.9 83.9 197.0 80.6L197.0 80.6Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 3"
+            d="M230.5 86.0L230.5 100L216.5 100L216.5 30.0L230.5 30.0L230.5 65.0L256.6 30.0L272.5 30.0L250.4 59.5L272.5 100L256.6 100L241.2 71.7L230.5 86.0Z"
+          />
+          <path
+            class="splash-letter splash-letter--accent"
+            style="--i: 4"
+            d="M329.8 51.0L329.8 51.0Q329.8 55.3 328.2 59.2Q326.5 63.0 323.6 65.8Q320.8 68.7 317.0 70.4Q313.2 72.0 308.8 72.0L308.8 72.0L301.8 72.0Q300.3 72.0 299.1 72.6Q297.8 73.1 296.8 74.0Q295.9 75 295.3 76.3Q294.8 77.5 294.8 79.0L294.8 79.0L294.8 86.0L327.9 86.0L327.9 100L280.8 100L280.8 79.0Q280.8 74.7 282.5 70.8Q284.1 67.0 287.0 64.1Q289.8 61.3 293.6 59.6Q297.4 58.0 301.8 58.0L301.8 58.0L308.8 58.0Q310.3 58.0 311.6 57.5Q312.8 56.9 313.8 56.0Q314.7 55.0 315.3 53.7Q315.8 52.4 315.8 51.0L315.8 51.0Q315.8 49.5 315.3 48.2Q314.7 47.0 313.8 46.0Q312.8 45.1 311.6 44.5Q310.3 44.0 308.8 44.0L308.8 44.0L283.8 44.0L283.8 30.0L308.8 30.0Q313.2 30.0 317.0 31.6Q320.8 33.3 323.6 36.2Q326.5 39.0 328.2 42.8Q329.8 46.6 329.8 51.0Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 5"
+            d="M375.6 78.1L375.6 100L361.6 100L361.6 78.1Q357.0 76.9 353.1 74.3Q349.2 71.7 346.4 68.1Q343.6 64.6 342.1 60.2Q340.6 55.8 340.6 51.0L340.6 51.0L340.6 30.0L354.6 30.0L354.6 51.0Q354.6 53.9 355.7 56.4Q356.8 59.0 358.7 60.9Q360.6 62.8 363.1 63.9Q365.7 65.0 368.6 65.0L368.6 65.0Q371.5 65.0 374.0 63.9Q376.6 62.8 378.5 60.9Q380.4 59.0 381.5 56.4Q382.6 53.9 382.6 51.0L382.6 51.0L382.6 30.0L396.6 30.0L396.6 51.0Q396.6 55.8 395.0 60.2Q393.5 64.6 390.7 68.1Q387.9 71.7 384.1 74.3Q380.2 76.9 375.6 78.1L375.6 78.1Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 6"
+            d="M478.7 65.3L478.7 65.3Q478.7 70.3 477.4 74.9Q476.1 79.5 473.8 83.5Q471.4 87.5 468.1 90.9Q464.8 94.2 460.8 96.6Q456.8 98.9 452.1 100.2Q447.5 101.5 442.5 101.5L442.5 101.5Q437.5 101.5 432.9 100.2Q428.3 98.9 424.3 96.6Q420.2 94.2 416.9 90.9Q413.6 87.5 411.2 83.5Q408.9 79.5 407.6 74.9Q406.3 70.3 406.3 65.3L406.3 65.3Q406.3 60.3 407.6 55.7Q408.9 51.0 411.2 47.0Q413.6 43.0 416.9 39.7Q420.2 36.4 424.3 34.0Q428.3 31.7 432.9 30.4Q437.5 29.1 442.5 29.1L442.5 29.1Q447.5 29.1 452.1 30.4Q456.8 31.7 460.8 34.0Q464.8 36.4 468.1 39.7Q471.4 43.0 473.8 47.0Q476.1 51.0 477.4 55.7Q478.7 60.3 478.7 65.3ZM464.8 65.3L464.8 65.3Q464.8 60.7 463.0 56.6Q461.3 52.5 458.3 49.5Q455.3 46.5 451.2 44.8Q447.1 43.0 442.5 43.0L442.5 43.0Q437.9 43.0 433.8 44.8Q429.8 46.5 426.7 49.5Q423.7 52.5 421.9 56.6Q420.2 60.7 420.2 65.3L420.2 65.3Q420.2 69.9 421.9 73.9Q423.7 77.9 426.7 81.0Q429.8 84.0 433.8 85.7Q437.9 87.5 442.5 87.5L442.5 87.5Q447.1 87.5 451.2 85.7Q455.3 84.0 458.3 81.0Q461.3 77.9 463.0 73.9Q464.8 69.9 464.8 65.3Z"
+          />
+          <path
+            class="splash-letter"
+            style="--i: 7"
+            d="M547.1 30.0L547.1 72.0Q547.1 77.8 544.9 82.9Q542.7 88.0 538.9 91.8Q535.1 95.6 530.0 97.8Q524.9 100 519.1 100L519.1 100Q513.3 100 508.2 97.8Q503.0 95.6 499.3 91.8Q495.5 88.0 493.3 82.9Q491.1 77.8 491.1 72.0L491.1 72.0L491.1 30.0L505.1 30.0L505.1 72.0Q505.1 74.9 506.1 77.4Q507.2 80.0 509.2 81.9Q511.1 83.8 513.6 84.9Q516.2 86.0 519.1 86.0L519.1 86.0Q521.9 86.0 524.5 84.9Q527.1 83.8 529.0 81.9Q530.9 80.0 532.0 77.4Q533.1 74.9 533.1 72.0L533.1 72.0L533.1 30.0L547.1 30.0Z"
+          />
+        </svg>
+        <div class="splash-progress"></div>
       </div>
-    <svg class="splash-wordmark" viewBox="6 29 542 73" aria-hidden="true" focusable="false">
-      <path class="splash-letter" style="--i:0" d="M62.5 79.0L62.5 79.0Q62.5 83.3 60.8 87.2Q59.2 91.0 56.3 93.8Q53.5 96.7 49.7 98.3Q45.8 100 41.5 100L41.5 100L6.5 100L6.5 30.0L41.5 30.0Q45.8 30.0 49.7 31.6Q53.5 33.3 56.3 36.2Q59.2 39.0 60.8 42.8Q62.5 46.6 62.5 51.0L62.5 51.0Q62.5 52.9 62.0 55.0Q61.4 57.0 60.4 58.9Q59.5 60.8 58.1 62.4Q56.7 64.0 55.1 65.0L55.1 65.0Q56.8 65.9 58.2 67.5Q59.5 69.1 60.5 71.0Q61.5 72.9 62.0 75.0Q62.5 77.1 62.5 79.0ZM20.5 72.0L20.5 86.0L41.5 86.0Q43.0 86.0 44.2 85.4Q45.5 84.9 46.5 84.0Q47.4 83.0 47.9 81.7Q48.5 80.5 48.5 79.0L48.5 79.0Q48.5 77.5 47.9 76.3Q47.4 75 46.5 74.0Q45.5 73.1 44.2 72.6Q43.0 72.0 41.5 72.0L41.5 72.0L20.5 72.0ZM20.5 44.0L20.5 58.0L41.5 58.0Q43.0 58.0 44.2 57.5Q45.5 56.9 46.5 56.0Q47.4 55.0 47.9 53.7Q48.5 52.4 48.5 51.0L48.5 51.0Q48.5 49.5 47.9 48.2Q47.4 47.0 46.5 46.0Q45.5 45.1 44.2 44.5Q43.0 44.0 41.5 44.0L41.5 44.0L20.5 44.0Z"/>
-      <path class="splash-letter" style="--i:1" d="M90.3 72.0L118.3 72.0L118.3 58.0Q118.3 55.1 117.2 52.6Q116.1 50 114.2 48.1Q112.3 46.2 109.7 45.1Q107.2 44.0 104.3 44.0L104.3 44.0Q101.4 44.0 98.8 45.1Q96.3 46.2 94.4 48.1Q92.5 50 91.4 52.6Q90.3 55.1 90.3 58.0L90.3 58.0L90.3 72.0ZM132.3 58.0L132.3 100L118.3 100L118.3 86.0L90.3 86.0L90.3 100L76.3 100L76.3 58.0Q76.3 52.2 78.5 47.1Q80.7 42.0 84.5 38.2Q88.3 34.4 93.4 32.2Q98.5 30.0 104.3 30.0L104.3 30.0Q110.1 30.0 115.2 32.2Q120.3 34.4 124.1 38.2Q127.9 42.0 130.1 47.1Q132.3 52.2 132.3 58.0L132.3 58.0Z"/>
-      <path class="splash-letter" style="--i:2" d="M197.0 80.6L204.4 92.8Q199.5 97.0 193.4 99.3Q187.4 101.5 180.9 101.5L180.9 101.5Q175.9 101.5 171.3 100.2Q166.7 98.9 162.7 96.6Q158.6 94.2 155.3 90.9Q152.0 87.5 149.6 83.5Q147.3 79.5 146.0 74.9Q144.7 70.3 144.7 65.3L144.7 65.3Q144.7 60.3 146.0 55.7Q147.3 51.0 149.6 47.0Q152.0 43.0 155.3 39.6Q158.6 36.3 162.7 34.0Q166.7 31.6 171.3 30.3Q175.9 29.0 180.9 29.0L180.9 29.0Q187.4 29.0 193.4 31.2Q199.5 33.4 204.4 37.7L204.4 37.7L197.0 49.9Q193.9 46.6 189.7 44.8Q185.5 43.0 180.9 43.0L180.9 43.0Q176.3 43.0 172.2 44.8Q168.2 46.5 165.1 49.5Q162.1 52.5 160.3 56.6Q158.6 60.7 158.6 65.3L158.6 65.3Q158.6 69.9 160.3 73.9Q162.1 77.9 165.1 81.0Q168.2 84.0 172.2 85.7Q176.3 87.5 180.9 87.5L180.9 87.5Q185.5 87.5 189.7 85.7Q193.9 83.9 197.0 80.6L197.0 80.6Z"/>
-      <path class="splash-letter" style="--i:3" d="M230.5 86.0L230.5 100L216.5 100L216.5 30.0L230.5 30.0L230.5 65.0L256.6 30.0L272.5 30.0L250.4 59.5L272.5 100L256.6 100L241.2 71.7L230.5 86.0Z"/>
-      <path class="splash-letter splash-letter--accent" style="--i:4" d="M329.8 51.0L329.8 51.0Q329.8 55.3 328.2 59.2Q326.5 63.0 323.6 65.8Q320.8 68.7 317.0 70.4Q313.2 72.0 308.8 72.0L308.8 72.0L301.8 72.0Q300.3 72.0 299.1 72.6Q297.8 73.1 296.8 74.0Q295.9 75 295.3 76.3Q294.8 77.5 294.8 79.0L294.8 79.0L294.8 86.0L327.9 86.0L327.9 100L280.8 100L280.8 79.0Q280.8 74.7 282.5 70.8Q284.1 67.0 287.0 64.1Q289.8 61.3 293.6 59.6Q297.4 58.0 301.8 58.0L301.8 58.0L308.8 58.0Q310.3 58.0 311.6 57.5Q312.8 56.9 313.8 56.0Q314.7 55.0 315.3 53.7Q315.8 52.4 315.8 51.0L315.8 51.0Q315.8 49.5 315.3 48.2Q314.7 47.0 313.8 46.0Q312.8 45.1 311.6 44.5Q310.3 44.0 308.8 44.0L308.8 44.0L283.8 44.0L283.8 30.0L308.8 30.0Q313.2 30.0 317.0 31.6Q320.8 33.3 323.6 36.2Q326.5 39.0 328.2 42.8Q329.8 46.6 329.8 51.0Z"/>
-      <path class="splash-letter" style="--i:5" d="M375.6 78.1L375.6 100L361.6 100L361.6 78.1Q357.0 76.9 353.1 74.3Q349.2 71.7 346.4 68.1Q343.6 64.6 342.1 60.2Q340.6 55.8 340.6 51.0L340.6 51.0L340.6 30.0L354.6 30.0L354.6 51.0Q354.6 53.9 355.7 56.4Q356.8 59.0 358.7 60.9Q360.6 62.8 363.1 63.9Q365.7 65.0 368.6 65.0L368.6 65.0Q371.5 65.0 374.0 63.9Q376.6 62.8 378.5 60.9Q380.4 59.0 381.5 56.4Q382.6 53.9 382.6 51.0L382.6 51.0L382.6 30.0L396.6 30.0L396.6 51.0Q396.6 55.8 395.0 60.2Q393.5 64.6 390.7 68.1Q387.9 71.7 384.1 74.3Q380.2 76.9 375.6 78.1L375.6 78.1Z"/>
-      <path class="splash-letter" style="--i:6" d="M478.7 65.3L478.7 65.3Q478.7 70.3 477.4 74.9Q476.1 79.5 473.8 83.5Q471.4 87.5 468.1 90.9Q464.8 94.2 460.8 96.6Q456.8 98.9 452.1 100.2Q447.5 101.5 442.5 101.5L442.5 101.5Q437.5 101.5 432.9 100.2Q428.3 98.9 424.3 96.6Q420.2 94.2 416.9 90.9Q413.6 87.5 411.2 83.5Q408.9 79.5 407.6 74.9Q406.3 70.3 406.3 65.3L406.3 65.3Q406.3 60.3 407.6 55.7Q408.9 51.0 411.2 47.0Q413.6 43.0 416.9 39.7Q420.2 36.4 424.3 34.0Q428.3 31.7 432.9 30.4Q437.5 29.1 442.5 29.1L442.5 29.1Q447.5 29.1 452.1 30.4Q456.8 31.7 460.8 34.0Q464.8 36.4 468.1 39.7Q471.4 43.0 473.8 47.0Q476.1 51.0 477.4 55.7Q478.7 60.3 478.7 65.3ZM464.8 65.3L464.8 65.3Q464.8 60.7 463.0 56.6Q461.3 52.5 458.3 49.5Q455.3 46.5 451.2 44.8Q447.1 43.0 442.5 43.0L442.5 43.0Q437.9 43.0 433.8 44.8Q429.8 46.5 426.7 49.5Q423.7 52.5 421.9 56.6Q420.2 60.7 420.2 65.3L420.2 65.3Q420.2 69.9 421.9 73.9Q423.7 77.9 426.7 81.0Q429.8 84.0 433.8 85.7Q437.9 87.5 442.5 87.5L442.5 87.5Q447.1 87.5 451.2 85.7Q455.3 84.0 458.3 81.0Q461.3 77.9 463.0 73.9Q464.8 69.9 464.8 65.3Z"/>
-      <path class="splash-letter" style="--i:7" d="M547.1 30.0L547.1 72.0Q547.1 77.8 544.9 82.9Q542.7 88.0 538.9 91.8Q535.1 95.6 530.0 97.8Q524.9 100 519.1 100L519.1 100Q513.3 100 508.2 97.8Q503.0 95.6 499.3 91.8Q495.5 88.0 493.3 82.9Q491.1 77.8 491.1 72.0L491.1 72.0L491.1 30.0L505.1 30.0L505.1 72.0Q505.1 74.9 506.1 77.4Q507.2 80.0 509.2 81.9Q511.1 83.8 513.6 84.9Q516.2 86.0 519.1 86.0L519.1 86.0Q521.9 86.0 524.5 84.9Q527.1 83.8 529.0 81.9Q530.9 80.0 532.0 77.4Q533.1 74.9 533.1 72.0L533.1 72.0L533.1 30.0L547.1 30.0Z"/>
-    </svg>
-      <div class="splash-progress"></div>
     </div>
-  </div>
 
   <!-- NAVBAR -->
   <nav class="navbar">
@@ -63,7 +102,6 @@
       </a>
       <div class="nav-links" id="navLinks">
         <a href="#items">Items</a>
-        <a href="/?filter=registered#items" class="mobile-drawer-belongings" hidden><svg class="mobile-drawer-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8h14l1 13H4L5 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>My Belongings</a>
         <a href="#report">Report Item</a>
         <a href="/about.html">About</a>
         <button type="button" class="btn btn-outline nav-btn-action nav-register-btn nav-register-mobile" data-action="handleOpenRegisterBelonging">Register Belonging</button>
@@ -85,1014 +123,1681 @@
     </div>
   </nav>
 
-  <!-- HERO SECTION -->
-  <header id="portalHero" class="hero-section" style="min-height: auto; padding: 4rem 1.5rem 3rem; align-items: center;">
-    <div class="hero-text">
-      <p class="hero-greeting">Camarines Sur Polytechnic Colleges</p>
-      <h1 class="hero-name">Back2You</h1>
-      <p class="hero-tagline">Find what's lost, return what's found. Browse items reported around campus, or post a report of your own.</p>
-      <div class="hero-actions">
-        <button type="button" class="btn btn-primary" data-action="startReport" data-args='["lost"]'>Report a lost item</button>
-        <button type="button" class="btn btn-outline" data-action="startReport" data-args='["found"]'>Report a found item</button>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="hero-stats">
-        <button type="button" class="stat-box active" data-filter="all" aria-label="Show all items" aria-pressed="true" data-action="setFilter" data-args='["all", "$el"]'>
-          <span class="stat-val" id="statTotal">0</span>
-          <span class="stat-lbl">Total Items</span>
-        </button>
-        <button type="button" class="stat-box" data-filter="lost" aria-label="Show lost items" aria-pressed="false" data-action="setFilter" data-args='["lost", "$el"]'>
-          <span class="stat-val stat-val--lost" id="statLost">0</span>
-          <span class="stat-lbl">Lost</span>
-        </button>
-        <button type="button" class="stat-box" data-filter="found" aria-label="Show found items" aria-pressed="false" data-action="setFilter" data-args='["found", "$el"]'>
-          <span class="stat-val stat-val--found" id="statFound">0</span>
-          <span class="stat-lbl">Found</span>
-        </button>
-        <button type="button" class="stat-box" data-filter="claimed" aria-label="Show claimed items" aria-pressed="false" data-action="setFilter" data-args='["claimed", "$el"]'>
-          <span class="stat-val stat-val--claimed" id="statClaimed">0</span>
-          <span class="stat-lbl">Claimed</span>
-        </button>
-      </div>
-    </div>
-
-    <!-- Animated Three.js CSPC globe logo. -->
-    <div class="hero-avatar portal-hero-avatar" style="flex-shrink: 0; text-align: center;">
-      <div class="portal-hero-globe" data-cspc-logo-scene>
-        <span class="portal-hero-glow" aria-hidden="true"></span>
-        <div class="portal-hero-stage" data-cspc-logo-stage role="img" aria-label="Animated 3D CSPC globe logo. Drag to rotate."></div>
-        <span class="portal-hero-shadow" aria-hidden="true"></span>
-      </div>
-    </div>
-  </header>
-
-  <hr class="section-divider" />
-
-  <!-- Items and the report form: side by side on wide screens, stacked below that (css/polish.css). -->
-  <div class="browse-report-layout">
-
-  <!-- BROWSE & SEARCH ITEMS -->
-  <section class="projects-section" id="items">
-    <div class="section-head">
-      <div class="section-head-text">
-        <p class="section-eyebrow">Campus listings</p>
-        <h2 class="section-title">Items on Campus</h2>
-        <p class="section-subtitle">Lost and found reports from around CSPC. Search by name, reference code, or place, or narrow the list by office.</p>
-      </div>
-      <p class="section-meta" id="itemsSummary" aria-live="polite"></p>
-    </div>
-
-    <!-- Search & Filter Controls -->
-    <div class="filter-row">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Search items, codes or places…" data-input="scheduleItemsSearch" aria-label="Search by item name, reference code, location, or details" />
-        <kbd class="search-shortcut-hint" aria-hidden="true">/</kbd>
-      </div>
-      <div class="filter-chips" role="group" aria-label="Filter items">
-        <button class="chip active" data-filter="all" data-action="setFilter" data-args='["all", "$el"]'>All</button>
-        <button class="chip" data-filter="lost" data-action="setFilter" data-args='["lost", "$el"]'>Lost</button>
-        <button class="chip" data-filter="found" data-action="setFilter" data-args='["found", "$el"]'>Found</button>
-        <button class="chip" data-filter="claimed" data-action="setFilter" data-args='["claimed", "$el"]'>Claimed</button>
-        <button class="chip chip-my-vault" data-filter="registered" id="chipMyBelongings" data-action="setFilter" data-args='["registered", "$el"]' style="display: none;"><span class="my-belongings-icon" aria-hidden="true">🔒</span> My Belongings<span class="my-belongings-count"> (<span id="myBelongingsCount">0</span>)</span></button>
-      </div>
-    </div>
-
-    <!-- Campus Location Hotspots based on CSPC Offices -->
-    <div class="hotspots-row">
-      <label for="locationFilterSelect">Office:</label>
-      <div class="location-filter-wrap">
-        <select id="locationFilterSelect" class="location-filter-select" data-change="setLocationFilter" data-args='["$value"]'>
-          <option value="">All Offices</option>
-          <option value="College of Computer Studies (CCS)">College of Computer Studies (CCS)</option>
-          <option value="College of Engineering and Architecture (CEA)">College of Engineering and Architecture (CEA)</option>
-          <option value="College of Health Sciences (CHS)">College of Health Sciences (CHS)</option>
-          <option value="College of Tourism, Hospitality and Business Management (CTHBM)">College of Tourism, Hospitality and Business Management (CTHBM)</option>
-          <option value="College of Technological and Developmental Education (CTDE)">College of Technological and Developmental Education (CTDE)</option>
-          <option value="College of Arts and Sciences (CAS)">College of Arts and Sciences (CAS)</option>
-          <option value="Graduate School">Graduate School</option>
-          <option value="Buhi Campus">Buhi Campus</option>
-        </select>
-      </div>
-      <div class="sort-filter-wrap">
-        <label for="sortSelect">Sort:</label>
-        <select id="sortSelect" class="location-filter-select" data-change="setSortOrder" data-args='["$value"]'>
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="title">Name (A–Z)</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Items Grid -->
-    <div class="projects-grid items-grid" id="itemsGrid">
-      <!-- Loaded dynamically via Express API -->
-    </div>
-    <div class="items-pagination" id="itemsPagination" aria-label="Items pagination"></div>
-  </section>
-
-  <hr class="section-divider" />
-
-  <!-- REPORT FORM -->
-  <section class="tools-section" id="report" tabindex="-1">
-    <div class="section-head">
-      <div class="section-head-text">
-        <p class="section-eyebrow">Submit a report</p>
-        <h2 class="section-title">Report an Item</h2>
-      </div>
-    </div>
-
-    <div class="assistant-card" id="reportAssistant">
-      <div class="assistant-head">
-        <span class="assistant-head-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false"><path d="M12 3v2m0 14v2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M3 12h2m14 0h2M5.6 18.4 7 17m10-10 1.4-1.4"/><circle cx="12" cy="12" r="3.4"/></svg>
-        </span>
-        <div class="assistant-head-text">
-          <h3>Quick Report Assistant</h3>
-          <p>Skip the form &mdash; just describe what happened and I will fill it in for you.</p>
-        </div>
-        <span class="assistant-badge">Beta</span>
-      </div>
-
-      <div class="assistant-log" id="assistantLog" role="log" aria-live="polite" aria-label="Report assistant conversation"></div>
-
-      <form class="assistant-form" id="assistantForm" data-submit="assistantSubmit">
-        <label class="visually-hidden" for="assistantInput">Describe the lost or found item</label>
-        <input type="text" id="assistantInput" class="assistant-input" maxlength="1000" autocomplete="off"
-               placeholder="e.g. I lost my black AquaFlask near the library this morning" />
-        <button type="button" class="assistant-mic" id="assistantMicBtn" data-action="assistantToggleVoice"
-                aria-label="Dictate your report" aria-pressed="false" title="Dictate your report">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="9" y="2.5" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-3 0h6"/></svg>
-        </button>
-        <button type="submit" class="assistant-send" id="assistantSendBtn">Send</button>
-      </form>
-
-      <div class="assistant-examples">
-        <span>Try:</span>
-        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["I lost my black AquaFlask near the library this morning"]'>I lost my black AquaFlask near the library this morning</button>
-        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["I found a blue JanSport backpack at the canteen around lunch"]'>I found a blue JanSport backpack at the canteen</button>
-        <button type="button" class="assistant-example" data-action="assistantUseExample" data-args='["nawala yung school ID ko sa CCS building kahapon ng hapon"]'>nawala yung school ID ko sa CCS building kahapon</button>
-      </div>
-    </div>
-
-    <button type="button" class="manual-report-toggle" id="manualReportToggle"
-            data-action="toggleManualReportForm" aria-expanded="false" aria-controls="manualReportCard">
-      <span class="manual-report-toggle-title">Prefer to type it in yourself?</span>
-      <span class="manual-report-toggle-hint">Open the report form instead of using the assistant above</span>
-    </button>
-
-    <div class="simple-card" id="manualReportCard" hidden>
-      <form id="itemForm" class="report-item-form" data-submit="handleFormSubmit">
-        
-        <!-- Type Selection -->
-        <div class="input-field report-type-selection" style="margin-bottom: 1.25rem;">
-          <label>What are you reporting?</label>
-          <div class="type-switcher">
-            <label class="type-option active-lost" id="lblLost">
-              <input type="radio" name="itemType" value="lost" checked data-change="updateTypeRadio" />
-              <svg class="type-option-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
-              <span>I lost it</span>
-            </label>
-            <label class="type-option" id="lblFound">
-              <input type="radio" name="itemType" value="found" data-change="updateTypeRadio" />
-              <svg class="type-option-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m8 12.5 2.8 2.8L16.5 9.5"/></svg>
-              <span>I found it</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="input-field">
-            <label for="itemTitle">Item Name *</label>
-            <input type="text" id="itemTitle" placeholder="e.g., Cellphone" required minlength="3" maxlength="100" />
-          </div>
-          <div class="input-field">
-            <label for="itemCategory">Category *</label>
-            <input type="hidden" id="itemCategory" />
-            <button type="button" class="category-picker" id="itemCategoryPicker" data-action="openCategoryPicker" data-args='["itemCategory"]'>Select category...</button>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="input-field">
-            <label for="itemLocation">CSPC Office / Campus Location *</label>
-            <div class="location-input-wrap">
-              <span class="location-input-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
-                  <circle cx="12" cy="10" r="2.5" />
-                </svg>
-              </span>
-              <input type="text" id="itemLocation" role="combobox" aria-autocomplete="list"
-                     aria-controls="itemLocationSuggestions" aria-expanded="false"
-                     aria-haspopup="listbox" required
-                     placeholder="Type to search, e.g. CCS, Library, Registrar..." autocomplete="off" />
-              <div class="location-suggestions" id="itemLocationSuggestions" role="listbox"
-                   aria-label="Campus location suggestions" hidden></div>
-            </div>
-            <datalist id="itemLocationOptions">
-              <option value="College of Computer Studies (CCS)"></option>
-              <option value="College of Engineering and Architecture (CEA)"></option>
-              <option value="College of Health Sciences (CHS)"></option>
-              <option value="College of Tourism, Hospitality and Business Management (CTHBM)"></option>
-              <option value="College of Technological and Developmental Education (CTDE)"></option>
-              <option value="College of Arts and Sciences (CAS)"></option>
-              <option value="Graduate School"></option>
-              <option value="Buhi Campus"></option>
-              <option value="Student Affairs and Services (SAS)"></option>
-              <option value="Learning Resources and Development (Library)"></option>
-              <option value="Student Registration and Records (Registrar)"></option>
-              <option value="Student Testing and Admission"></option>
-              <option value="Guidance and Counseling Unit"></option>
-              <option value="Sports Development Unit (Gymnasium)"></option>
-              <option value="Cultural Affairs Unit"></option>
-              <option value="National Service Training Program (NSTP)"></option>
-              <option value="Academic Center for Continuing Enrichment for Students"></option>
-              <option value="Training and Assessment Center"></option>
-              <option value="Office of the President"></option>
-              <option value="Vice President for Administration and Finance"></option>
-              <option value="Vice President for Academic Affairs"></option>
-              <option value="VP for Research, Innovation and Collaboration"></option>
-              <option value="Health Services Unit (Campus Clinic)"></option>
-              <option value="General Services Unit (GSU / Security Desk)"></option>
-              <option value="Information and Communications Technology Unit (ICTU)"></option>
-              <option value="Cash Unit"></option>
-              <option value="Accounting Unit"></option>
-              <option value="Budget Unit"></option>
-              <option value="Supply and Property Management Unit"></option>
-              <option value="Procurement Unit / Bids and Awards Committee"></option>
-              <option value="Human Resource Management and Development Unit"></option>
-              <option value="Records and Freedom of Information Unit"></option>
-              <option value="Project Management Unit"></option>
-              <option value="Institutional Planning and Development Unit"></option>
-              <option value="Internal Audit Unit"></option>
-              <option value="Legal Affairs Unit"></option>
-              <option value="Center for International Relations and Linkages"></option>
-              <option value="Research Development Services Office"></option>
-              <option value="Extension and Community Services Office"></option>
-              <option value="Production and Auxiliary Services (Canteen / Commercial)"></option>
-              <option value="Technology Transfer Office"></option>
-              <option value="AI Research Center for Community Development"></option>
-              <option value="Center for Futures Energy and Sustainable Technology"></option>
-              <option value="Center for Rinconada Culture and the Arts"></option>
-              <option value="Rinconada Center for Environmental Sustainability"></option>
-              <option value="Center for Human Rights Education"></option>
-              <option value="Center for Gender and Development"></option>
-              <option value="Campus Main Grounds / Quadrangle"></option>
-              <option value="Campus Main Gate / Entrance"></option>
-              <option value="Campus Parking Area"></option>
-            </datalist>
-          </div>
-        </div>
-
-        <div class="form-row">
-          <div class="input-field" style="grid-column: 1 / -1;">
-            <label for="itemContact">Contact Information (Name &amp; Phone/Email) *</label>
-            <input type="text" id="itemContact" placeholder="Your name and phone or email" required />
-          </div>
-        </div>
-
-        <div class="input-field" style="margin-bottom: 1rem;">
-          <label for="itemDesc">Description &amp; Identifying Details *</label>
-          <textarea id="itemDesc" placeholder="Describe it publicly, but keep one identifying detail private." required minlength="5"></textarea>
-        </div>
-
-        <!-- Optional fields stay folded away so the form is short; resetting the form folds them again. -->
-        <details class="report-more" id="reportMoreDetails">
-          <summary>
-            <span class="report-more-title">Add more details</span>
-            <span class="report-more-hint">Room, secret detail, photo · optional</span>
-          </summary>
-
-          <div class="input-field" style="margin-bottom: 1rem;">
-            <label for="itemLocationDetails">Room or Specific Spot (Optional)</label>
-            <input type="text" id="itemLocationDetails" placeholder="e.g., Room 101" />
-          </div>
-
-          <div class="input-field" style="margin-bottom: 1rem;">
-            <label for="itemVerification">Secret Ownership Verification Detail (Optional)</label>
-            <input type="text" id="itemVerification" placeholder="e.g., Lock screen wallpaper, serial ending digits, or secret detail to verify claimant" />
-          </div>
-
-          <div class="input-field" style="margin-bottom: 1rem;">
-            <label for="itemPhotoInput">Upload Photo (Optional)</label>
-            <div class="photo-upload-area" id="photoUploadArea" role="button" tabindex="0" data-action="openPhotoPicker" data-activate>
-              <div class="photo-upload-icon" aria-hidden="true">
-                <svg viewBox="0 0 40 32" focusable="false">
-                  <path d="M11 27h19a9 9 0 0 0 1-18A13 13 0 0 0 7 12a8 8 0 0 0 4 15z" fill="currentColor"/>
-                  <path d="M20 23V11m-5 5 5-5 5 5" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </div>
-              <strong>Choose a photo or drag it here</strong>
-              <small>PNG, JPG, or WEBP · maximum 5MB</small>
-            </div>
-            <input type="file" id="itemPhotoInput" accept="image/*" data-change="handlePhotoSelect" data-args='["$event"]' style="display: none;" />
-            <div id="photoPreviewBox" class="photo-preview-box" style="display: none;">
-              <img id="photoPreviewImg" class="photo-preview-image" src="" alt="Photo Preview" />
-              <div id="photoPreviewMeta" class="photo-preview-meta"></div>
-              <button type="button" data-action="removePhoto" style="position: absolute; top: 6px; right: 6px; background: rgba(239, 68, 68, 0.9); color: white; border: none; border-radius: 4px; padding: 0.25rem 0.55rem; font-size: 0.8125rem; cursor: pointer; font-weight: 700;">✕ Remove Photo</button>
-            </div>
-          </div>
-        </details>
-
-        <div class="report-actions">
-          <button type="button" class="btn btn-outline report-cancel" data-action="resetItemForm">Cancel</button>
-          <button type="submit" class="btn btn-primary report-submit">Submit Report</button>
-        </div>
-      </form>
-    </div>
-  </section>
-
-  </div>
-
-  <!-- DIGITAL QR CODE STICKERS -->
-  <div class="slip-overlay" id="qrModal" data-close="closeQrModal">
-    <div class="qr-modal-card modal-card modal-card--lg">
-
-      <!-- Feature Header -->
-      <div class="qr-modal-header modal-header">
-        <div>
-          <h2 class="modal-heading modal-heading--plain">Digital QR Code Stickers</h2>
-          <p class="modal-subtitle">Print or reopen a sticker for your registered belonging or unclaimed lost or found report.</p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeQrModal" aria-label="Close">&times;</button>
-      </div>
-
-      <!-- Printable Sticker Preview Box -->
-      <div id="qrPrintArea" class="print-sticker">
-        <div class="print-sticker-brand">
-          <img src="cspc-logo.png" alt="CSPC Logo" class="print-logo" />
-          <span class="print-brand-text">CSPC Campus Lost &amp; Found</span>
-        </div>
-
-        <div class="print-title" id="qrItemTitle">Personal Item</div>
-        <div class="print-ref" id="qrRefCode">CSPC-LF-QR-000</div>
-
-        <!-- Scannable QR Code -->
-        <div class="print-qr-frame">
-          <img id="qrCodeImage" src="" alt="Campus Lost and Found QR Code" class="print-qr-img" />
-        </div>
-
-        <div class="print-cta">SCAN WITH PHONE IF FOUND</div>
-        <div class="print-hint">Attach this sticker to your item to help a finder contact you.</div>
-      </div>
-
-      <!-- Feature Details (How it works & Why it's useful) -->
-      <div class="qr-feature-details feature-notes">
-        <div class="feature-note">
-          <strong class="feature-note-title">📌 How it works:</strong>
-          <span class="feature-note-text">A finder can scan the sticker to see safe item details and send you a message without seeing your private contact details.</span>
-        </div>
-
-        <div class="feature-note feature-note--success">
-          <strong class="feature-note-title">🔒 Why it&rsquo;s useful:</strong>
-          <span class="feature-note-text">Reopen or print a replacement sticker from your belongings vault whenever you need one.</span>
-        </div>
-      </div>
-
-      <!-- Live Interactive Demo: Test Anonymous Finder Screen -->
-      <div id="anonymousDemoBox" class="demo-box" style="display: none;">
-        <div class="demo-box-header">
-          <span class="demo-box-title">📱 Finder's Screen (Simulated Live Preview)</span>
-          <span class="demo-box-badge">Anonymous Mode Active</span>
-        </div>
-        <p class="demo-box-text">Finder does not see owner's contact number or social media accounts. Type a recovery message:</p>
-        <textarea id="anonymousMsgInput" class="form-control demo-box-input" rows="2" aria-label="Recovery message" placeholder="e.g. Hi! Found this item at Library 2nd floor desk. Left it with the front librarian."></textarea>
-        <div class="modal-actions modal-actions--tight">
-          <button type="button" class="btn btn-outline btn-compact" data-action="toggleAnonymousDemo" data-args='[false]'>Cancel</button>
-          <button type="button" class="btn btn-primary btn-compact" data-action="sendAnonymousNotification">Send to Owner</button>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="qr-actions no-print modal-actions">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeQrModal">Close</button>
-        <button type="button" class="btn btn-outline btn-compact btn-outline-accent inline-flex items-center justify-center gap-2" id="demoToggleBtn" data-action="toggleAnonymousDemo" data-args='[true]'><span class="shrink-0" aria-hidden="true">💬</span><span class="flex items-center">Test Finder Screen</span></button>
-        <button type="button" class="btn btn-primary btn-compact" data-action="printQrSticker">🖨️ Print Sticker</button>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- PHOTO VIEWER: full-screen photo with item details, browsing and zoom (css/lightbox.css, js/home-page.js) -->
-  <div class="slip-overlay photo-lightbox" id="imageModal" data-close="closeImageModal">
-    <div class="lightbox" role="dialog" aria-labelledby="imageModalTitle">
-      <div class="lightbox-toolbar">
-        <span class="lightbox-counter" id="imageModalCounter" aria-live="polite"></span>
-        <div class="lightbox-tools">
-          <button type="button" class="lightbox-tool" id="imageModalZoom" data-action="toggleImageZoom" aria-label="Zoom in" title="Zoom (click the photo)">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5M7.5 10.5h6" /><path class="lightbox-zoom-plus" d="M10.5 7.5v6" /></svg>
+    <!-- HERO SECTION -->
+    <header
+      id="portalHero"
+      class="hero-section"
+      style="min-height: auto; padding: 4rem 1.5rem 3rem; align-items: center"
+    >
+      <div class="hero-text">
+        <p class="hero-greeting">Camarines Sur Polytechnic Colleges</p>
+        <h1 class="hero-name">Back2You</h1>
+        <p class="hero-tagline">
+          Find what's lost, return what's found. Browse items reported around campus, or post a report of your own.
+        </p>
+        <div class="hero-actions">
+          <button type="button" class="btn btn-primary" data-action="startReport" data-args='["lost"]'>
+            Report a lost item
           </button>
-          <a class="lightbox-tool" id="imageModalOpen" href="#" target="_blank" rel="noopener" aria-label="Open original photo in a new tab" title="Open original">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
-          </a>
-          <button type="button" class="lightbox-tool" data-action="closeImageModal" aria-label="Close photo" title="Close (Esc)">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          <button type="button" class="btn btn-outline" data-action="startReport" data-args='["found"]'>
+            Report a found item
+          </button>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="hero-stats">
+          <button
+            type="button"
+            class="stat-box active"
+            data-filter="all"
+            aria-label="Show all items"
+            aria-pressed="true"
+            data-action="setFilter"
+            data-args='["all", "$el"]'
+          >
+            <span class="stat-val" id="statTotal">0</span>
+            <span class="stat-lbl">Total Items</span>
+          </button>
+          <button
+            type="button"
+            class="stat-box"
+            data-filter="lost"
+            aria-label="Show lost items"
+            aria-pressed="false"
+            data-action="setFilter"
+            data-args='["lost", "$el"]'
+          >
+            <span class="stat-val stat-val--lost" id="statLost">0</span>
+            <span class="stat-lbl">Lost</span>
+          </button>
+          <button
+            type="button"
+            class="stat-box"
+            data-filter="found"
+            aria-label="Show found items"
+            aria-pressed="false"
+            data-action="setFilter"
+            data-args='["found", "$el"]'
+          >
+            <span class="stat-val stat-val--found" id="statFound">0</span>
+            <span class="stat-lbl">Found</span>
+          </button>
+          <button
+            type="button"
+            class="stat-box"
+            data-filter="claimed"
+            aria-label="Show claimed items"
+            aria-pressed="false"
+            data-action="setFilter"
+            data-args='["claimed", "$el"]'
+          >
+            <span class="stat-val stat-val--claimed" id="statClaimed">0</span>
+            <span class="stat-lbl">Claimed</span>
           </button>
         </div>
       </div>
 
-      <div class="lightbox-stage" id="imageModalStage">
-        <button type="button" class="lightbox-nav lightbox-nav--prev" id="imageModalPrev" data-action="showAdjacentPhoto" data-args="[-1]" aria-label="Previous photo">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5-7 7 7 7" /></svg>
-        </button>
-        <div class="lightbox-frame" id="imageModalFrame">
-          <img id="imageModalImg" src="" alt="" draggable="false" />
-          <span class="lightbox-spinner" aria-hidden="true"></span>
-          <p id="imageModalFallback" class="lightbox-fallback" hidden>This photo could not be loaded.</p>
-        </div>
-        <button type="button" class="lightbox-nav lightbox-nav--next" id="imageModalNext" data-action="showAdjacentPhoto" data-args="[1]" aria-label="Next photo">
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7" /></svg>
-        </button>
-      </div>
-
-      <div class="lightbox-caption">
-        <div class="lightbox-caption-head">
-          <span class="item-badge" id="imageModalBadge" hidden></span>
-          <h3 class="lightbox-title" id="imageModalTitle">Item photo</h3>
-        </div>
-        <p class="lightbox-meta" id="imageModalMeta"></p>
-      </div>
-    </div>
-  </div>
-
-  <!-- DELETE CONFIRMATION MODAL -->
-  <div class="slip-overlay" id="deleteConfirmModal" data-close="closeDeleteModal">
-    <div class="modal-card modal-card--sm modal-card--danger modal-card--center">
-      <div class="modal-icon" aria-hidden="true">🗑️</div>
-      <h3 class="modal-confirm-title modal-confirm-title--danger">Remove Item Report?</h3>
-      <p class="modal-confirm-text" id="deleteConfirmText">Are you sure you want to permanently delete this report from campus records?</p>
-      <div class="modal-actions modal-actions--center">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeDeleteModal">Cancel</button>
-        <button type="button" class="btn btn-danger" data-action="executeDelete">Remove Report</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- GENERIC CONFIRMATION MODAL: reusable yes/no prompt, replaces window.confirm() -->
-  <div class="slip-overlay" id="genericConfirmModal" data-close="closeGenericConfirm">
-    <div class="modal-card modal-card--sm modal-card--danger modal-card--center">
-      <div class="modal-icon" id="genericConfirmIcon" aria-hidden="true">⚠️</div>
-      <h3 class="modal-confirm-title modal-confirm-title--danger" id="genericConfirmTitle">Are you sure?</h3>
-      <p class="modal-confirm-text" id="genericConfirmText"></p>
-      <div class="modal-actions modal-actions--center">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeGenericConfirm">Cancel</button>
-        <button type="button" class="btn btn-danger" id="genericConfirmBtn" data-action="confirmGenericConfirm">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- POSITIVE CONFIRMATION: confirm that an item was received or returned -->
-  <div class="slip-overlay" id="confirmItemReturnedModal" data-close="closeConfirmItemReturned">
-    <div class="modal-card modal-card--sm modal-card--success modal-card--center confirm-item-returned-card">
-      <div class="modal-icon modal-icon--success" aria-hidden="true">✓</div>
-      <h3 class="modal-confirm-title modal-confirm-title--success" id="confirmItemReturnedTitle">Confirm item received/returned?</h3>
-      <p class="modal-confirm-text" id="confirmItemReturnedText">Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.</p>
-      <div class="modal-actions modal-actions--center">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeConfirmItemReturned">Cancel</button>
-        <button type="button" class="btn btn-success confirm-item-returned-button" id="confirmItemReturnedButton" data-action="confirmItemReturned">Confirm</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CLAIM / UNCLAIM CONFIRMATION MODAL -->
-  <div class="slip-overlay" id="claimConfirmModal" data-close="closeClaimModal">
-    <div class="modal-card modal-card--md">
-      <div class="modal-header modal-header--center">
-        <h3 class="modal-heading modal-heading--sm modal-confirm-title" id="claimModalTitle">Confirm Item Claim</h3>
-        <button type="button" class="modal-close" data-action="closeClaimModal" aria-label="Close">✕</button>
-      </div>
-      <p class="modal-body-text" id="claimModalSubtitle">Mark this item as successfully returned to owner or finder.</p>
-
-      <div id="claimVerificationBox" class="info-panel info-panel--hint" style="display: none;">
-        <div class="info-panel-label info-panel-label--accent">Verification Hint from Reporter:</div>
-        <div class="info-panel-quote" id="claimModalHint">"Hint text"</div>
-      </div>
-
-      <div class="input-field modal-field modal-field--last modal-field--boxed" id="claimProofGroup">
-        <label for="claimProofInput">Claimant Proof / Verification Answer</label>
-        <input type="text" id="claimProofInput" maxlength="500" aria-invalid="false" aria-describedby="claimProofError" placeholder="Enter proof, ID details, or verification answer..." />
-        <p id="claimProofError" class="field-error" style="display: none;" role="alert"></p>
-      </div>
-      <div id="claimantDetailsGroup" class="modal-field--last" style="display: none;">
-        <div class="input-field modal-field modal-field--boxed">
-          <label for="claimantCourseYearInput">Course &amp; Year</label>
-          <input type="text" id="claimantCourseYearInput" maxlength="100" aria-invalid="false" aria-describedby="claimCourseYearError" placeholder="e.g., BS Information Technology, 3rd Year" />
-          <p id="claimCourseYearError" class="field-error" style="display: none;" role="alert"></p>
-        </div>
-        <div class="input-field modal-field modal-field--boxed">
-          <label for="claimantContactInput">Contact Number (Optional)</label>
-          <input type="tel" id="claimantContactInput" maxlength="50" autocomplete="tel" placeholder="Best number to reach you" />
+      <!-- Animated Three.js CSPC globe logo. -->
+      <div class="hero-avatar portal-hero-avatar" style="flex-shrink: 0; text-align: center">
+        <div class="portal-hero-globe" data-cspc-logo-scene>
+          <span class="portal-hero-glow" aria-hidden="true"></span>
+          <div
+            class="portal-hero-stage"
+            data-cspc-logo-stage
+            role="img"
+            aria-label="Animated 3D CSPC globe logo. Drag to rotate."
+          ></div>
+          <span class="portal-hero-shadow" aria-hidden="true"></span>
         </div>
       </div>
+    </header>
 
-      <div id="claimModalError" class="modal-alert" role="alert" aria-live="assertive" style="display: none;"></div>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeClaimModal">Cancel</button>
-        <button type="button" class="btn btn-primary btn-compact" data-action="executeClaimToggle" id="claimModalBtn">Confirm Claim</button>
-      </div>
-    </div>
-  </div>
+    <hr class="section-divider" />
 
-  <!-- LOGOUT CONFIRMATION MODAL -->
-  <div class="slip-overlay" id="logoutConfirmModal" data-close="closeLogoutModal">
-    <div class="modal-card modal-card--sm modal-card--neutral modal-card--center">
-      <div class="modal-icon modal-icon--accent" aria-hidden="true">↪</div>
-      <h3 class="modal-confirm-title modal-confirm-title--neutral">Confirm Sign Out</h3>
-      <p class="modal-confirm-text">You are about to end your current session.</p>
-      <div class="modal-actions modal-actions--center">
-        <button type="button" class="btn btn-outline btn-compact" data-action="closeLogoutModal">Cancel</button>
-        <button type="button" class="btn btn-primary btn-compact" data-action="executeLogout">Sign Out</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHANGE PASSWORD MODAL -->
-  <div class="slip-overlay" id="changePasswordModal" data-close="closeChangePasswordModal">
-    <div class="modal-card modal-card--sm">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title modal-heading modal-heading--flush">Change Password</h2>
-          <p class="modal-subtitle" id="changePasswordEmail"></p>
+    <!-- Items and the report form: side by side on wide screens, stacked below that (css/polish.css). -->
+    <div class="browse-report-layout">
+      <!-- BROWSE & SEARCH ITEMS -->
+      <section class="projects-section" id="items">
+        <div class="section-head">
+          <div class="section-head-text">
+            <p class="section-eyebrow">Campus listings</p>
+            <h2 class="section-title">Items on Campus</h2>
+            <p class="section-subtitle">
+              Lost and found reports from around CSPC. Search by name, reference code, or place, or narrow the list by
+              office.
+            </p>
+          </div>
+          <p class="section-meta" id="itemsSummary" aria-live="polite"></p>
         </div>
-        <button type="button" class="modal-close" data-action="closeChangePasswordModal" aria-label="Close">&times;</button>
-      </div>
-      <form id="changePasswordForm" data-submit="handleChangePassword">
-        <div class="input-field modal-field">
-          <label for="currentPassword">Current Password</label>
-          <div class="password-wrap">
-            <input type="password" id="currentPassword" autocomplete="current-password" data-input="updateChangePasswordState" required />
-            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["currentPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
-              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
+
+        <!-- Search & Filter Controls -->
+        <div class="filter-row">
+          <div class="search-box">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search items, codes or places…"
+              data-input="scheduleItemsSearch"
+              aria-label="Search by item name, reference code, location, or details"
+            />
+            <kbd class="search-shortcut-hint" aria-hidden="true">/</kbd>
+          </div>
+          <div class="filter-chips" role="group" aria-label="Filter items">
+            <button class="chip active" data-filter="all" data-action="setFilter" data-args='["all", "$el"]'>
+              All
+            </button>
+            <button class="chip" data-filter="lost" data-action="setFilter" data-args='["lost", "$el"]'>Lost</button>
+            <button class="chip" data-filter="found" data-action="setFilter" data-args='["found", "$el"]'>Found</button>
+            <button class="chip" data-filter="claimed" data-action="setFilter" data-args='["claimed", "$el"]'>
+              Claimed
+            </button>
+            <button
+              class="chip chip-my-vault"
+              data-filter="registered"
+              id="chipMyBelongings"
+              data-action="setFilter"
+              data-args='["registered", "$el"]'
+              style="display: none"
+            >
+              <span class="my-belongings-icon" aria-hidden="true">🔒</span> My Belongings<span
+                class="my-belongings-count"
+              >
+                (<span id="myBelongingsCount">0</span>)</span
+              >
             </button>
           </div>
         </div>
-        <div class="input-field modal-field">
-          <label for="newPassword">New Password</label>
-          <div class="password-wrap">
-            <input type="password" id="newPassword" autocomplete="new-password" minlength="8" maxlength="128" required aria-describedby="newPasswordRequirements" data-input="updateChangePasswordState" />
-            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["newPassword", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
-              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
+
+        <!-- Campus Location Hotspots based on CSPC Offices -->
+        <div class="hotspots-row">
+          <label for="locationFilterSelect">Office:</label>
+          <div class="location-filter-wrap">
+            <select
+              id="locationFilterSelect"
+              class="location-filter-select"
+              data-change="setLocationFilter"
+              data-args='["$value"]'
+            >
+              <option value="">All Offices</option>
+              <option value="College of Computer Studies (CCS)">College of Computer Studies (CCS)</option>
+              <option value="College of Engineering and Architecture (CEA)">
+                College of Engineering and Architecture (CEA)
+              </option>
+              <option value="College of Health Sciences (CHS)">College of Health Sciences (CHS)</option>
+              <option value="College of Tourism, Hospitality and Business Management (CTHBM)">
+                College of Tourism, Hospitality and Business Management (CTHBM)
+              </option>
+              <option value="College of Technological and Developmental Education (CTDE)">
+                College of Technological and Developmental Education (CTDE)
+              </option>
+              <option value="College of Arts and Sciences (CAS)">College of Arts and Sciences (CAS)</option>
+              <option value="Graduate School">Graduate School</option>
+              <option value="Buhi Campus">Buhi Campus</option>
+            </select>
           </div>
-          <ul class="password-requirements" id="newPasswordRequirements" aria-live="polite">
-            <li data-requirement="length">8+ characters</li>
-            <li data-requirement="uppercase">Uppercase letter</li>
-            <li data-requirement="lowercase">Lowercase letter</li>
-            <li data-requirement="number">A number</li>
-            <li data-requirement="special">A special symbol</li>
-          </ul>
-        </div>
-        <div class="input-field modal-field">
-          <label for="newPasswordConfirm">Confirm New Password</label>
-          <div class="password-wrap">
-            <input type="password" id="newPasswordConfirm" autocomplete="new-password" required data-input="updateChangePasswordState" />
-            <button type="button" class="btn-toggle-pw" data-action="togglePasswordVisibility" data-args='["newPasswordConfirm", "$el"]' aria-label="Show password" aria-pressed="false" title="Show password">
-              <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
-          </div>
-          <p class="password-match-hint" id="passwordMatchHint" aria-live="polite"></p>
-        </div>
-        <p id="changePasswordError" class="modal-error" role="alert" style="display: none;"></p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" data-action="closeChangePasswordModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="changePasswordSubmit" disabled>Save Password</button>
-        </div>
-      </form>
-
-      <!-- Students and employees only (hidden for admins by js/home-page.js) -->
-      <div class="account-section" id="messengerAlertsSection" hidden>
-        <div>
-          <p class="account-section-title">Messenger alerts</p>
-          <p class="account-section-text" id="messengerAlertsStatus">Get possible-match and location-request alerts on Messenger too.</p>
-        </div>
-        <button type="button" class="btn btn-outline btn-compact" id="messengerAlertsBtn" data-action="handleMessengerAlertsClick">Connect Messenger</button>
-      </div>
-
-      <!-- Students and employees only (hidden for admins by js/home-page.js) -->
-      <div class="account-danger" id="deleteAccountSection">
-        <div>
-          <p class="account-danger-title">Delete account</p>
-          <p class="account-danger-text">Permanently remove your account and personal data.</p>
-        </div>
-        <button type="button" class="btn btn-outline btn-compact account-danger-btn" data-action="openDeleteAccountModal">Delete account</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
-  <div class="slip-overlay" id="deleteAccountModal" data-close="closeDeleteAccountModal">
-    <div class="modal-card modal-card--sm modal-card--danger">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title modal-heading modal-heading--flush modal-confirm-title--danger">Delete your account?</h2>
-          <p class="modal-subtitle" id="deleteAccountEmail"></p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeDeleteAccountModal" aria-label="Close">&times;</button>
-      </div>
-      <form id="deleteAccountForm" data-submit="handleDeleteAccount">
-        <p class="modal-body-text">This cannot be undone. Deleting your account will:</p>
-        <ul class="account-delete-list">
-          <li><strong>Delete</strong> your registered belongings, your lost-item reports, your pending claims and your notifications.</li>
-          <li><strong>Keep, without your name or contact details,</strong> found items you reported (so their owners can still claim them) and claims that were already decided.</li>
-        </ul>
-        <div class="input-field modal-field">
-          <label for="deleteAccountPassword">Your password</label>
-          <input type="password" id="deleteAccountPassword" autocomplete="current-password" required />
-        </div>
-        <div class="input-field modal-field">
-          <label for="deleteAccountConfirm">Type DELETE to confirm</label>
-          <input type="text" id="deleteAccountConfirm" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="DELETE" required />
-        </div>
-        <p id="deleteAccountError" class="modal-error" role="alert" style="display: none;"></p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" data-action="closeDeleteAccountModal">Keep my account</button>
-          <button type="submit" class="btn btn-danger" id="deleteAccountSubmit" disabled>Delete account</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MESSENGER ALERTS LINK MODAL -->
-  <div class="slip-overlay" id="messengerLinkModal" data-close="closeMessengerLinkModal">
-    <div class="modal-card modal-card--sm">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title modal-heading modal-heading--flush">Connect Messenger</h2>
-          <p class="modal-subtitle">One-time code to link your account</p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeMessengerLinkModal" aria-label="Close">&times;</button>
-      </div>
-      <p class="modal-body-text">Send this code as a message to our Facebook Page. Once received, Messenger alerts will turn on for your account.</p>
-      <div class="info-panel">
-        <div class="info-panel-label">Your code</div>
-        <div class="info-panel-code" id="messengerLinkCode">000000</div>
-      </div>
-      <p class="modal-body-text" id="messengerLinkExpiry"></p>
-      <div class="modal-actions">
-        <a class="btn btn-outline" id="messengerLinkPageBtn" href="#" target="_blank" rel="noopener">Message us on Facebook</a>
-        <button type="button" class="btn btn-primary" data-action="closeMessengerLinkModal">Done</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- REPORT SUCCESS CONFIRMATION MODAL -->
-  <div class="slip-overlay" id="reportSuccessModal" data-close="closeReportSuccessModal">
-    <div class="modal-card modal-card--md modal-card--center">
-      <div class="modal-icon" aria-hidden="true">✅</div>
-      <h3 class="modal-confirm-title">Report Submitted Successfully!</h3>
-      <p class="modal-confirm-text modal-confirm-text--tight">Your report has been saved into official CSPC campus records.</p>
-
-      <div class="info-panel">
-        <div class="info-panel-label">Tracking Reference Code</div>
-        <div class="info-panel-code" id="successRefCode">CSPC-LF-2026-000</div>
-      </div>
-
-      <div id="successMatchAlert" class="success-panel" style="display: none;">
-        🎯 <strong>Potential Smart Match Detected!</strong> A matching item report was found in campus records.
-      </div>
-
-      <div class="modal-actions modal-actions--center">
-        <button type="button" class="btn btn-outline" data-action="closeReportSuccessModal">Close</button>
-        <button type="button" class="btn btn-primary" id="successPrintBtn" data-action="openQrFromSuccessModal">Get QR Sticker</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- REGISTER VALUABLE BELONGING MODAL (AUTH REQUIRED) -->
-  <div class="slip-overlay" id="registerBelongingModal" data-close="closeRegisterBelongingModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div>
-          <span class="modal-badge-pill">Preventive Student Vault</span>
-          <h2 class="modal-title modal-heading" id="registerModalTitle">Register Valuable Belonging</h2>
-          <p class="modal-subtitle" id="registerModalSubtitle">Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.</p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeRegisterBelongingModal" aria-label="Close">&times;</button>
-      </div>
-
-      <div class="modal-notice-box">
-        🔒 <strong>Private to Your Account:</strong> Only you have access to your registered belongings. They are stored in your personal vault and never displayed on the public feed.
-      </div>
-
-      <form id="registerBelongingForm" data-submit="handleRegisterBelongingSubmit">
-        <div class="input-field modal-field">
-          <label for="regTitle">Belonging Name / Model <span class="required">*</span></label>
-          <input type="text" id="regTitle" placeholder="e.g. Acer Aspire 5 Laptop / AquaFlask 32oz Mustard" required minlength="3" maxlength="100" />
-        </div>
-
-        <div class="modal-grid-2">
-          <div class="input-field modal-field">
-            <label for="regCategoryPicker">Category <span class="required">*</span></label>
-            <input type="hidden" id="regCategory" />
-            <button type="button" class="category-picker" id="regCategoryPicker" data-action="openCategoryPicker" data-args='["regCategory"]'>Select category...</button>
-          </div>
-          <div class="input-field modal-field">
-            <label for="regLocation">Primary Building</label>
-            <select id="regLocation">
-              <option value="Campus-wide">Campus-wide</option>
-              <option value="Engineering (CEA)">CEA (Engineering)</option>
-              <option value="Computer Studies (CCS)">CCS (Computer)</option>
-              <option value="Library">Library</option>
-              <option value="Gymnasium">Gymnasium</option>
-              <option value="Main Building">Main Building</option>
+          <div class="sort-filter-wrap">
+            <label for="sortSelect">Sort:</label>
+            <select id="sortSelect" class="location-filter-select" data-change="setSortOrder" data-args='["$value"]'>
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="title">Name (A–Z)</option>
             </select>
           </div>
         </div>
 
-        <!-- Optional fields stay folded away so the required ones stand out; closing the modal folds them again. -->
-        <details class="report-more modal-field modal-field--last" id="registerMoreDetails">
-          <summary>
-            <span class="report-more-title">Add more details</span>
-            <span class="report-more-hint">Serial number, finder note · optional</span>
-          </summary>
-
-          <div class="input-field modal-field">
-            <label for="regIdentifiers">Distinguishing Marks / Serial No. (Optional)</label>
-            <input type="text" id="regIdentifiers" placeholder="e.g. Anime sticker on lid, engraved initials" maxlength="150" />
-          </div>
-
-          <div class="input-field modal-field">
-            <label for="regInstructions">Default Note for Finder (Optional)</label>
-            <textarea id="regInstructions" rows="2" placeholder="e.g. If found, please message me or leave it with the library front counter."></textarea>
-          </div>
-        </details>
-
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" data-action="closeRegisterBelongingModal">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="regSubmitBtn">Save Belonging</button>
+        <!-- Items Grid -->
+        <div class="projects-grid items-grid" id="itemsGrid">
+          <!-- Loaded dynamically via Express API -->
         </div>
-      </form>
-    </div>
-  </div>
+        <div class="items-pagination" id="itemsPagination" aria-label="Items pagination"></div>
+      </section>
 
-  <div class="slip-overlay" id="categoryPickerModal" data-close="closeCategoryPicker">
-    <div class="category-picker-modal" role="dialog" aria-modal="true" aria-labelledby="categoryPickerTitle">
-      <div class="category-picker-header">
-        <div><span class="category-picker-eyebrow">Item classification</span><h2 id="categoryPickerTitle">Select a Category</h2></div>
-        <button type="button" class="category-picker-close" data-action="closeCategoryPicker" aria-label="Close category picker">&times;</button>
-      </div>
-      <svg class="category-icon-defs" aria-hidden="true" focusable="false">
-        <symbol id="category-icon-electronics" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M10 5h4M11 18.5h2"/></symbol>
-        <symbol id="category-icon-bottle" viewBox="0 0 24 24"><path d="M9 3h6v3l2 2v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2z"/><path d="M9 10h8M9 14h8"/></symbol>
-        <symbol id="category-icon-clothing" viewBox="0 0 24 24"><path d="m8 4 4 2 4-2 5 3-3 5-2-1v10H8V11l-2 1-3-5z"/><path d="M9 4a3 3 0 0 0 6 0"/></symbol>
-        <symbol id="category-icon-books" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5v16.5M8 6h8M8 10h8"/></symbol>
-        <symbol id="category-icon-bag" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="14" rx="2"/><path d="M9 7V5a3 3 0 0 1 6 0v2M4 12h16M10 12v2h4v-2"/></symbol>
-        <symbol id="category-icon-key" viewBox="0 0 24 24"><circle cx="8" cy="10" r="5"/><path d="m12 13 8 8m-3-3 2-2m-5-1 2-2"/></symbol>
-        <symbol id="category-icon-jewelry" viewBox="0 0 24 24"><path d="m3 9 4-5h10l4 5-9 12zM3 9h18M7 4l5 17 5-17M7 9l5-5 5 5"/></symbol>
-        <symbol id="category-icon-sports" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 5h-5L8 10zM8 10l-4-1m4 1-2 6m8-6 5-1m-3 6 3 4m-11-3 4 5"/></symbol>
-        <symbol id="category-icon-school" viewBox="0 0 24 24"><path d="m4 17 11-11 4 4L8 21H4zM13 8l4 4M4 17l4 4M17 3l4 4"/></symbol>
-        <symbol id="category-icon-id" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.5"/><path d="M5.5 17a3.5 3.5 0 0 1 7 0m3-8h3m-3 4h3"/></symbol>
-        <symbol id="category-icon-other" viewBox="0 0 24 24"><path d="m3 7 9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10"/></symbol>
-      </svg>
-      <div class="category-grid">
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Electronics", "electronics"]'><svg aria-hidden="true"><use href="#category-icon-electronics"></use></svg>Electronics</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Water Bottles/Tumblers", "bottle"]'><svg aria-hidden="true"><use href="#category-icon-bottle"></use></svg>Water Bottles / Tumblers</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Clothing &amp; Accessories", "clothing"]'><svg aria-hidden="true"><use href="#category-icon-clothing"></use></svg>Clothing &amp; Accessories</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Books &amp; Documents", "books"]'><svg aria-hidden="true"><use href="#category-icon-books"></use></svg>Books &amp; Documents</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Bags &amp; Wallets", "bag"]'><svg aria-hidden="true"><use href="#category-icon-bag"></use></svg>Bags &amp; Wallets</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Keys", "key"]'><svg aria-hidden="true"><use href="#category-icon-key"></use></svg>Keys</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Jewelry", "jewelry"]'><svg aria-hidden="true"><use href="#category-icon-jewelry"></use></svg>Jewelry</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Sports Equipment", "sports"]'><svg aria-hidden="true"><use href="#category-icon-sports"></use></svg>Sports Equipment</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["School Supplies", "school"]'><svg aria-hidden="true"><use href="#category-icon-school"></use></svg>School Supplies</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["ID / Cards", "id"]'><svg aria-hidden="true"><use href="#category-icon-id"></use></svg>ID / Cards</button>
-        <button type="button" class="category-option" data-action="selectCategory" data-args='["Others", "other"]'><svg aria-hidden="true"><use href="#category-icon-other"></use></svg>Others</button>
+      <hr class="section-divider" />
+
+      <!-- REPORT FORM -->
+      <section class="tools-section" id="report" tabindex="-1">
+        <div class="section-head">
+          <div class="section-head-text">
+            <p class="section-eyebrow">Submit a report</p>
+            <h2 class="section-title">Report an Item</h2>
+          </div>
+        </div>
+
+        <div class="assistant-card" id="reportAssistant">
+          <div class="assistant-head">
+            <span class="assistant-head-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" focusable="false">
+                <path d="M12 3v2m0 14v2M5.6 5.6l1.4 1.4m10 10 1.4 1.4M3 12h2m14 0h2M5.6 18.4 7 17m10-10 1.4-1.4" />
+                <circle cx="12" cy="12" r="3.4" />
+              </svg>
+            </span>
+            <div class="assistant-head-text">
+              <h3>Quick Report Assistant</h3>
+              <p>Skip the form &mdash; just describe what happened and I will fill it in for you.</p>
+            </div>
+            <span class="assistant-badge">Beta</span>
+          </div>
+
+          <div
+            class="assistant-log"
+            id="assistantLog"
+            role="log"
+            aria-live="polite"
+            aria-label="Report assistant conversation"
+          ></div>
+
+          <form class="assistant-form" id="assistantForm" data-submit="assistantSubmit">
+            <label class="visually-hidden" for="assistantInput">Describe the lost or found item</label>
+            <input
+              type="text"
+              id="assistantInput"
+              class="assistant-input"
+              maxlength="1000"
+              autocomplete="off"
+              placeholder="e.g. I lost my black AquaFlask near the library this morning"
+            />
+            <button
+              type="button"
+              class="assistant-mic"
+              id="assistantMicBtn"
+              data-action="assistantToggleVoice"
+              aria-label="Dictate your report"
+              aria-pressed="false"
+              title="Dictate your report"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <rect x="9" y="2.5" width="6" height="11" rx="3" />
+                <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21m-3 0h6" />
+              </svg>
+            </button>
+            <button type="submit" class="assistant-send" id="assistantSendBtn">Send</button>
+          </form>
+
+          <div class="assistant-examples">
+            <span>Try:</span>
+            <button
+              type="button"
+              class="assistant-example"
+              data-action="assistantUseExample"
+              data-args='["I lost my black AquaFlask near the library this morning"]'
+            >
+              I lost my black AquaFlask near the library this morning
+            </button>
+            <button
+              type="button"
+              class="assistant-example"
+              data-action="assistantUseExample"
+              data-args='["I found a blue JanSport backpack at the canteen around lunch"]'
+            >
+              I found a blue JanSport backpack at the canteen
+            </button>
+            <button
+              type="button"
+              class="assistant-example"
+              data-action="assistantUseExample"
+              data-args='["nawala yung school ID ko sa CCS building kahapon ng hapon"]'
+            >
+              nawala yung school ID ko sa CCS building kahapon
+            </button>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="manual-report-toggle"
+          id="manualReportToggle"
+          data-action="toggleManualReportForm"
+          aria-expanded="false"
+          aria-controls="manualReportCard"
+        >
+          <span class="manual-report-toggle-title">Prefer to type it in yourself?</span>
+          <span class="manual-report-toggle-hint">Open the report form instead of using the assistant above</span>
+        </button>
+
+        <div class="simple-card" id="manualReportCard" hidden>
+          <form id="itemForm" class="report-item-form" data-submit="handleFormSubmit">
+            <!-- Type Selection -->
+            <div class="input-field report-type-selection" style="margin-bottom: 1.25rem">
+              <label>What are you reporting?</label>
+              <div class="type-switcher">
+                <label class="type-option active-lost" id="lblLost">
+                  <input type="radio" name="itemType" value="lost" checked data-change="updateTypeRadio" />
+                  <svg class="type-option-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="10.5" cy="10.5" r="6.5" />
+                    <path d="m16 16 5 5" />
+                  </svg>
+                  <span>I lost it</span>
+                </label>
+                <label class="type-option" id="lblFound">
+                  <input type="radio" name="itemType" value="found" data-change="updateTypeRadio" />
+                  <svg class="type-option-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="m8 12.5 2.8 2.8L16.5 9.5" />
+                  </svg>
+                  <span>I found it</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="input-field">
+                <label for="itemTitle">Item Name *</label>
+                <input
+                  type="text"
+                  id="itemTitle"
+                  placeholder="e.g., Cellphone"
+                  required
+                  minlength="3"
+                  maxlength="100"
+                />
+              </div>
+              <div class="input-field">
+                <label for="itemCategory">Category *</label>
+                <input type="hidden" id="itemCategory" />
+                <button
+                  type="button"
+                  class="category-picker"
+                  id="itemCategoryPicker"
+                  data-action="openCategoryPicker"
+                  data-args='["itemCategory"]'
+                >
+                  Select category...
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="input-field">
+                <label for="itemLocation">CSPC Office / Campus Location *</label>
+                <div class="location-input-wrap">
+                  <span class="location-input-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+                      <circle cx="12" cy="10" r="2.5" />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    id="itemLocation"
+                    role="combobox"
+                    aria-autocomplete="list"
+                    aria-controls="itemLocationSuggestions"
+                    aria-expanded="false"
+                    aria-haspopup="listbox"
+                    required
+                    placeholder="Type to search, e.g. CCS, Library, Registrar..."
+                    autocomplete="off"
+                  />
+                  <div
+                    class="location-suggestions"
+                    id="itemLocationSuggestions"
+                    role="listbox"
+                    aria-label="Campus location suggestions"
+                    hidden
+                  ></div>
+                </div>
+                <datalist id="itemLocationOptions">
+                  <option value="College of Computer Studies (CCS)"></option>
+                  <option value="College of Engineering and Architecture (CEA)"></option>
+                  <option value="College of Health Sciences (CHS)"></option>
+                  <option value="College of Tourism, Hospitality and Business Management (CTHBM)"></option>
+                  <option value="College of Technological and Developmental Education (CTDE)"></option>
+                  <option value="College of Arts and Sciences (CAS)"></option>
+                  <option value="Graduate School"></option>
+                  <option value="Buhi Campus"></option>
+                  <option value="Student Affairs and Services (SAS)"></option>
+                  <option value="Learning Resources and Development (Library)"></option>
+                  <option value="Student Registration and Records (Registrar)"></option>
+                  <option value="Student Testing and Admission"></option>
+                  <option value="Guidance and Counseling Unit"></option>
+                  <option value="Sports Development Unit (Gymnasium)"></option>
+                  <option value="Cultural Affairs Unit"></option>
+                  <option value="National Service Training Program (NSTP)"></option>
+                  <option value="Academic Center for Continuing Enrichment for Students"></option>
+                  <option value="Training and Assessment Center"></option>
+                  <option value="Office of the President"></option>
+                  <option value="Vice President for Administration and Finance"></option>
+                  <option value="Vice President for Academic Affairs"></option>
+                  <option value="VP for Research, Innovation and Collaboration"></option>
+                  <option value="Health Services Unit (Campus Clinic)"></option>
+                  <option value="General Services Unit (GSU / Security Desk)"></option>
+                  <option value="Information and Communications Technology Unit (ICTU)"></option>
+                  <option value="Cash Unit"></option>
+                  <option value="Accounting Unit"></option>
+                  <option value="Budget Unit"></option>
+                  <option value="Supply and Property Management Unit"></option>
+                  <option value="Procurement Unit / Bids and Awards Committee"></option>
+                  <option value="Human Resource Management and Development Unit"></option>
+                  <option value="Records and Freedom of Information Unit"></option>
+                  <option value="Project Management Unit"></option>
+                  <option value="Institutional Planning and Development Unit"></option>
+                  <option value="Internal Audit Unit"></option>
+                  <option value="Legal Affairs Unit"></option>
+                  <option value="Center for International Relations and Linkages"></option>
+                  <option value="Research Development Services Office"></option>
+                  <option value="Extension and Community Services Office"></option>
+                  <option value="Production and Auxiliary Services (Canteen / Commercial)"></option>
+                  <option value="Technology Transfer Office"></option>
+                  <option value="AI Research Center for Community Development"></option>
+                  <option value="Center for Futures Energy and Sustainable Technology"></option>
+                  <option value="Center for Rinconada Culture and the Arts"></option>
+                  <option value="Rinconada Center for Environmental Sustainability"></option>
+                  <option value="Center for Human Rights Education"></option>
+                  <option value="Center for Gender and Development"></option>
+                  <option value="Campus Main Grounds / Quadrangle"></option>
+                  <option value="Campus Main Gate / Entrance"></option>
+                  <option value="Campus Parking Area"></option>
+                </datalist>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="input-field" style="grid-column: 1 / -1">
+                <label for="itemContact">Contact Information (Name &amp; Phone/Email) *</label>
+                <input type="text" id="itemContact" placeholder="Your name and phone or email" required />
+              </div>
+            </div>
+
+            <div class="input-field" style="margin-bottom: 1rem">
+              <label for="itemDesc">Description &amp; Identifying Details *</label>
+              <textarea
+                id="itemDesc"
+                placeholder="Describe it publicly, but keep one identifying detail private."
+                required
+                minlength="5"
+              ></textarea>
+            </div>
+
+            <!-- Optional fields stay folded away so the form is short; resetting the form folds them again. -->
+            <details class="report-more" id="reportMoreDetails">
+              <summary>
+                <span class="report-more-title">Add more details</span>
+                <span class="report-more-hint">Room, secret detail, photo · optional</span>
+              </summary>
+
+              <div class="input-field" style="margin-bottom: 1rem">
+                <label for="itemLocationDetails">Room or Specific Spot (Optional)</label>
+                <input type="text" id="itemLocationDetails" placeholder="e.g., Room 101" />
+              </div>
+
+              <div class="input-field" style="margin-bottom: 1rem">
+                <label for="itemVerification">Secret Ownership Verification Detail (Optional)</label>
+                <input
+                  type="text"
+                  id="itemVerification"
+                  placeholder="e.g., Lock screen wallpaper, serial ending digits, or secret detail to verify claimant"
+                />
+              </div>
+
+              <div class="input-field" style="margin-bottom: 1rem">
+                <label for="itemPhotoInput">Upload Photo (Optional)</label>
+                <div
+                  class="photo-upload-area"
+                  id="photoUploadArea"
+                  role="button"
+                  tabindex="0"
+                  data-action="openPhotoPicker"
+                  data-activate
+                >
+                  <div class="photo-upload-icon" aria-hidden="true">
+                    <svg viewBox="0 0 40 32" focusable="false">
+                      <path d="M11 27h19a9 9 0 0 0 1-18A13 13 0 0 0 7 12a8 8 0 0 0 4 15z" fill="currentColor" />
+                      <path
+                        d="M20 23V11m-5 5 5-5 5 5"
+                        fill="none"
+                        stroke="#fff"
+                        stroke-width="2.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <strong>Choose a photo or drag it here</strong>
+                  <small>PNG, JPG, or WEBP · maximum 5MB</small>
+                </div>
+                <input
+                  type="file"
+                  id="itemPhotoInput"
+                  accept="image/*"
+                  data-change="handlePhotoSelect"
+                  data-args='["$event"]'
+                  style="display: none"
+                />
+                <div id="photoPreviewBox" class="photo-preview-box" style="display: none">
+                  <img id="photoPreviewImg" class="photo-preview-image" src="" alt="Photo Preview" />
+                  <div id="photoPreviewMeta" class="photo-preview-meta"></div>
+                  <button
+                    type="button"
+                    data-action="removePhoto"
+                    style="
+                      position: absolute;
+                      top: 6px;
+                      right: 6px;
+                      background: rgba(239, 68, 68, 0.9);
+                      color: white;
+                      border: none;
+                      border-radius: 4px;
+                      padding: 0.25rem 0.55rem;
+                      font-size: 0.8125rem;
+                      cursor: pointer;
+                      font-weight: 700;
+                    "
+                  >
+                    ✕ Remove Photo
+                  </button>
+                </div>
+              </div>
+            </details>
+
+            <div class="report-actions">
+              <button type="button" class="btn btn-outline report-cancel" data-action="resetItemForm">Cancel</button>
+              <button type="submit" class="btn btn-primary report-submit">Submit Report</button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <!-- DIGITAL QR CODE STICKERS -->
+    <div class="slip-overlay" id="qrModal" data-close="closeQrModal">
+      <div class="qr-modal-card modal-card modal-card--lg">
+        <!-- Feature Header -->
+        <div class="qr-modal-header modal-header">
+          <div>
+            <h2 class="modal-heading modal-heading--plain">Digital QR Code Stickers</h2>
+            <p class="modal-subtitle">
+              Print or reopen a sticker for your registered belonging or unclaimed lost or found report.
+            </p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeQrModal" aria-label="Close">&times;</button>
+        </div>
+
+        <!-- Printable Sticker Preview Box -->
+        <div id="qrPrintArea" class="print-sticker">
+          <div class="print-sticker-brand">
+            <img src="cspc-logo.png" alt="CSPC Logo" class="print-logo" />
+            <span class="print-brand-text">CSPC Campus Lost &amp; Found</span>
+          </div>
+
+          <div class="print-title" id="qrItemTitle">Personal Item</div>
+          <div class="print-ref" id="qrRefCode">CSPC-LF-QR-000</div>
+
+          <!-- Scannable QR Code -->
+          <div class="print-qr-frame">
+            <img id="qrCodeImage" src="" alt="Campus Lost and Found QR Code" class="print-qr-img" />
+          </div>
+
+          <div class="print-cta">SCAN WITH PHONE IF FOUND</div>
+          <div class="print-hint">Attach this sticker to your item to help a finder contact you.</div>
+        </div>
+
+        <!-- Feature Details (How it works & Why it's useful) -->
+        <div class="qr-feature-details feature-notes">
+          <div class="feature-note">
+            <strong class="feature-note-title">📌 How it works:</strong>
+            <span class="feature-note-text"
+              >A finder can scan the sticker to see safe item details and send you a message without seeing your private
+              contact details.</span
+            >
+          </div>
+
+          <div class="feature-note feature-note--success">
+            <strong class="feature-note-title">🔒 Why it&rsquo;s useful:</strong>
+            <span class="feature-note-text"
+              >Reopen or print a replacement sticker from your belongings vault whenever you need one.</span
+            >
+          </div>
+        </div>
+
+        <!-- Live Interactive Demo: Test Anonymous Finder Screen -->
+        <div id="anonymousDemoBox" class="demo-box" style="display: none">
+          <div class="demo-box-header">
+            <span class="demo-box-title">📱 Finder's Screen (Simulated Live Preview)</span>
+            <span class="demo-box-badge">Anonymous Mode Active</span>
+          </div>
+          <p class="demo-box-text">
+            Finder does not see owner's contact number or social media accounts. Type a recovery message:
+          </p>
+          <textarea
+            id="anonymousMsgInput"
+            class="form-control demo-box-input"
+            rows="2"
+            aria-label="Recovery message"
+            placeholder="e.g. Hi! Found this item at Library 2nd floor desk. Left it with the front librarian."
+          ></textarea>
+          <div class="modal-actions modal-actions--tight">
+            <button
+              type="button"
+              class="btn btn-outline btn-compact"
+              data-action="toggleAnonymousDemo"
+              data-args="[false]"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary btn-compact" data-action="sendAnonymousNotification">
+              Send to Owner
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="qr-actions no-print modal-actions">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeQrModal">Close</button>
+          <button
+            type="button"
+            class="btn btn-outline btn-compact btn-outline-accent inline-flex items-center justify-center gap-2"
+            id="demoToggleBtn"
+            data-action="toggleAnonymousDemo"
+            data-args="[true]"
+          >
+            <span class="shrink-0" aria-hidden="true">💬</span><span class="flex items-center">Test Finder Screen</span>
+          </button>
+          <button type="button" class="btn btn-primary btn-compact" data-action="printQrSticker">
+            🖨️ Print Sticker
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- AUTH REQUIRED MODAL -->
-  <div class="slip-overlay" id="authRequiredModal" data-close="closeAuthRequiredModal">
-    <div class="modal-card modal-card--md modal-card--center">
-      <div class="modal-icon" aria-hidden="true">🔒</div>
-      <h3 class="modal-confirm-title">Registered Account Required</h3>
-      <p class="modal-confirm-text">
-        Belonging Registration is a <strong>preventive feature</strong> available exclusively to authenticated CSPC students and admins. This guarantees that <strong>only you have access</strong> to your registered belongings and notification alerts.
-      </p>
-      <div class="modal-actions modal-actions--center modal-actions--stretch">
-        <button type="button" class="btn btn-outline" data-action="closeAuthRequiredModal">Cancel</button>
-        <a href="/login" class="btn btn-primary">Sign In / Register</a>
+    <!-- PHOTO VIEWER: full-screen photo with item details, browsing and zoom (css/lightbox.css, js/home-page.js) -->
+    <div class="slip-overlay photo-lightbox" id="imageModal" data-close="closeImageModal">
+      <div class="lightbox" role="dialog" aria-labelledby="imageModalTitle">
+        <div class="lightbox-toolbar">
+          <span class="lightbox-counter" id="imageModalCounter" aria-live="polite"></span>
+          <div class="lightbox-tools">
+            <button
+              type="button"
+              class="lightbox-tool"
+              id="imageModalZoom"
+              data-action="toggleImageZoom"
+              aria-label="Zoom in"
+              title="Zoom (click the photo)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="m16 16 5 5M7.5 10.5h6" />
+                <path class="lightbox-zoom-plus" d="M10.5 7.5v6" />
+              </svg>
+            </button>
+            <a
+              class="lightbox-tool"
+              id="imageModalOpen"
+              href="#"
+              target="_blank"
+              rel="noopener"
+              aria-label="Open original photo in a new tab"
+              title="Open original"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+              </svg>
+            </a>
+            <button
+              type="button"
+              class="lightbox-tool"
+              data-action="closeImageModal"
+              aria-label="Close photo"
+              title="Close (Esc)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="lightbox-stage" id="imageModalStage">
+          <button
+            type="button"
+            class="lightbox-nav lightbox-nav--prev"
+            id="imageModalPrev"
+            data-action="showAdjacentPhoto"
+            data-args="[-1]"
+            aria-label="Previous photo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 5-7 7 7 7" /></svg>
+          </button>
+          <div class="lightbox-frame" id="imageModalFrame">
+            <img id="imageModalImg" src="" alt="" draggable="false" />
+            <span class="lightbox-spinner" aria-hidden="true"></span>
+            <p id="imageModalFallback" class="lightbox-fallback" hidden>This photo could not be loaded.</p>
+          </div>
+          <button
+            type="button"
+            class="lightbox-nav lightbox-nav--next"
+            id="imageModalNext"
+            data-action="showAdjacentPhoto"
+            data-args="[1]"
+            aria-label="Next photo"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 5 7 7-7 7" /></svg>
+          </button>
+        </div>
+
+        <div class="lightbox-caption">
+          <div class="lightbox-caption-head">
+            <span class="item-badge" id="imageModalBadge" hidden></span>
+            <h3 class="lightbox-title" id="imageModalTitle">Item photo</h3>
+          </div>
+          <p class="lightbox-meta" id="imageModalMeta"></p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- CONNECT & NOTIFY SCREEN MODAL: message the owner, and optionally exchange direct contact.
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="slip-overlay" id="deleteConfirmModal" data-close="closeDeleteModal">
+      <div class="modal-card modal-card--sm modal-card--danger modal-card--center">
+        <div class="modal-icon" aria-hidden="true">🗑️</div>
+        <h3 class="modal-confirm-title modal-confirm-title--danger">Remove Item Report?</h3>
+        <p class="modal-confirm-text" id="deleteConfirmText">
+          Are you sure you want to permanently delete this report from campus records?
+        </p>
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeDeleteModal">Cancel</button>
+          <button type="button" class="btn btn-danger" data-action="executeDelete">Remove Report</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GENERIC CONFIRMATION MODAL: reusable yes/no prompt, replaces window.confirm() -->
+    <div class="slip-overlay" id="genericConfirmModal" data-close="closeGenericConfirm">
+      <div class="modal-card modal-card--sm modal-card--danger modal-card--center">
+        <div class="modal-icon" id="genericConfirmIcon" aria-hidden="true">⚠️</div>
+        <h3 class="modal-confirm-title modal-confirm-title--danger" id="genericConfirmTitle">Are you sure?</h3>
+        <p class="modal-confirm-text" id="genericConfirmText"></p>
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeGenericConfirm">Cancel</button>
+          <button type="button" class="btn btn-danger" id="genericConfirmBtn" data-action="confirmGenericConfirm">
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSITIVE CONFIRMATION: confirm that an item was received or returned -->
+    <div class="slip-overlay" id="confirmItemReturnedModal" data-close="closeConfirmItemReturned">
+      <div class="modal-card modal-card--sm modal-card--success modal-card--center confirm-item-returned-card">
+        <div class="modal-icon modal-icon--success" aria-hidden="true">✓</div>
+        <h3 class="modal-confirm-title modal-confirm-title--success" id="confirmItemReturnedTitle">
+          Confirm item received/returned?
+        </h3>
+        <p class="modal-confirm-text" id="confirmItemReturnedText">
+          Confirm that this item has been received or returned? Once both sides confirm, the item is marked as claimed.
+        </p>
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeConfirmItemReturned">
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="btn btn-success confirm-item-returned-button"
+            id="confirmItemReturnedButton"
+            data-action="confirmItemReturned"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLAIM / UNCLAIM CONFIRMATION MODAL -->
+    <div class="slip-overlay" id="claimConfirmModal" data-close="closeClaimModal">
+      <div class="modal-card modal-card--md">
+        <div class="modal-header modal-header--center">
+          <h3 class="modal-heading modal-heading--sm modal-confirm-title" id="claimModalTitle">Confirm Item Claim</h3>
+          <button type="button" class="modal-close" data-action="closeClaimModal" aria-label="Close">✕</button>
+        </div>
+        <p class="modal-body-text" id="claimModalSubtitle">
+          Mark this item as successfully returned to owner or finder.
+        </p>
+
+        <div id="claimVerificationBox" class="info-panel info-panel--hint" style="display: none">
+          <div class="info-panel-label info-panel-label--accent">Verification Hint from Reporter:</div>
+          <div class="info-panel-quote" id="claimModalHint">"Hint text"</div>
+        </div>
+
+        <div class="input-field modal-field modal-field--last modal-field--boxed" id="claimProofGroup">
+          <label for="claimProofInput">Claimant Proof / Verification Answer</label>
+          <input
+            type="text"
+            id="claimProofInput"
+            maxlength="500"
+            aria-invalid="false"
+            aria-describedby="claimProofError"
+            placeholder="Enter proof, ID details, or verification answer..."
+          />
+          <p id="claimProofError" class="field-error" style="display: none" role="alert"></p>
+        </div>
+        <div id="claimantDetailsGroup" class="modal-field--last" style="display: none">
+          <div class="input-field modal-field modal-field--boxed">
+            <label for="claimantCourseYearInput">Course &amp; Year</label>
+            <input
+              type="text"
+              id="claimantCourseYearInput"
+              maxlength="100"
+              aria-invalid="false"
+              aria-describedby="claimCourseYearError"
+              placeholder="e.g., BS Information Technology, 3rd Year"
+            />
+            <p id="claimCourseYearError" class="field-error" style="display: none" role="alert"></p>
+          </div>
+          <div class="input-field modal-field modal-field--boxed">
+            <label for="claimantContactInput">Contact Number (Optional)</label>
+            <input
+              type="tel"
+              id="claimantContactInput"
+              maxlength="50"
+              autocomplete="tel"
+              placeholder="Best number to reach you"
+            />
+          </div>
+        </div>
+
+        <div id="claimModalError" class="modal-alert" role="alert" aria-live="assertive" style="display: none"></div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeClaimModal">Cancel</button>
+          <button type="button" class="btn btn-primary btn-compact" data-action="executeClaimToggle" id="claimModalBtn">
+            Confirm Claim
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div class="slip-overlay" id="logoutConfirmModal" data-close="closeLogoutModal">
+      <div class="modal-card modal-card--sm modal-card--neutral modal-card--center">
+        <div class="modal-icon modal-icon--accent" aria-hidden="true">↪</div>
+        <h3 class="modal-confirm-title modal-confirm-title--neutral">Confirm Sign Out</h3>
+        <p class="modal-confirm-text">You are about to end your current session.</p>
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeLogoutModal">Cancel</button>
+          <button type="button" class="btn btn-primary btn-compact" data-action="executeLogout">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div class="slip-overlay" id="changePasswordModal" data-close="closeChangePasswordModal">
+      <div class="modal-card modal-card--sm">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title modal-heading modal-heading--flush">Change Password</h2>
+            <p class="modal-subtitle" id="changePasswordEmail"></p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeChangePasswordModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <form id="changePasswordForm" data-submit="handleChangePassword">
+          <div class="input-field modal-field">
+            <label for="currentPassword">Current Password</label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="currentPassword"
+                autocomplete="current-password"
+                data-input="updateChangePasswordState"
+                required
+              />
+              <button
+                type="button"
+                class="btn-toggle-pw"
+                data-action="togglePasswordVisibility"
+                data-args='["currentPassword", "$el"]'
+                aria-label="Show password"
+                aria-pressed="false"
+                title="Show password"
+              >
+                <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="input-field modal-field">
+            <label for="newPassword">New Password</label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="newPassword"
+                autocomplete="new-password"
+                minlength="8"
+                maxlength="128"
+                required
+                aria-describedby="newPasswordRequirements"
+                data-input="updateChangePasswordState"
+              />
+              <button
+                type="button"
+                class="btn-toggle-pw"
+                data-action="togglePasswordVisibility"
+                data-args='["newPassword", "$el"]'
+                aria-label="Show password"
+                aria-pressed="false"
+                title="Show password"
+              >
+                <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+            <ul class="password-requirements" id="newPasswordRequirements" aria-live="polite">
+              <li data-requirement="length">8+ characters</li>
+              <li data-requirement="uppercase">Uppercase letter</li>
+              <li data-requirement="lowercase">Lowercase letter</li>
+              <li data-requirement="number">A number</li>
+              <li data-requirement="special">A special symbol</li>
+            </ul>
+          </div>
+          <div class="input-field modal-field">
+            <label for="newPasswordConfirm">Confirm New Password</label>
+            <div class="password-wrap">
+              <input
+                type="password"
+                id="newPasswordConfirm"
+                autocomplete="new-password"
+                required
+                data-input="updateChangePasswordState"
+              />
+              <button
+                type="button"
+                class="btn-toggle-pw"
+                data-action="togglePasswordVisibility"
+                data-args='["newPasswordConfirm", "$el"]'
+                aria-label="Show password"
+                aria-pressed="false"
+                title="Show password"
+              >
+                <svg class="password-toggle-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </button>
+            </div>
+            <p class="password-match-hint" id="passwordMatchHint" aria-live="polite"></p>
+          </div>
+          <p id="changePasswordError" class="modal-error" role="alert" style="display: none"></p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" data-action="closeChangePasswordModal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="changePasswordSubmit" disabled>Save Password</button>
+          </div>
+        </form>
+
+        <!-- Students and employees only (hidden for admins by js/home-page.js) -->
+        <div class="account-section" id="messengerAlertsSection" hidden>
+          <div>
+            <p class="account-section-title">Messenger alerts</p>
+            <p class="account-section-text" id="messengerAlertsStatus">
+              Get QR scan, possible-match, and location-request alerts on Messenger too.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-compact"
+            id="messengerAlertsBtn"
+            data-action="handleMessengerAlertsClick"
+          >
+            Connect Messenger
+          </button>
+        </div>
+
+        <!-- Students and employees only (hidden for admins by js/home-page.js) -->
+        <div class="account-danger" id="deleteAccountSection">
+          <div>
+            <p class="account-danger-title">Delete account</p>
+            <p class="account-danger-text">Permanently remove your account and personal data.</p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-outline btn-compact account-danger-btn"
+            data-action="openDeleteAccountModal"
+          >
+            Delete account
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DELETE ACCOUNT CONFIRMATION MODAL -->
+    <div class="slip-overlay" id="deleteAccountModal" data-close="closeDeleteAccountModal">
+      <div class="modal-card modal-card--sm modal-card--danger">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title modal-heading modal-heading--flush modal-confirm-title--danger">
+              Delete your account?
+            </h2>
+            <p class="modal-subtitle" id="deleteAccountEmail"></p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeDeleteAccountModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <form id="deleteAccountForm" data-submit="handleDeleteAccount">
+          <p class="modal-body-text">This cannot be undone. Deleting your account will:</p>
+          <ul class="account-delete-list">
+            <li>
+              <strong>Delete</strong> your registered belongings, your lost-item reports, your pending claims and your
+              notifications.
+            </li>
+            <li>
+              <strong>Keep, without your name or contact details,</strong> found items you reported (so their owners can
+              still claim them) and claims that were already decided.
+            </li>
+          </ul>
+          <div class="input-field modal-field">
+            <label for="deleteAccountPassword">Your password</label>
+            <input type="password" id="deleteAccountPassword" autocomplete="current-password" required />
+          </div>
+          <div class="input-field modal-field">
+            <label for="deleteAccountConfirm">Type DELETE to confirm</label>
+            <input
+              type="text"
+              id="deleteAccountConfirm"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              placeholder="DELETE"
+              required
+            />
+          </div>
+          <p id="deleteAccountError" class="modal-error" role="alert" style="display: none"></p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" data-action="closeDeleteAccountModal">Keep my account</button>
+            <button type="submit" class="btn btn-danger" id="deleteAccountSubmit" disabled>Delete account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- MESSENGER ALERTS LINK MODAL -->
+    <div class="slip-overlay" id="messengerLinkModal" data-close="closeMessengerLinkModal">
+      <div class="modal-card modal-card--sm">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title modal-heading modal-heading--flush">Connect Messenger</h2>
+            <p class="modal-subtitle">One-time code to link your account</p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeMessengerLinkModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+        <p class="modal-body-text">
+          Send this code as a message to our Facebook Page. Once received, Messenger alerts will turn on for your
+          account.
+        </p>
+        <div class="info-panel">
+          <div class="info-panel-label">Your code</div>
+          <div class="info-panel-code" id="messengerLinkCode">000000</div>
+        </div>
+        <p class="modal-body-text" id="messengerLinkExpiry"></p>
+        <div class="modal-actions">
+          <a class="btn btn-outline" id="messengerLinkPageBtn" href="#" target="_blank" rel="noopener"
+            >Message us on Facebook</a
+          >
+          <button type="button" class="btn btn-primary" data-action="closeMessengerLinkModal">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT SUCCESS CONFIRMATION MODAL -->
+    <div class="slip-overlay" id="reportSuccessModal" data-close="closeReportSuccessModal">
+      <div class="modal-card modal-card--md modal-card--center">
+        <div class="modal-icon" aria-hidden="true">✅</div>
+        <h3 class="modal-confirm-title">Report Submitted Successfully!</h3>
+        <p class="modal-confirm-text modal-confirm-text--tight">
+          Your report has been saved into official CSPC campus records.
+        </p>
+
+        <div class="info-panel">
+          <div class="info-panel-label">Tracking Reference Code</div>
+          <div class="info-panel-code" id="successRefCode">CSPC-LF-2026-000</div>
+        </div>
+
+        <div id="successMatchAlert" class="success-panel" style="display: none">
+          🎯 <strong>Potential Smart Match Detected!</strong> A matching item report was found in campus records.
+        </div>
+
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline" data-action="closeReportSuccessModal">Close</button>
+          <button type="button" class="btn btn-primary" id="successPrintBtn" data-action="openQrFromSuccessModal">
+            Get QR Sticker
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTER VALUABLE BELONGING MODAL (AUTH REQUIRED) -->
+    <div class="slip-overlay" id="registerBelongingModal" data-close="closeRegisterBelongingModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <span class="modal-badge-pill">Preventive Student Vault</span>
+            <h2 class="modal-title modal-heading" id="registerModalTitle">Register Valuable Belonging</h2>
+            <p class="modal-subtitle" id="registerModalSubtitle">
+              Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you
+              need a QR sticker.
+            </p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeRegisterBelongingModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+
+        <div class="modal-notice-box">
+          🔒 <strong>Private to Your Account:</strong> Only you have access to your registered belongings. They are
+          stored in your personal vault and never displayed on the public feed.
+        </div>
+
+        <form id="registerBelongingForm" data-submit="handleRegisterBelongingSubmit">
+          <div class="input-field modal-field">
+            <label for="regTitle">Belonging Name / Model <span class="required">*</span></label>
+            <input
+              type="text"
+              id="regTitle"
+              placeholder="e.g. Acer Aspire 5 Laptop / AquaFlask 32oz Mustard"
+              required
+              minlength="3"
+              maxlength="100"
+            />
+          </div>
+
+          <div class="modal-grid-2">
+            <div class="input-field modal-field">
+              <label for="regCategoryPicker">Category <span class="required">*</span></label>
+              <input type="hidden" id="regCategory" />
+              <button
+                type="button"
+                class="category-picker"
+                id="regCategoryPicker"
+                data-action="openCategoryPicker"
+                data-args='["regCategory"]'
+              >
+                Select category...
+              </button>
+            </div>
+            <div class="input-field modal-field">
+              <label for="regLocation">Primary Building</label>
+              <select id="regLocation">
+                <option value="Campus-wide">Campus-wide</option>
+                <option value="Engineering (CEA)">CEA (Engineering)</option>
+                <option value="Computer Studies (CCS)">CCS (Computer)</option>
+                <option value="Library">Library</option>
+                <option value="Gymnasium">Gymnasium</option>
+                <option value="Main Building">Main Building</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Optional fields stay folded away so the required ones stand out; closing the modal folds them again. -->
+          <details class="report-more modal-field modal-field--last" id="registerMoreDetails">
+            <summary>
+              <span class="report-more-title">Add more details</span>
+              <span class="report-more-hint">Serial number, finder note · optional</span>
+            </summary>
+
+            <div class="input-field modal-field">
+              <label for="regIdentifiers">Distinguishing Marks / Serial No. (Optional)</label>
+              <input
+                type="text"
+                id="regIdentifiers"
+                placeholder="e.g. Anime sticker on lid, engraved initials"
+                maxlength="150"
+              />
+            </div>
+
+            <div class="input-field modal-field">
+              <label for="regInstructions">Default Note for Finder (Optional)</label>
+              <textarea
+                id="regInstructions"
+                rows="2"
+                placeholder="e.g. If found, please message me or leave it with the library front counter."
+              ></textarea>
+            </div>
+          </details>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" data-action="closeRegisterBelongingModal">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="regSubmitBtn">Save Belonging</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="slip-overlay" id="categoryPickerModal" data-close="closeCategoryPicker">
+      <div class="category-picker-modal" role="dialog" aria-modal="true" aria-labelledby="categoryPickerTitle">
+        <div class="category-picker-header">
+          <div>
+            <span class="category-picker-eyebrow">Item classification</span>
+            <h2 id="categoryPickerTitle">Select a Category</h2>
+          </div>
+          <button
+            type="button"
+            class="category-picker-close"
+            data-action="closeCategoryPicker"
+            aria-label="Close category picker"
+          >
+            &times;
+          </button>
+        </div>
+        <svg class="category-icon-defs" aria-hidden="true" focusable="false">
+          <symbol id="category-icon-electronics" viewBox="0 0 24 24">
+            <rect x="6" y="2.5" width="12" height="19" rx="2" />
+            <path d="M10 5h4M11 18.5h2" />
+          </symbol>
+          <symbol id="category-icon-bottle" viewBox="0 0 24 24">
+            <path d="M9 3h6v3l2 2v12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V8l2-2z" />
+            <path d="M9 10h8M9 14h8" />
+          </symbol>
+          <symbol id="category-icon-clothing" viewBox="0 0 24 24">
+            <path d="m8 4 4 2 4-2 5 3-3 5-2-1v10H8V11l-2 1-3-5z" />
+            <path d="M9 4a3 3 0 0 0 6 0" />
+          </symbol>
+          <symbol id="category-icon-books" viewBox="0 0 24 24">
+            <path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z" />
+            <path d="M4 5v16.5M8 6h8M8 10h8" />
+          </symbol>
+          <symbol id="category-icon-bag" viewBox="0 0 24 24">
+            <rect x="4" y="7" width="16" height="14" rx="2" />
+            <path d="M9 7V5a3 3 0 0 1 6 0v2M4 12h16M10 12v2h4v-2" />
+          </symbol>
+          <symbol id="category-icon-key" viewBox="0 0 24 24">
+            <circle cx="8" cy="10" r="5" />
+            <path d="m12 13 8 8m-3-3 2-2m-5-1 2-2" />
+          </symbol>
+          <symbol id="category-icon-jewelry" viewBox="0 0 24 24">
+            <path d="m3 9 4-5h10l4 5-9 12zM3 9h18M7 4l5 17 5-17M7 9l5-5 5 5" />
+          </symbol>
+          <symbol id="category-icon-sports" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9" />
+            <path d="m12 7 4 3-1.5 5h-5L8 10zM8 10l-4-1m4 1-2 6m8-6 5-1m-3 6 3 4m-11-3 4 5" />
+          </symbol>
+          <symbol id="category-icon-school" viewBox="0 0 24 24">
+            <path d="m4 17 11-11 4 4L8 21H4zM13 8l4 4M4 17l4 4M17 3l4 4" />
+          </symbol>
+          <symbol id="category-icon-id" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <circle cx="9" cy="10" r="2.5" />
+            <path d="M5.5 17a3.5 3.5 0 0 1 7 0m3-8h3m-3 4h3" />
+          </symbol>
+          <symbol id="category-icon-other" viewBox="0 0 24 24">
+            <path d="m3 7 9-4 9 4-9 4zM3 7v10l9 4 9-4V7M12 11v10" />
+          </symbol>
+        </svg>
+        <div class="category-grid">
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Electronics", "electronics"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-electronics"></use></svg>Electronics
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Water Bottles/Tumblers", "bottle"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-bottle"></use></svg>Water Bottles / Tumblers
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Clothing &amp; Accessories", "clothing"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-clothing"></use></svg>Clothing &amp; Accessories
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Books &amp; Documents", "books"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-books"></use></svg>Books &amp; Documents
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Bags &amp; Wallets", "bag"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-bag"></use></svg>Bags &amp; Wallets
+          </button>
+          <button type="button" class="category-option" data-action="selectCategory" data-args='["Keys", "key"]'>
+            <svg aria-hidden="true"><use href="#category-icon-key"></use></svg>Keys
+          </button>
+          <button type="button" class="category-option" data-action="selectCategory" data-args='["Jewelry", "jewelry"]'>
+            <svg aria-hidden="true"><use href="#category-icon-jewelry"></use></svg>Jewelry
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["Sports Equipment", "sports"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-sports"></use></svg>Sports Equipment
+          </button>
+          <button
+            type="button"
+            class="category-option"
+            data-action="selectCategory"
+            data-args='["School Supplies", "school"]'
+          >
+            <svg aria-hidden="true"><use href="#category-icon-school"></use></svg>School Supplies
+          </button>
+          <button type="button" class="category-option" data-action="selectCategory" data-args='["ID / Cards", "id"]'>
+            <svg aria-hidden="true"><use href="#category-icon-id"></use></svg>ID / Cards
+          </button>
+          <button type="button" class="category-option" data-action="selectCategory" data-args='["Others", "other"]'>
+            <svg aria-hidden="true"><use href="#category-icon-other"></use></svg>Others
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTH REQUIRED MODAL -->
+    <div class="slip-overlay" id="authRequiredModal" data-close="closeAuthRequiredModal">
+      <div class="modal-card modal-card--md modal-card--center">
+        <div class="modal-icon" aria-hidden="true">🔒</div>
+        <h3 class="modal-confirm-title">Registered Account Required</h3>
+        <p class="modal-confirm-text">
+          Belonging Registration is a <strong>preventive feature</strong> available exclusively to authenticated CSPC
+          students and admins. This guarantees that <strong>only you have access</strong> to your registered belongings
+          and notification alerts.
+        </p>
+        <div class="modal-actions modal-actions--center modal-actions--stretch">
+          <button type="button" class="btn btn-outline" data-action="closeAuthRequiredModal">Cancel</button>
+          <a href="/login" class="btn btn-primary">Sign In / Register</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECT & NOTIFY SCREEN MODAL: message the owner, and optionally exchange direct contact.
        Styled as a one-shot conversation preview (same bubble language as the claim
        conversation modal) since the finder may have no account to open a real thread with. -->
-  <div class="slip-overlay" id="anonymousFinderModal" data-close="closeAnonymousFinderModal">
-    <div class="modal-card connect-card thread-card">
-      <button type="button" class="connect-card-close" data-action="closeAnonymousFinderModal" aria-label="Close">&times;</button>
+    <div class="slip-overlay" id="anonymousFinderModal" data-close="closeAnonymousFinderModal">
+      <div class="modal-card connect-card thread-card">
+        <button type="button" class="connect-card-close" data-action="closeAnonymousFinderModal" aria-label="Close">
+          &times;
+        </button>
 
-      <p class="connect-eyebrow">You Found</p>
-      <h3 class="connect-title" id="finderScreenItemTitle">MacBook Air M2</h3>
-      <p class="connect-ref" id="finderScreenRefCode">CSPC-REG-QR-001</p>
-      <p class="connect-instructions" id="finderScreenInstructions"></p>
+        <p class="connect-eyebrow">You Found</p>
+        <h3 class="connect-title" id="finderScreenItemTitle">MacBook Air M2</h3>
+        <p class="connect-ref" id="finderScreenRefCode">CSPC-REG-QR-001</p>
+        <p class="connect-instructions" id="finderScreenInstructions"></p>
 
-      <form id="anonymousFinderForm" class="connect-form" data-submit="handleAnonymousFinderSubmit">
-        <input type="hidden" id="finderRefCodeInput" />
-        <input type="hidden" id="finderMatchTokenInput" />
-        <input type="hidden" id="finderSubmissionKeyInput" />
+        <form id="anonymousFinderForm" class="connect-form" data-submit="handleAnonymousFinderSubmit">
+          <input type="hidden" id="finderRefCodeInput" />
+          <input type="hidden" id="finderMatchTokenInput" />
+          <input type="hidden" id="finderSubmissionKeyInput" />
 
-        <div class="thread-messages thread-messages--preview" aria-hidden="true">
-          <div class="thread-msg thread-msg--theirs">
-            <p class="thread-msg-text">👋 Someone registered this item. Where did you find it, and what would you like to tell the owner?</p>
+          <div class="thread-messages thread-messages--preview" aria-hidden="true">
+            <div class="thread-msg thread-msg--theirs">
+              <p class="thread-msg-text">
+                👋 Someone registered this item. Where did you find it, and what would you like to tell the owner?
+              </p>
+            </div>
           </div>
-        </div>
 
-        <div class="connect-field connect-field--bubble">
-          <span class="connect-field-icon" aria-hidden="true">📍</span>
-          <div class="connect-field-body">
-            <label for="finderLocationInput">Where is it right now? <span class="required">*</span></label>
-            <input type="text" id="finderLocationInput" placeholder="e.g. Library 2nd floor desk" required />
+          <div class="connect-field connect-field--bubble">
+            <span class="connect-field-icon" aria-hidden="true">📍</span>
+            <div class="connect-field-body">
+              <label for="finderLocationInput">Where is it right now? <span class="required">*</span></label>
+              <input type="text" id="finderLocationInput" placeholder="e.g. Library 2nd floor desk" required />
+            </div>
           </div>
-        </div>
 
-        <div class="connect-field connect-field--bubble">
-          <span class="connect-field-icon" aria-hidden="true">💬</span>
-          <div class="connect-field-body">
-            <label for="finderMessageInput">Your message to the owner <span class="required">*</span></label>
-            <textarea id="finderMessageInput" rows="3" required placeholder="Hi! Found your item near table 5. Handed it over to campus security desk."></textarea>
+          <div class="connect-field connect-field--bubble">
+            <span class="connect-field-icon" aria-hidden="true">💬</span>
+            <div class="connect-field-body">
+              <label for="finderMessageInput">Your message to the owner <span class="required">*</span></label>
+              <textarea
+                id="finderMessageInput"
+                rows="3"
+                required
+                placeholder="Hi! Found your item near table 5. Handed it over to campus security desk."
+              ></textarea>
+            </div>
           </div>
-        </div>
 
-        <label class="connect-toggle" for="finderShareContactToggle">
-          <input type="checkbox" id="finderShareContactToggle" data-change="toggleFinderContactField" data-args='["$checked"]' />
-          <span class="connect-toggle-switch"><span class="connect-toggle-knob"></span></span>
-          <span class="connect-toggle-text">
-            <strong>Let the owner contact me directly</strong>
-            <small>Off by default — your message still reaches their dashboard either way.</small>
-          </span>
-        </label>
+          <label class="connect-toggle" for="finderShareContactToggle">
+            <input
+              type="checkbox"
+              id="finderShareContactToggle"
+              data-change="toggleFinderContactField"
+              data-args='["$checked"]'
+            />
+            <span class="connect-toggle-switch"><span class="connect-toggle-knob"></span></span>
+            <span class="connect-toggle-text">
+              <strong>Let the owner contact me directly</strong>
+              <small>Off by default — your message still reaches their dashboard either way.</small>
+            </span>
+          </label>
 
-        <div class="connect-field connect-field--bubble connect-field--contact" id="finderContactField" hidden>
-          <span class="connect-field-icon" aria-hidden="true">✉️</span>
-          <div class="connect-field-body">
-            <label for="finderContactInput">Your phone number or email</label>
-            <input type="text" id="finderContactInput" placeholder="e.g. 09XX-XXX-XXXX or juan@cspc.edu.ph" />
+          <div class="connect-field connect-field--bubble connect-field--contact" id="finderContactField" hidden>
+            <span class="connect-field-icon" aria-hidden="true">✉️</span>
+            <div class="connect-field-body">
+              <label for="finderContactInput">Your phone number or email</label>
+              <input type="text" id="finderContactInput" placeholder="e.g. 09XX-XXX-XXXX or juan@cspc.edu.ph" />
+            </div>
           </div>
-        </div>
 
-        <div class="modal-actions">
-          <button type="button" class="btn btn-outline" data-action="closeAnonymousFinderModal">Cancel</button>
-          <button type="button" class="btn btn-outline" id="finderCopyConversationLinkBtn" data-action="copyFinderConversationLink" disabled hidden>Copy secure link</button>
-          <button type="button" class="btn btn-primary" id="finderOpenConversationBtn" data-action="openFinderConversationFromModal" disabled hidden>Open conversation</button>
-          <button type="submit" class="btn btn-success" id="finderSendBtn">🚀 Send to Owner</button>
-        </div>
-      </form>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" data-action="closeAnonymousFinderModal">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-outline"
+              id="finderCopyConversationLinkBtn"
+              data-action="copyFinderConversationLink"
+              disabled
+              hidden
+            >
+              Copy secure link
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="finderOpenConversationBtn"
+              data-action="openFinderConversationFromModal"
+              disabled
+              hidden
+            >
+              Open conversation
+            </button>
+            <button type="submit" class="btn btn-success" id="finderSendBtn">🚀 Send to Owner</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
 
-  <!-- NOTIFICATIONS INBOX MODAL (FOR LOGGED-IN USERS) -->
-  <div class="slip-overlay" id="notificationsModal" data-close="closeNotificationsModal">
-    <div class="modal-card">
-      <div class="modal-header modal-header--center">
-        <div class="modal-header-group">
-          <span class="modal-header-icon" aria-hidden="true">🔔</span>
+    <!-- NOTIFICATIONS INBOX MODAL (FOR LOGGED-IN USERS) -->
+    <div class="slip-overlay" id="notificationsModal" data-close="closeNotificationsModal">
+      <div class="modal-card">
+        <div class="modal-header modal-header--center">
+          <div class="modal-header-group">
+            <span class="modal-header-icon" aria-hidden="true">🔔</span>
+            <div>
+              <h3 class="modal-heading modal-heading--sm modal-heading--plain" id="notificationsHeading">
+                Account Notifications
+              </h3>
+              <span class="modal-subtitle" id="notificationsSubtitle">Finder alerts and claim request updates</span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="notifications-modal-close"
+            data-action="closeNotificationsModal"
+            aria-label="Close notifications"
+          >
+            &times;
+          </button>
+        </div>
+
+        <div id="notificationSelectionToolbar" class="notification-selection-toolbar" hidden>
+          <label class="notification-select-all">
+            <input
+              id="selectAllNotifications"
+              type="checkbox"
+              data-change="selectAllNotifications"
+              data-args='["$checked"]'
+            />
+            <span>Select all</span>
+          </label>
+          <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
+          <button
+            id="deleteSelectedNotifications"
+            type="button"
+            class="btn-delete-notifications"
+            data-action="deleteSelectedNotifications"
+            disabled
+          >
+            Delete selected
+          </button>
+        </div>
+        <div id="notificationsList" class="notifications-list">
+          <!-- Filled dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- MATCH REFERENCE QR MODAL -->
+    <div class="slip-overlay" id="matchQrModal" data-close="closeMatchQrModal">
+      <div class="modal-card modal-card--lg">
+        <div class="modal-header">
           <div>
-            <h3 class="modal-heading modal-heading--sm modal-heading--plain" id="notificationsHeading">Account Notifications</h3>
-            <span class="modal-subtitle" id="notificationsSubtitle">Finder alerts and claim request updates</span>
+            <span class="modal-pill">Match Reference</span>
+            <h2 class="modal-heading modal-heading--plain">🤝 Match Reference QR</h2>
+            <p class="modal-subtitle">Automated reconciliation between Lost and Found reports.</p>
           </div>
         </div>
-        <button type="button" class="notifications-modal-close" data-action="closeNotificationsModal" aria-label="Close notifications">&times;</button>
-      </div>
 
-      <div id="notificationSelectionToolbar" class="notification-selection-toolbar" hidden>
-        <label class="notification-select-all">
-          <input id="selectAllNotifications" type="checkbox" data-change="selectAllNotifications" data-args='["$checked"]'>
-          <span>Select all</span>
-        </label>
-        <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
-        <button id="deleteSelectedNotifications" type="button" class="btn-delete-notifications" data-action="deleteSelectedNotifications" disabled>Delete selected</button>
-      </div>
-      <div id="notificationsList" class="notifications-list">
-        <!-- Filled dynamically -->
+        <div id="matchPrintArea" class="print-sticker print-sticker--match">
+          <div class="print-sticker-brand">
+            <img src="cspc-logo.png" alt="CSPC Logo" class="print-logo" />
+            <span class="print-brand-text">CSPC Lost &amp; Found Match References</span>
+          </div>
+
+          <div class="match-columns">
+            <div>
+              <span class="match-column-label match-column-label--lost">Lost Report</span>
+              <div class="match-column-title" id="matchLostTitle">Lost Item</div>
+              <div class="match-column-meta match-column-meta--mono" id="matchLostRef">CSPC-LF-000</div>
+              <div class="match-column-meta" id="matchLostLocation">Location unavailable</div>
+            </div>
+            <div>
+              <span class="match-column-label match-column-label--found">Found Report</span>
+              <div class="match-column-title" id="matchFoundTitle">Found Item</div>
+              <div class="match-column-meta match-column-meta--mono" id="matchFoundRef">CSPC-LF-000</div>
+              <div class="match-column-meta" id="matchFoundLocation">Location unavailable</div>
+            </div>
+          </div>
+
+          <div class="print-qr-frame print-qr-frame--block">
+            <img id="matchQrImage" src="" alt="Match Verification QR" class="print-qr-img print-qr-img--sm" />
+          </div>
+          <div class="print-hint print-hint--spaced">Scan this QR code to view the match status.</div>
+          <div id="matchQrAccessNote" class="print-note" style="display: none">
+            Read-only status view. CSPC Admin verification details are restricted.
+          </div>
+          <div class="print-disclaimer">Reference lookup only — not handover approval</div>
+        </div>
+
+        <div class="no-print modal-actions">
+          <button type="button" class="btn btn-outline" data-action="closeMatchQrModal">Close</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="matchConversationBtn"
+            style="display: none"
+            data-action="openClaimThreadModalFromMatch"
+          >
+            💬 Message the finder
+          </button>
+          <button type="button" class="btn btn-primary" id="matchPrintBtn" data-action="printMatchQr">
+            🖨️ Print Match Reference
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- MATCH REFERENCE QR MODAL -->
-  <div class="slip-overlay" id="matchQrModal" data-close="closeMatchQrModal">
-    <div class="modal-card modal-card--lg">
-      <div class="modal-header">
-        <div>
-          <span class="modal-pill">Match Reference</span>
-          <h2 class="modal-heading modal-heading--plain">🤝 Match Reference QR</h2>
-          <p class="modal-subtitle">Automated reconciliation between Lost and Found reports.</p>
-        </div>
-      </div>
-
-      <div id="matchPrintArea" class="print-sticker print-sticker--match">
-        <div class="print-sticker-brand">
-          <img src="cspc-logo.png" alt="CSPC Logo" class="print-logo" />
-          <span class="print-brand-text">CSPC Lost &amp; Found Match References</span>
-        </div>
-
-        <div class="match-columns">
+    <!-- CLAIM CONVERSATION MODAL: message thread + location sharing + mutual confirm -->
+    <div class="slip-overlay" id="claimThreadModal" data-close="closeClaimThreadModal">
+      <div class="modal-card modal-card--lg thread-card">
+        <div class="modal-header">
           <div>
-            <span class="match-column-label match-column-label--lost">Lost Report</span>
-            <div class="match-column-title" id="matchLostTitle">Lost Item</div>
-            <div class="match-column-meta match-column-meta--mono" id="matchLostRef">CSPC-LF-000</div>
-            <div class="match-column-meta" id="matchLostLocation">Location unavailable</div>
+            <h2 class="modal-title modal-heading modal-heading--flush" id="claimThreadTitle">Claim conversation</h2>
+            <p class="modal-subtitle" id="claimThreadSubtitle"></p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeClaimThreadModal" aria-label="Close">
+            &times;
+          </button>
+        </div>
+
+        <div class="thread-messages" id="claimThreadBody" aria-live="polite"></div>
+
+        <div class="thread-meetup" id="claimThreadMeetup"></div>
+
+        <form class="thread-compose" data-submit="sendClaimThreadMessage">
+          <input
+            type="text"
+            id="claimThreadInput"
+            maxlength="500"
+            placeholder="Type a message…"
+            aria-label="Message"
+            enterkeyhint="send"
+            required
+          />
+          <button type="submit" class="btn btn-primary btn-compact" id="claimThreadSendBtn">Send</button>
+        </form>
+
+        <div class="thread-confirm" id="claimThreadConfirm"></div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <img src="cspc-logo.png" alt="" width="36" height="36" />
+          <div>
+            <p class="footer-name">Back2You</p>
+            <p class="footer-tagline">Lost &amp; found for the CSPC community</p>
+          </div>
+        </div>
+        <p class="footer-location">
+          Camarines Sur Polytechnic Colleges<br />Nabua, Camarines Sur · <a href="/privacy.html">Privacy Policy</a>
+        </p>
+      </div>
+    </footer>
+
+    <div
+      class="slip-overlay keyboard-shortcuts-overlay"
+      id="keyboardShortcutsModal"
+      data-close="closeKeyboardShortcutsModal"
+    >
+      <section
+        class="modal-card modal-card--sm keyboard-shortcuts-card"
+        role="dialog"
+        aria-labelledby="keyboardShortcutsTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-heading modal-heading--flush" id="keyboardShortcutsTitle">Keyboard shortcuts</h2>
+            <p class="modal-subtitle">Move around Back2You without taking your hands off the keyboard.</p>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            data-action="closeKeyboardShortcutsModal"
+            aria-label="Close shortcuts"
+          >
+            &times;
+          </button>
+        </div>
+        <dl class="keyboard-shortcuts-list">
+          <div>
+            <dt><kbd>/</kbd><span>or</span><kbd>Ctrl</kbd><span>/</span><kbd>Cmd</kbd><kbd>K</kbd></dt>
+            <dd>Focus item or admin search</dd>
           </div>
           <div>
-            <span class="match-column-label match-column-label--found">Found Report</span>
-            <div class="match-column-title" id="matchFoundTitle">Found Item</div>
-            <div class="match-column-meta match-column-meta--mono" id="matchFoundRef">CSPC-LF-000</div>
-            <div class="match-column-meta" id="matchFoundLocation">Location unavailable</div>
+            <dt><kbd>1</kbd>–<kbd>5</kbd></dt>
+            <dd>Switch item status filter</dd>
           </div>
-        </div>
-
-        <div class="print-qr-frame print-qr-frame--block">
-          <img id="matchQrImage" src="" alt="Match Verification QR" class="print-qr-img print-qr-img--sm" />
-        </div>
-        <div class="print-hint print-hint--spaced">Scan this QR code to view the match status.</div>
-        <div id="matchQrAccessNote" class="print-note" style="display: none;">Read-only status view. CSPC Admin verification details are restricted.</div>
-        <div class="print-disclaimer">Reference lookup only — not handover approval</div>
-      </div>
-
-      <div class="no-print modal-actions">
-        <button type="button" class="btn btn-outline" data-action="closeMatchQrModal">Close</button>
-        <button type="button" class="btn btn-primary" id="matchConversationBtn" style="display: none;" data-action="openClaimThreadModalFromMatch">💬 Message the finder</button>
-        <button type="button" class="btn btn-primary" id="matchPrintBtn" data-action="printMatchQr">🖨️ Print Match Reference</button>
-      </div>
+          <div>
+            <dt><kbd>R</kbd></dt>
+            <dd>Go to Quick Report Assistant</dd>
+          </div>
+          <div>
+            <dt><kbd>B</kbd></dt>
+            <dd>Register a belonging</dd>
+          </div>
+          <div>
+            <dt><kbd>I</kbd></dt>
+            <dd>Go to items on campus</dd>
+          </div>
+          <div>
+            <dt><kbd>←</kbd><kbd>→</kbd></dt>
+            <dd>Previous / next listings page, or move between photos in the viewer</dd>
+          </div>
+          <div>
+            <dt><kbd>Esc</kbd></dt>
+            <dd>Close an open dialog, menu, sidebar, or tooltip; clear or blur search</dd>
+          </div>
+          <div>
+            <dt><kbd>?</kbd></dt>
+            <dd>Show this shortcut guide</dd>
+          </div>
+        </dl>
+        <p class="keyboard-shortcuts-note">Shortcuts are paused while you type.</p>
+      </section>
     </div>
-  </div>
 
-  <!-- CLAIM CONVERSATION MODAL: message thread + location sharing + mutual confirm -->
-  <div class="slip-overlay" id="claimThreadModal" data-close="closeClaimThreadModal">
-    <div class="modal-card modal-card--lg thread-card">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-title modal-heading modal-heading--flush" id="claimThreadTitle">Claim conversation</h2>
-          <p class="modal-subtitle" id="claimThreadSubtitle"></p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeClaimThreadModal" aria-label="Close">&times;</button>
-      </div>
-
-      <div class="thread-messages" id="claimThreadBody" aria-live="polite"></div>
-
-      <div class="thread-meetup" id="claimThreadMeetup"></div>
-
-      <form class="thread-compose" data-submit="sendClaimThreadMessage">
-        <input type="text" id="claimThreadInput" maxlength="500" placeholder="Type a message…" aria-label="Message" enterkeyhint="send" required />
-        <button type="submit" class="btn btn-primary btn-compact" id="claimThreadSendBtn">Send</button>
-      </form>
-
-      <div class="thread-confirm" id="claimThreadConfirm"></div>
-    </div>
-  </div>
-
-  <!-- FOOTER -->
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <img src="cspc-logo.png" alt="" width="36" height="36" />
-        <div>
-          <p class="footer-name">Back2You</p>
-          <p class="footer-tagline">Lost &amp; found for the CSPC community</p>
-        </div>
-      </div>
-      <p class="footer-location">Camarines Sur Polytechnic Colleges<br />Nabua, Camarines Sur · <a href="/privacy.html">Privacy Policy</a></p>
-    </div>
-  </footer>
-
-  <div class="slip-overlay keyboard-shortcuts-overlay" id="keyboardShortcutsModal" data-close="closeKeyboardShortcutsModal">
-    <section class="modal-card modal-card--sm keyboard-shortcuts-card" role="dialog" aria-labelledby="keyboardShortcutsTitle">
-      <div class="modal-header">
-        <div>
-          <h2 class="modal-heading modal-heading--flush" id="keyboardShortcutsTitle">Keyboard shortcuts</h2>
-          <p class="modal-subtitle">Move around Back2You without taking your hands off the keyboard.</p>
-        </div>
-        <button type="button" class="modal-close" data-action="closeKeyboardShortcutsModal" aria-label="Close shortcuts">&times;</button>
-      </div>
-      <dl class="keyboard-shortcuts-list">
-        <div><dt><kbd>/</kbd><span>or</span><kbd>Ctrl</kbd><span>/</span><kbd>Cmd</kbd><kbd>K</kbd></dt><dd>Focus item or admin search</dd></div>
-        <div><dt><kbd>1</kbd>–<kbd>5</kbd></dt><dd>Switch item status filter</dd></div>
-        <div><dt><kbd>R</kbd></dt><dd>Go to Quick Report Assistant</dd></div>
-        <div><dt><kbd>B</kbd></dt><dd>Register a belonging</dd></div>
-        <div><dt><kbd>I</kbd></dt><dd>Go to items on campus</dd></div>
-        <div><dt><kbd>←</kbd><kbd>→</kbd></dt><dd>Previous / next listings page, or move between photos in the viewer</dd></div>
-        <div><dt><kbd>Esc</kbd></dt><dd>Close an open dialog, menu, sidebar, or tooltip; clear or blur search</dd></div>
-        <div><dt><kbd>?</kbd></dt><dd>Show this shortcut guide</dd></div>
-      </dl>
-      <p class="keyboard-shortcuts-note">Shortcuts are paused while you type.</p>
-    </section>
-  </div>
-
-  <script src="/vendor/three.min.js"></script>
-  <script src="/js/cspc-3d-logo.js"></script>
-  <script src="/vendor/leaflet.js"></script>
-  <script src="/js/home-page.js"></script>
-  <script src="/js/report-assistant.js"></script>
-  <script src="/icons.js"></script>
-</body>
+    <script src="/vendor/three.min.js"></script>
+    <script src="/js/cspc-3d-logo.js"></script>
+    <script src="/vendor/leaflet.js"></script>
+    <script src="/js/home-page.js"></script>
+    <script src="/js/report-assistant.js"></script>
+    <script src="/icons.js"></script>
+  </body>
 </html>
