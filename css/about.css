@@ -143,7 +143,8 @@
   line-height: 1.7;
 }
 
-:root .about-page .benefit-row p a {
+:root .about-page .benefit-row p a:link,
+:root .about-page .benefit-row p a:visited {
   display: inline;
   padding: 0 0.3em;
   border-radius: 0.25em;
