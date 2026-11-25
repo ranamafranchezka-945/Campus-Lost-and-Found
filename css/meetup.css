@@ -128,10 +128,20 @@
 
 /* Pin: a blue dot with a white ring that drops in, then pulses. Leaflet positions the
    wrapper (.meetup-pin-wrap) at the right pixel coordinates itself via its own inline
-   transform, so this inner span is the only element the drop/pulse animation touches. */
+   transform, so this inner span is the only element the drop/pulse animation touches.
+   The transition below is what makes a moved pin glide to its new spot instead of
+   jumping there: updateMeetupMapInPlace() (js/home-page.js) calls marker.setLatLng()
+   on live-tracking updates, which only changes that inline transform - the browser
+   animates the rest. */
 .meetup-pin-wrap {
   background: transparent;
   border: none;
+  transition: transform 1.2s linear;
+}
+@media (prefers-reduced-motion: reduce) {
+  .meetup-pin-wrap {
+    transition: none;
+  }
 }
 .meetup-pin {
   display: block;

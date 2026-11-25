@@ -1968,10 +1968,32 @@ function meetupMapHtml(location, otherName, claimId, idPrefix = '', mapExpanded 
 // tear them down before their containers are replaced - Leaflet leaves listeners behind
 // otherwise, and refuses to reinitialize a container id it still remembers.
 const activeMeetupMaps = new Map();
+// The marker/circle each map is showing, keyed the same way, so a live-tracking update
+// can glide the pin to its new spot (updateMeetupMapInPlace) instead of the whole map
+// being torn down and rebuilt from scratch.
+const activeMeetupMarkers = new Map();
+const activeMeetupCircles = new Map();
 
 function destroyMeetupMaps() {
   activeMeetupMaps.forEach((map) => map.remove());
   activeMeetupMaps.clear();
+  activeMeetupMarkers.clear();
+  activeMeetupCircles.clear();
+}
+
+// Destroys only the live maps whose container is inside `root` - used where the rest
+// of that root's markup is about to be replaced or discarded too (a fresh thread
+// open, or a re-render that isn't a plain movement update).
+function destroyMeetupMapsWithin(root) {
+  root.querySelectorAll('[data-meetup-map]').forEach((container) => {
+    const map = activeMeetupMaps.get(container.id);
+    if (map) {
+      map.remove();
+      activeMeetupMaps.delete(container.id);
+      activeMeetupMarkers.delete(container.id);
+      activeMeetupCircles.delete(container.id);
+    }
+  });
 }
 
 // Keeps each live meetup map's last camera view across refreshes (the thread polls
@@ -1995,14 +2017,14 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
       maxZoom: 19,
       attribution: '© OpenStreetMap',
     }).addTo(map);
-    L.circle([lat, lng], {
+    const circle = L.circle([lat, lng], {
       radius: accuracy,
       color: '#2563eb',
       weight: 2,
       fillColor: '#3b82f6',
       fillOpacity: 0.16,
     }).addTo(map);
-    L.marker([lat, lng], {
+    const marker = L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'meetup-pin-wrap',
         html: '<span class="meetup-pin" aria-hidden="true"></span>',
@@ -2023,6 +2045,8 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
     container.appendChild(attribution);
 
     activeMeetupMaps.set(container.id, map);
+    activeMeetupMarkers.set(container.id, marker);
+    activeMeetupCircles.set(container.id, circle);
   });
 }
 
@@ -2245,7 +2269,9 @@ async function openClaimThreadModal(claimId) {
   lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadInput').placeholder = 'Type a message…';
   document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading…</p>';
+  destroyMeetupMapsWithin(document.getElementById('claimThreadMeetup'));
   document.getElementById('claimThreadMeetup').innerHTML = '';
+  lastRenderedThreadMeetup = null;
   document.getElementById('claimThreadConfirm').innerHTML = '';
   document.getElementById('claimThreadModal').classList.add('open');
   await refreshClaimThread();
@@ -2274,7 +2300,9 @@ async function openRegisteredFinderConversation(conversationId, token) {
   lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadInput').placeholder = 'Type a message…';
   document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading conversation…</p>';
+  destroyMeetupMapsWithin(document.getElementById('claimThreadMeetup'));
   document.getElementById('claimThreadMeetup').innerHTML = '';
+  lastRenderedThreadMeetup = null;
   document.getElementById('claimThreadConfirm').innerHTML = '';
   document.getElementById('claimThreadModal').classList.add('open');
   await refreshClaimThread();
@@ -2299,7 +2327,9 @@ async function openRegisteredOwnerConversation(conversationId) {
   lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadInput').placeholder = 'Type a message…';
   document.getElementById('claimThreadBody').innerHTML = '<p class="thread-empty">Loading conversation…</p>';
+  destroyMeetupMapsWithin(document.getElementById('claimThreadMeetup'));
   document.getElementById('claimThreadMeetup').innerHTML = '';
+  lastRenderedThreadMeetup = null;
   document.getElementById('claimThreadConfirm').innerHTML = '';
   document.getElementById('claimThreadModal').classList.add('open');
   await refreshClaimThread();
@@ -2320,7 +2350,9 @@ function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
     requesterRole === 'finder'
       ? '<p class="thread-empty">Send the owner a message - where you found it, or ask them to confirm a detail - to start the conversation.</p>'
       : '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
+  destroyMeetupMapsWithin(document.getElementById('claimThreadMeetup'));
   document.getElementById('claimThreadMeetup').innerHTML = '';
+  lastRenderedThreadMeetup = null;
   document.getElementById('claimThreadConfirm').innerHTML = '';
   document.getElementById('claimThreadInput').placeholder =
     requesterRole === 'finder'
@@ -2388,18 +2420,71 @@ function renderClaimThread(thread) {
   if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
 }
 
+// The last meetup notification fully rendered into the claim-thread box, so the 5s
+// poll (refreshClaimThreadMeetup) can tell a plain movement update (same shared
+// location, just a new reading) from an actual change of state - only the former can
+// be patched in place; see canUpdateMeetupMapInPlace / updateMeetupMapInPlace below.
+let lastRenderedThreadMeetup = null;
+
+// True when `next` is the same live share as `prev`, just a later reading - the map
+// is already showing it, so the pin can glide to its new spot (CSS transition on
+// .meetup-pin-wrap) instead of the whole box being torn down and rebuilt.
+function canUpdateMeetupMapInPlace(prev, next, mapExpanded) {
+  if (!mapExpanded || !prev || !next || prev.claimId !== next.claimId) return false;
+  if (prev.myLocation?.status !== next.myLocation?.status) return false;
+  const prevLocation = prev.theirLocation;
+  const nextLocation = next.theirLocation;
+  if (prevLocation?.status !== 'shared' || nextLocation?.status !== 'shared') return false;
+  if (!prevLocation.location || !nextLocation.location) return false;
+  if (prevLocation.location.note !== nextLocation.location.note) return false;
+  const containerId = `meetup-map-thread-${String(next.claimId).replace(/[^\w-]/g, '')}`;
+  return activeMeetupMaps.has(containerId);
+}
+
+function updateMeetupMapInPlace(meetupBox, notification) {
+  const location = notification.theirLocation.location;
+  const lat = Number(location.latitude.toFixed(6));
+  const lng = Number(location.longitude.toFixed(6));
+  const containerId = `meetup-map-thread-${String(notification.claimId).replace(/[^\w-]/g, '')}`;
+  const container = document.getElementById(containerId);
+  const marker = activeMeetupMarkers.get(containerId);
+  const circle = activeMeetupCircles.get(containerId);
+  if (container) {
+    container.dataset.lat = String(lat);
+    container.dataset.lng = String(lng);
+    container.dataset.accuracy = String(location.accuracy);
+  }
+  if (marker) marker.setLatLng([lat, lng]);
+  if (circle) {
+    circle.setLatLng([lat, lng]);
+    circle.setRadius(location.accuracy);
+  }
+  const theirHint = meetupBox.querySelector('.meetup-section .meetup-hint');
+  if (theirHint) {
+    theirHint.textContent = `Shared ${relativeTimeLabel(new Date(location.sharedAt))} · accurate to about ${location.accuracy} m · visible until ${meetupTime(location.expiresAt)}`;
+  }
+  if (notification.myLocation?.status === 'shared' && notification.myLocation.expiresAt) {
+    const myHint = meetupBox.querySelector('.meetup-sharing .meetup-hint');
+    if (myHint) {
+      myHint.textContent = `Keeps updating until ${meetupTime(notification.myLocation.expiresAt)} unless you stop sharing sooner.`;
+    }
+  }
+}
+
 // The location-sharing section is driven by the same meetup notification the
 // inbox uses - reused here instead of duplicating that request/respond logic.
 function renderClaimThreadMeetupNotification(notification) {
   const meetupBox = document.getElementById('claimThreadMeetup');
   const mapExpanded = Boolean(meetupBox.querySelector('.meetup-map-toggle[aria-expanded="true"]'));
-  meetupBox.querySelectorAll('[data-meetup-map]').forEach((container) => {
-    const map = activeMeetupMaps.get(container.id);
-    if (map) {
-      map.remove();
-      activeMeetupMaps.delete(container.id);
-    }
-  });
+
+  if (canUpdateMeetupMapInPlace(lastRenderedThreadMeetup, notification, mapExpanded)) {
+    updateMeetupMapInPlace(meetupBox, notification);
+    lastRenderedThreadMeetup = notification;
+    return;
+  }
+  lastRenderedThreadMeetup = notification;
+
+  destroyMeetupMapsWithin(meetupBox);
   meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-', mapExpanded) : '';
   // If I'm the one sharing (e.g. after a page reload wiped the in-memory watch),
   // pick tracking back up so the other person's map keeps following me.
