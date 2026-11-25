@@ -47,8 +47,8 @@ body.auth-checking > .auth-checking-state {
   margin-bottom: 1.25rem;
 }
 /* Animated 3D CSPC seal (js/cspc-3d-logo.js), scaled down from the landing-page hero
-       size (~300-380px) to fit this card - small enough not to push the form down, large
-       enough that the globe/seal/flame detail still reads instead of blurring together. */
+  size (~300-380px) to fit this card - small enough not to push the form down, large
+  enough that the globe/seal/flame detail still reads instead of blurring together. */
 .auth-logo-scene {
   position: relative;
   width: 160px;
