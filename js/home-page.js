@@ -1507,8 +1507,12 @@ function showAnonymousFinderForItem(item, matchToken = '') {
   sendButton.textContent = '🚀 Send to Owner';
   const isRegisteredBelonging = safeItem.isRegisteredBelonging === true && !matchToken;
   activeFinderConversationToken = isRegisteredBelonging ? createFinderConversationToken() : null;
-  document.getElementById('finderCopyConversationLinkBtn').hidden = true;
-  document.getElementById('finderOpenConversationBtn').hidden = true;
+  const copyConversationButton = document.getElementById('finderCopyConversationLinkBtn');
+  copyConversationButton.hidden = true;
+  copyConversationButton.disabled = true;
+  const openConversationButton = document.getElementById('finderOpenConversationBtn');
+  openConversationButton.hidden = true;
+  openConversationButton.disabled = true;
   document.getElementById('anonymousFinderModal').classList.add('open');
 }
 
@@ -1588,8 +1592,12 @@ async function handleAnonymousFinderSubmit(e) {
           expiresAt: data.conversation.expiresAt
         });
         setFinderConversationLink(data.conversation.id, data.conversation.token);
-        document.getElementById('finderCopyConversationLinkBtn').hidden = false;
-        document.getElementById('finderOpenConversationBtn').hidden = false;
+        const copyConversationButton = document.getElementById('finderCopyConversationLinkBtn');
+        copyConversationButton.disabled = false;
+        copyConversationButton.hidden = false;
+        const openConversationButton = document.getElementById('finderOpenConversationBtn');
+        openConversationButton.disabled = false;
+        openConversationButton.hidden = false;
       }
     } else {
       sendButton.disabled = false;
