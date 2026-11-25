@@ -112,7 +112,6 @@
   background: rgba(59, 130, 246, 0.1);
   font-size: 1.25rem;
 }
-
 .about-card h3,
 .benefit-row h3 {
   margin-bottom: 0.45rem;
@@ -121,7 +120,6 @@
   font-weight: 800;
   line-height: 1.4;
 }
-
 .about-card p,
 .benefit-row p {
   color: var(--text-muted);
