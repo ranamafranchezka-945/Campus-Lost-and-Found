@@ -3863,6 +3863,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupPhotoDropZone();
   setupItemLocationSuggestions();
   setupReportMoreDetails();
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('click', () => searchInput.select());
   ['deleteAccountPassword', 'deleteAccountConfirm'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', updateDeleteAccountButton);
   });
