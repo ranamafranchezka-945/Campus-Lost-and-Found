@@ -23,7 +23,7 @@
         return null;
       }
     }
-    return args.map(arg => {
+    return args.map((arg) => {
       if (arg === '$el') return el;
       if (arg === '$event') return event;
       if (arg === '$checked') return el.checked;
@@ -42,13 +42,13 @@
     if (args) fn.apply(el, args);
   }
 
-  document.addEventListener('click', event => {
+  document.addEventListener('click', (event) => {
     const el = event.target.closest('[data-action]');
     if (!el || el.disabled) return;
     invoke(el.dataset.action, el, event, []);
   });
 
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
     const el = event.target.closest('[data-activate][data-action]');
     if (!el || el !== event.target) return;
@@ -56,19 +56,19 @@
     invoke(el.dataset.action, el, event, []);
   });
 
-  document.addEventListener('submit', event => {
+  document.addEventListener('submit', (event) => {
     const form = event.target.closest('[data-submit]');
     if (!form) return;
     invoke(form.dataset.submit, form, event, [event]);
   });
 
-  document.addEventListener('change', event => {
+  document.addEventListener('change', (event) => {
     const el = event.target.closest('[data-change]');
     if (!el) return;
     invoke(el.dataset.change, el, event, []);
   });
 
-  document.addEventListener('input', event => {
+  document.addEventListener('input', (event) => {
     const el = event.target.closest('[data-input]');
     if (!el) return;
     invoke(el.dataset.input, el, event, []);
@@ -76,7 +76,8 @@
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
   const OVERLAY = '.slip-overlay, .del-modal-backdrop';
-  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  const FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const openStack = [];
   const returnFocus = new WeakMap();
   let labelCounter = 0;
@@ -133,8 +134,9 @@
     requestAnimationFrame(() => {
       if (!overlay.classList.contains('open')) return;
       const panel = panelOf(overlay);
-      const field = [...panel.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), select, textarea')]
-        .find(el => !el.disabled && isVisible(el));
+      const field = [
+        ...panel.querySelectorAll('input:not([type="hidden"]):not([type="checkbox"]), select, textarea'),
+      ].find((el) => !el.disabled && isVisible(el));
       if (!panel.contains(document.activeElement)) (field || panel).focus({ preventScroll: true });
     });
   }
@@ -154,7 +156,7 @@
     if (overlay.dataset.dialogWatched) return;
     overlay.dataset.dialogWatched = 'true';
     prepare(overlay);
-    overlay.addEventListener('click', event => {
+    overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closeOverlay(overlay);
     });
     new MutationObserver(() => {
@@ -164,7 +166,7 @@
     if (overlay.classList.contains('open')) handleOpened(overlay);
   }
 
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     const top = openStack[openStack.length - 1];
     if (!top) return;
     if (event.key === 'Escape' && !event.defaultPrevented) {
@@ -203,7 +205,11 @@
   else init();
 
   // Escape a value list for use inside a data-args="..." attribute in HTML templates.
-  window.actionArgs = (...args) => JSON.stringify(args)
-    .replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-    .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  window.actionArgs = (...args) =>
+    JSON.stringify(args)
+      .replace(/&/g, '&amp;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 })();

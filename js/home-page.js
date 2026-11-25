@@ -17,7 +17,7 @@ let accountUnreadNotificationCount = 0;
 let lastDisplayedUnreadNotificationCount = null;
 
 function clearStoredAuth() {
-  ['adminToken', 'currentUser', 'userRole'].forEach(key => {
+  ['adminToken', 'currentUser', 'userRole'].forEach((key) => {
     localStorage.removeItem(key);
     sessionStorage.removeItem(key);
   });
@@ -37,12 +37,18 @@ function renderGuestHeader() {
 function renderAuthenticatedHeader(user) {
   currentUser = user;
   const isAdmin = user.role === 'admin';
-  const roleLabel = isAdmin ? 'Administrator' : (user.role === 'employee' ? 'Employee' : 'Student');
+  const roleLabel = isAdmin ? 'Administrator' : user.role === 'employee' ? 'Employee' : 'Student';
   const slot = document.getElementById('userNavSlot');
   const mobileLogout = document.getElementById('mobileMenuLogout');
   const chipVault = document.getElementById('chipMyBelongings');
-  const displayName = isAdmin ? 'Admin' : (user.fullName || 'Account');
-  const initials = displayName.trim().split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+  const displayName = isAdmin ? 'Admin' : user.fullName || 'Account';
+  const initials = displayName
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
   if (mobileLogout) mobileLogout.classList.add('visible');
   if (slot) {
     slot.innerHTML = `
@@ -101,12 +107,12 @@ function closeUserProfileMenu() {
   menu.hidden = true;
 }
 
-document.addEventListener('click', event => {
+document.addEventListener('click', (event) => {
   const accountMenu = document.querySelector('.user-account-wrap');
   if (accountMenu && !accountMenu.contains(event.target)) closeUserProfileMenu();
 });
 
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event) => {
   const button = document.getElementById('userProfileBtn');
   if (event.key !== 'Escape' || !button || button.getAttribute('aria-expanded') !== 'true') return;
 
@@ -122,11 +128,11 @@ function closeKeyboardShortcutsModal() {
   document.getElementById('keyboardShortcutsModal').classList.remove('open');
 }
 
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     if (event.defaultPrevented) return;
 
-    document.querySelectorAll('.button-select.open').forEach(control => closeButtonSelect(control));
+    document.querySelectorAll('.button-select.open').forEach((control) => closeButtonSelect(control));
     closeBelongingMenus();
     const active = document.activeElement;
     if (active && active.matches('input, textarea, select')) active.blur();
@@ -192,8 +198,11 @@ async function checkAuthSession() {
   let cachedUser = null;
   try {
     const stored = JSON.parse(sessionStorage.getItem('currentUser') || 'null');
-    if (stored && ['admin', 'student', 'employee'].includes(stored.role)
-      && sessionStorage.getItem('userRole') === stored.role) {
+    if (
+      stored &&
+      ['admin', 'student', 'employee'].includes(stored.role) &&
+      sessionStorage.getItem('userRole') === stored.role
+    ) {
       cachedUser = stored;
       renderAuthenticatedHeader(cachedUser);
       if (cachedUser.role !== 'admin') installDashboardBackGuard();
@@ -276,7 +285,7 @@ function updateChangePasswordState() {
     uppercase: /[A-Z]/.test(newPassword),
     lowercase: /[a-z]/.test(newPassword),
     number: /[0-9]/.test(newPassword),
-    special: /[!@#$%?&*]/.test(newPassword)
+    special: /[!@#$%?&*]/.test(newPassword),
   };
   Object.entries(requirements).forEach(([name, satisfied]) => {
     const item = document.querySelector(`#newPasswordRequirements [data-requirement="${name}"]`);
@@ -305,7 +314,7 @@ function updateChangePasswordState() {
 async function handleChangePassword(event) {
   event.preventDefault();
   const errorBox = document.getElementById('changePasswordError');
-  const showChangeError = message => {
+  const showChangeError = (message) => {
     errorBox.textContent = message;
     errorBox.style.display = 'block';
   };
@@ -322,7 +331,7 @@ async function handleChangePassword(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'same-origin',
-      body: JSON.stringify({ currentPassword: document.getElementById('currentPassword').value, newPassword })
+      body: JSON.stringify({ currentPassword: document.getElementById('currentPassword').value, newPassword }),
     });
     const data = await res.json();
     if (data.success) {
@@ -357,8 +366,9 @@ function closeDeleteAccountModal() {
 
 // The red button unlocks only once the password is entered and DELETE is typed.
 function updateDeleteAccountButton() {
-  const ready = document.getElementById('deleteAccountPassword').value.length > 0
-    && document.getElementById('deleteAccountConfirm').value.trim() === 'DELETE';
+  const ready =
+    document.getElementById('deleteAccountPassword').value.length > 0 &&
+    document.getElementById('deleteAccountConfirm').value.trim() === 'DELETE';
   document.getElementById('deleteAccountSubmit').disabled = !ready;
 }
 
@@ -376,8 +386,8 @@ async function handleDeleteAccount(event) {
       credentials: 'same-origin',
       body: JSON.stringify({
         password: document.getElementById('deleteAccountPassword').value,
-        confirm: document.getElementById('deleteAccountConfirm').value.trim()
-      })
+        confirm: document.getElementById('deleteAccountConfirm').value.trim(),
+      }),
     });
     const data = await res.json();
     if (data.success) {
@@ -425,8 +435,8 @@ async function refreshMessengerAlertsSection() {
     }
     messengerAlertsLinked = Boolean(data.linked);
     statusText.textContent = messengerAlertsLinked
-      ? 'Possible-match and location-request alerts are being sent to your Messenger.'
-      : 'Get possible-match and location-request alerts on Messenger too.';
+      ? 'QR scan, possible-match, and location-request alerts are being sent to your Messenger.'
+      : 'Get QR scan, possible-match, and location-request alerts on Messenger too.';
     button.textContent = messengerAlertsLinked ? 'Disconnect Messenger' : 'Connect Messenger';
   } catch (err) {
     section.hidden = true;
@@ -511,9 +521,11 @@ async function fetchStats() {
   } catch (err) {
     if (typeof loadedItems !== 'undefined' && loadedItems && loadedItems.length > 0) {
       document.getElementById('statTotal').innerText = loadedItems.length;
-      document.getElementById('statLost').innerText = loadedItems.filter(i => i.type === 'lost').length;
-      document.getElementById('statFound').innerText = loadedItems.filter(i => i.type === 'found').length;
-      document.getElementById('statClaimed').innerText = loadedItems.filter(i => i.claimed || i.status === 'claimed').length;
+      document.getElementById('statLost').innerText = loadedItems.filter((i) => i.type === 'lost').length;
+      document.getElementById('statFound').innerText = loadedItems.filter((i) => i.type === 'found').length;
+      document.getElementById('statClaimed').innerText = loadedItems.filter(
+        (i) => i.claimed || i.status === 'claimed'
+      ).length;
     }
   }
 }
@@ -565,7 +577,7 @@ function restoreFeedFromUrl() {
   if (query) document.getElementById('searchInput').value = query;
   const locationSelect = document.getElementById('locationFilterSelect');
   const location = params.get('location');
-  if (location && [...locationSelect.options].some(option => option.value === location)) {
+  if (location && [...locationSelect.options].some((option) => option.value === location)) {
     setSelectValue(locationSelect, location);
     currentLocationFilter = location.toLowerCase();
   }
@@ -576,14 +588,17 @@ function restoreFeedFromUrl() {
 }
 
 function sortItems(items) {
-  const time = item => Date.parse(item.createdAt || item.date || '') || 0;
+  const time = (item) => Date.parse(item.createdAt || item.date || '') || 0;
   const sorted = items.map((item, index) => ({ item, index }));
   sorted.sort((a, b) => {
-    if (currentSort === 'title') return (a.item.title || '').localeCompare(b.item.title || '', undefined, { sensitivity: 'base' }) || a.index - b.index;
+    if (currentSort === 'title')
+      return (
+        (a.item.title || '').localeCompare(b.item.title || '', undefined, { sensitivity: 'base' }) || a.index - b.index
+      );
     const diff = currentSort === 'oldest' ? time(a.item) - time(b.item) : time(b.item) - time(a.item);
     return diff || a.index - b.index;
   });
-  return sorted.map(entry => entry.item);
+  return sorted.map((entry) => entry.item);
 }
 
 function setSortOrder(value) {
@@ -601,7 +616,11 @@ function scheduleItemsSearch() {
 }
 
 function hasActiveFeedFilters() {
-  return currentFilter !== 'all' || Boolean(currentLocationFilter) || Boolean(document.getElementById('searchInput').value.trim());
+  return (
+    currentFilter !== 'all' ||
+    Boolean(currentLocationFilter) ||
+    Boolean(document.getElementById('searchInput').value.trim())
+  );
 }
 
 function resetItemFilters() {
@@ -625,13 +644,17 @@ function showItemsLoading(grid) {
     grid.classList.add('is-loading');
     return;
   }
-  grid.innerHTML = Array.from({ length: 3 }, () => `
+  grid.innerHTML =
+    Array.from(
+      { length: 3 },
+      () => `
     <div class="project-card skeleton-card" aria-hidden="true">
       <span class="skeleton-line skeleton-line--short"></span>
       <span class="skeleton-line"></span>
       <span class="skeleton-block"></span>
       <span class="skeleton-line"></span>
-    </div>`).join('') + '<span class="visually-hidden" role="status">Loading items…</span>';
+    </div>`
+    ).join('') + '<span class="visually-hidden" role="status">Loading items…</span>';
 }
 
 function showItemsError(grid) {
@@ -756,9 +779,11 @@ function renderItemsGrid(items) {
     grid.innerHTML = `
       <div class="feed-empty">
         <p class="feed-empty-title">No items found</p>
-        <p class="feed-empty-text">${filtered
-          ? 'Nothing matches the current search or filters. Try different words or clear the filters.'
-          : 'No items have been reported yet.'}</p>
+        <p class="feed-empty-text">${
+          filtered
+            ? 'Nothing matches the current search or filters. Try different words or clear the filters.'
+            : 'No items have been reported yet.'
+        }</p>
         <div class="feed-empty-actions">
           ${filtered ? '<button type="button" class="btn btn-outline" data-action="resetItemFilters">Clear filters</button>' : ''}
           <button type="button" class="btn btn-primary" data-action="startReport" data-args='["lost"]'>Report a lost item</button>
@@ -772,10 +797,11 @@ function renderItemsGrid(items) {
   if (currentPage > totalPages) currentPage = totalPages;
   const pageItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  grid.innerHTML = pageItems.map((item, itemIndex) => {
-    // Special render for personal preventive registered belongings
-    if (item.type === 'registered') {
-      return `
+  grid.innerHTML = pageItems
+    .map((item, itemIndex) => {
+      // Special render for personal preventive registered belongings
+      if (item.type === 'registered') {
+        return `
         <div class="project-card registered-belonging-card" id="item-card-${item.id}">
           <div class="project-card-header registered-card-header" style="position: relative;">
             <div class="item-card-header-content registered-card-header-content">
@@ -815,38 +841,38 @@ function renderItemsGrid(items) {
           </div>
         </div>
       `;
-    }
+      }
 
-    const isClaimed = isItemClaimed(item);
-    let badgeHtml = '';
-    if (isClaimed) {
-      badgeHtml = '<span class="item-badge badge-claimed">Claimed</span>';
-    } else if (item.type === 'lost') {
-      badgeHtml = '<span class="item-badge badge-lost">Lost</span>';
-    } else {
-      badgeHtml = '<span class="item-badge badge-found">Found</span>';
-    }
+      const isClaimed = isItemClaimed(item);
+      let badgeHtml = '';
+      if (isClaimed) {
+        badgeHtml = '<span class="item-badge badge-claimed">Claimed</span>';
+      } else if (item.type === 'lost') {
+        badgeHtml = '<span class="item-badge badge-lost">Lost</span>';
+      } else {
+        badgeHtml = '<span class="item-badge badge-found">Found</span>';
+      }
 
-    let matchBadgeHtml = '';
-    if (item.potentialMatch && currentUser) {
-      matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
-    }
+      let matchBadgeHtml = '';
+      if (item.potentialMatch && currentUser) {
+        matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
+      }
 
-    // Admins and the reporter can both remove a report, lost/found/claimed alike -
-    // item.canResolve already means "admin or the reporter" (see publicItemView in
-    // routes/itemRoutes.js), and the server re-checks the same thing before deleting.
-    const canDelete = currentUser?.role === 'admin' || Boolean(item.canResolve);
-    const delBtnHtml = canDelete
-      ? `<button class="btn-sm btn-del" data-action="deleteItem" data-args="${actionArgs(item.id)}">Remove</button>`
-      : '';
-    const actionsHtml = matchBadgeHtml + delBtnHtml;
+      // Admins and the reporter can both remove a report, lost/found/claimed alike -
+      // item.canResolve already means "admin or the reporter" (see publicItemView in
+      // routes/itemRoutes.js), and the server re-checks the same thing before deleting.
+      const canDelete = currentUser?.role === 'admin' || Boolean(item.canResolve);
+      const delBtnHtml = canDelete
+        ? `<button class="btn-sm btn-del" data-action="deleteItem" data-args="${actionArgs(item.id)}">Remove</button>`
+        : '';
+      const actionsHtml = matchBadgeHtml + delBtnHtml;
 
-    const photoUrl = getItemPhotoUrl(item);
-    const photoInteraction = photoUrl
-      ? `role="button" tabindex="0" aria-label="View photo of ${escapeHtml(item.title)}" data-activate data-action="openImageModal" data-args="${actionArgs(photoUrl, item.title)}"`
-      : '';
-    // Without a photo, the category icon fills the frame (it also shows if a photo fails to load).
-    const photoHtml = `
+      const photoUrl = getItemPhotoUrl(item);
+      const photoInteraction = photoUrl
+        ? `role="button" tabindex="0" aria-label="View photo of ${escapeHtml(item.title)}" data-activate data-action="openImageModal" data-args="${actionArgs(photoUrl, item.title)}"`
+        : '';
+      // Without a photo, the category icon fills the frame (it also shows if a photo fails to load).
+      const photoHtml = `
       <div class="item-photo-container listing-media">
         <div class="item-photo-frame" data-photo-state="${photoUrl ? 'loading' : 'empty'}" ${photoInteraction}>
           ${photoUrl ? `<img src="${escapeHtml(photoUrl)}" alt="${escapeHtml(item.title)}" loading="${itemIndex < 2 ? 'eager' : 'lazy'}" fetchpriority="${itemIndex === 0 ? 'high' : 'auto'}" decoding="async" data-item-photo />` : ''}
@@ -859,22 +885,29 @@ function renderItemsGrid(items) {
       </div>
     `;
 
-    return `
+      return `
       <article class="project-card listing-card" id="item-card-${item.id}">
         ${photoHtml}
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? !canShowItemQr(item)
-              ? `<span class="ref-code listing-ref listing-ref-code" title="Reference code">${escapeHtml(item.refCode)}</span>`
-              : `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>`
-              : ''}
+            ${
+              item.refCode
+                ? !canShowItemQr(item)
+                  ? `<span class="ref-code listing-ref listing-ref-code" title="Reference code">${escapeHtml(item.refCode)}</span>`
+                  : `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>`
+                : ''
+            }
           </div>
           <h3 class="listing-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h3>
           <p class="listing-category">${escapeHtml(item.category || 'Uncategorized')}</p>
-          ${item.desc ? `
+          ${
+            item.desc
+              ? `
           <p class="listing-desc">${escapeHtml(item.desc)}</p>
-          <button type="button" class="listing-more" data-action="toggleItemDescription" data-args='["$el"]' aria-expanded="false" hidden>Show more</button>` : ''}
+          <button type="button" class="listing-more" data-action="toggleItemDescription" data-args='["$el"]' aria-expanded="false" hidden>Show more</button>`
+              : ''
+          }
           <ul class="listing-facts">
             <li><span class="listing-fact-icon" aria-hidden="true">📍</span><span><span class="visually-hidden">Location: </span>${escapeHtml(item.location || 'Location not given')}</span></li>
             <li><span class="listing-fact-icon" aria-hidden="true">🕐</span><span>${cardTimeHtml(item.createdAt || item.date, 'Reported')}</span></li>
@@ -884,9 +917,14 @@ function renderItemsGrid(items) {
         </div>
       </article>
     `;
-  }).join('');
+    })
+    .join('');
   renderItemsPagination(totalPages);
-  updateItemsSummary(items.length, (currentPage - 1) * itemsPerPage + 1, (currentPage - 1) * itemsPerPage + pageItems.length);
+  updateItemsSummary(
+    items.length,
+    (currentPage - 1) * itemsPerPage + 1,
+    (currentPage - 1) * itemsPerPage + pageItems.length
+  );
   updateDescriptionToggles(grid);
 }
 
@@ -895,24 +933,23 @@ function isItemClaimed(item) {
 }
 
 function canShowItemQr(item) {
-  return Boolean(item && (
-    item.type === 'registered' ||
-    (['lost', 'found'].includes(item.type) && !isItemClaimed(item))
-  ));
+  return Boolean(
+    item && (item.type === 'registered' || (['lost', 'found'].includes(item.type) && !isItemClaimed(item)))
+  );
 }
 
 // Category name → icon symbol defined in index.html (#category-icon-*).
 const CATEGORY_ICON_IDS = {
-  'Electronics': 'electronics',
+  Electronics: 'electronics',
   'Water Bottles/Tumblers': 'bottle',
   'Clothing & Accessories': 'clothing',
   'Books & Documents': 'books',
   'Bags & Wallets': 'bag',
-  'Keys': 'key',
-  'Jewelry': 'jewelry',
+  Keys: 'key',
+  Jewelry: 'jewelry',
   'Sports Equipment': 'sports',
   'School Supplies': 'school',
-  'ID / Cards': 'id'
+  'ID / Cards': 'id',
 };
 
 function categoryIconHtml(category, className) {
@@ -949,15 +986,14 @@ function updateItemsSummary(total, start = 0, end = 0) {
     return;
   }
   const noun = currentFilter === 'registered' ? 'belonging' : 'item';
-  summary.textContent = total > itemsPerPage
-    ? `Showing ${start}–${end} of ${total} ${noun}s`
-    : `${total} ${noun}${total === 1 ? '' : 's'}`;
+  summary.textContent =
+    total > itemsPerPage ? `Showing ${start}–${end} of ${total} ${noun}s` : `${total} ${noun}${total === 1 ? '' : 's'}`;
 }
 
 // Descriptions are clamped to a few lines; offer "Show more" only where text is cut off.
 function updateDescriptionToggles(root) {
   if (!root) return;
-  root.querySelectorAll('.listing-desc').forEach(description => {
+  root.querySelectorAll('.listing-desc').forEach((description) => {
     const button = description.nextElementSibling;
     if (!button || !button.classList.contains('listing-more')) return;
     if (description.classList.contains('is-expanded')) {
@@ -1040,12 +1076,12 @@ function updateTypeRadio() {
 }
 
 function updateFilterUi() {
-  document.querySelectorAll('.filter-chips .chip').forEach(chip => {
+  document.querySelectorAll('.filter-chips .chip').forEach((chip) => {
     const active = chip.dataset.filter === currentFilter;
     chip.classList.toggle('active', active);
     chip.setAttribute('aria-pressed', String(active));
   });
-  document.querySelectorAll('.hero-stats .stat-box').forEach(stat => {
+  document.querySelectorAll('.hero-stats .stat-box').forEach((stat) => {
     const active = stat.dataset.filter === currentFilter;
     stat.classList.toggle('active', active);
     stat.setAttribute('aria-pressed', String(active));
@@ -1066,7 +1102,7 @@ function setLocationFilter(loc) {
 
 // Digital QR stickers are available for registered belongings and unclaimed lost/found reports.
 async function openQrStickerModal(id) {
-  let item = loadedItems.find(i => String(i.id) === String(id));
+  let item = loadedItems.find((i) => String(i.id) === String(id));
   if (!item) {
     try {
       const res = await fetch(`/api/items/${id}`);
@@ -1137,7 +1173,7 @@ function sendAnonymousNotification() {
     showToast('Please enter a message to notify the owner.', 'error');
     return;
   }
-  showToast('Anonymous notification delivered to the owner\'s account! 📲');
+  showToast("Anonymous notification delivered to the owner's account! 📲");
   input.value = '';
   toggleAnonymousDemo(false);
 }
@@ -1162,7 +1198,8 @@ function closeRegisterBelongingModal() {
   if (moreDetails) moreDetails.open = false;
   editingBelongingId = null;
   document.getElementById('registerModalTitle').textContent = 'Register Valuable Belonging';
-  document.getElementById('registerModalSubtitle').textContent = 'Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.';
+  document.getElementById('registerModalSubtitle').textContent =
+    'Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.';
   document.getElementById('regSubmitBtn').textContent = 'Save Belonging';
 }
 
@@ -1202,7 +1239,7 @@ function closeAuthRequiredModal() {
 }
 
 function closeBelongingMenus() {
-  document.querySelectorAll('.belonging-menu.open').forEach(menu => {
+  document.querySelectorAll('.belonging-menu.open').forEach((menu) => {
     menu.classList.remove('open');
     menu.parentElement?.classList.remove('menu-open');
     menu.previousElementSibling?.setAttribute('aria-expanded', 'false');
@@ -1225,7 +1262,7 @@ function toggleBelongingMenu(event, id) {
 function editRegisteredBelonging(event, id) {
   event.stopPropagation();
   closeBelongingMenus();
-  const item = loadedItems.find(entry => String(entry.id) === String(id));
+  const item = loadedItems.find((entry) => String(entry.id) === String(id));
   if (!item) return showToast('Belonging details are unavailable. Please refresh and try again.', true);
   editingBelongingId = item.id;
   document.getElementById('regTitle').value = item.title || '';
@@ -1254,10 +1291,12 @@ function deleteRegisteredBelonging(event, id) {
 
 async function handleRegisterBelongingSubmit(e) {
   e.preventDefault();
-  const title        = document.getElementById('regTitle').value.trim();
-  const category     = document.getElementById('regCategory').value;
-  const location     = document.getElementById('regLocation') ? document.getElementById('regLocation').value : 'Campus-wide';
-  const identifiers  = document.getElementById('regIdentifiers').value.trim();
+  const title = document.getElementById('regTitle').value.trim();
+  const category = document.getElementById('regCategory').value;
+  const location = document.getElementById('regLocation')
+    ? document.getElementById('regLocation').value
+    : 'Campus-wide';
+  const identifiers = document.getElementById('regIdentifiers').value.trim();
   const instructions = document.getElementById('regInstructions').value.trim();
 
   if (!title || !category) {
@@ -1267,11 +1306,14 @@ async function handleRegisterBelongingSubmit(e) {
 
   try {
     const isEditing = Boolean(editingBelongingId);
-    const res = await fetch(isEditing ? `/api/items/${encodeURIComponent(editingBelongingId)}/registered` : '/api/items/register-belonging', {
-      method: isEditing ? 'PATCH' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, category, location, identifiers, instructions })
-    });
+    const res = await fetch(
+      isEditing ? `/api/items/${encodeURIComponent(editingBelongingId)}/registered` : '/api/items/register-belonging',
+      {
+        method: isEditing ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, category, location, identifiers, instructions }),
+      }
+    );
     const data = await res.json();
     if (!data.success) {
       showToast(data.message || 'Registration failed.', 'error');
@@ -1286,7 +1328,6 @@ async function handleRegisterBelongingSubmit(e) {
 
     // Refresh feed if currently showing registered items
     if (currentFilter === 'registered') fetchAndRenderItems();
-
   } catch (err) {
     showToast('Server error. Please try again.', 'error');
   }
@@ -1309,9 +1350,14 @@ function getSavedFinderConversations() {
   try {
     const saved = JSON.parse(serialized);
     if (!Array.isArray(saved)) throw new Error('Saved finder conversations must be a list.');
-    return saved.filter(entry => entry && typeof entry.id === 'string' &&
-      /^notif-[a-z0-9-]+$/i.test(entry.id) && typeof entry.token === 'string' &&
-      /^[a-f0-9]{64}$/i.test(entry.token));
+    return saved.filter(
+      (entry) =>
+        entry &&
+        typeof entry.id === 'string' &&
+        /^notif-[a-z0-9-]+$/i.test(entry.id) &&
+        typeof entry.token === 'string' &&
+        /^[a-f0-9]{64}$/i.test(entry.token)
+    );
   } catch (error) {
     console.error('Saved finder conversations could not be read:', error);
     return [];
@@ -1357,20 +1403,23 @@ function refreshFinderNotificationsButton() {
 
 function saveFinderConversation(conversation) {
   const savedConversations = getSavedFinderConversations();
-  const existing = savedConversations.find(entry => entry.id === conversation.id);
-  const saved = savedConversations.filter(entry => entry.id !== conversation.id);
+  const existing = savedConversations.find((entry) => entry.id === conversation.id);
+  const saved = savedConversations.filter((entry) => entry.id !== conversation.id);
   saved.unshift({
     id: conversation.id,
     token: conversation.token,
     itemTitle: conversation.itemTitle || '',
     expiresAt: conversation.expiresAt || '',
-    savedAt: existing?.savedAt || new Date().toISOString()
+    savedAt: existing?.savedAt || new Date().toISOString(),
   });
   try {
     localStorage.setItem(FINDER_CONVERSATIONS_STORAGE_KEY, JSON.stringify(saved));
   } catch (error) {
     console.error('Could not save finder conversation on this device:', error);
-    showToast('Conversation started, but this browser could not save access for later. Copy the secure link to keep it.', true);
+    showToast(
+      'Conversation started, but this browser could not save access for later. Copy the secure link to keep it.',
+      true
+    );
     return false;
   }
   refreshFinderNotificationsButton();
@@ -1378,7 +1427,7 @@ function saveFinderConversation(conversation) {
 }
 
 function removeSavedFinderConversation(conversationId) {
-  const saved = getSavedFinderConversations().filter(entry => entry.id !== conversationId);
+  const saved = getSavedFinderConversations().filter((entry) => entry.id !== conversationId);
   try {
     localStorage.setItem(FINDER_CONVERSATIONS_STORAGE_KEY, JSON.stringify(saved));
   } catch (error) {
@@ -1392,59 +1441,65 @@ function removeSavedFinderConversation(conversationId) {
 
 async function loadSavedFinderConversationNotifications() {
   const savedConversations = getSavedFinderConversations();
-  return Promise.all(savedConversations.map(async saved => {
-    const base = {
-      notificationType: 'guest-finder-conversation',
-      id: saved.id,
-      conversationId: saved.id,
-      itemTitle: saved.itemTitle || 'QR finder conversation',
-      timestamp: saved.savedAt || new Date().toISOString(),
-      conversationExpiresAt: saved.expiresAt,
-      conversationStatus: 'open',
-      lastMessage: ''
-    };
-    if (saved.expiresAt && Date.parse(saved.expiresAt) <= Date.now()) {
-      return { ...base, conversationStatus: 'expired' };
-    }
-
-    try {
-      const response = await fetch(`/api/items/registered-conversations/${encodeURIComponent(saved.id)}/guest`, {
-        cache: 'no-store',
-        headers: { Authorization: `Bearer ${saved.token}` }
-      });
-      if (response.status === 410) return { ...base, conversationStatus: 'expired' };
-      if (!response.ok) throw new Error(`Could not refresh saved finder conversation (${response.status}).`);
-      const data = await response.json();
-      if (!data.success) throw new Error(data.message || 'Could not refresh saved finder conversation.');
-      saveFinderConversation({
+  return Promise.all(
+    savedConversations.map(async (saved) => {
+      const base = {
+        notificationType: 'guest-finder-conversation',
         id: saved.id,
-        token: saved.token,
-        itemTitle: data.item?.title || saved.itemTitle,
-        expiresAt: data.conversation?.expiresAt || saved.expiresAt
-      });
-      return {
-        ...base,
-        itemTitle: data.item?.title || base.itemTitle,
-        conversationExpiresAt: data.conversation?.expiresAt || saved.expiresAt,
-        conversationStatus: data.conversation?.status || 'open',
-        lastMessage: data.messages?.at(-1)?.text || ''
+        conversationId: saved.id,
+        itemTitle: saved.itemTitle || 'QR finder conversation',
+        timestamp: saved.savedAt || new Date().toISOString(),
+        conversationExpiresAt: saved.expiresAt,
+        conversationStatus: 'open',
+        lastMessage: '',
       };
-    } catch (error) {
-      console.error(`Could not refresh finder conversation ${saved.id}:`, error);
-      return { ...base, loadError: true };
-    }
-  }));
+      if (saved.expiresAt && Date.parse(saved.expiresAt) <= Date.now()) {
+        return { ...base, conversationStatus: 'expired' };
+      }
+
+      try {
+        const response = await fetch(`/api/items/registered-conversations/${encodeURIComponent(saved.id)}/guest`, {
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${saved.token}` },
+        });
+        if (response.status === 410) return { ...base, conversationStatus: 'expired' };
+        if (!response.ok) throw new Error(`Could not refresh saved finder conversation (${response.status}).`);
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Could not refresh saved finder conversation.');
+        saveFinderConversation({
+          id: saved.id,
+          token: saved.token,
+          itemTitle: data.item?.title || saved.itemTitle,
+          expiresAt: data.conversation?.expiresAt || saved.expiresAt,
+        });
+        return {
+          ...base,
+          itemTitle: data.item?.title || base.itemTitle,
+          conversationExpiresAt: data.conversation?.expiresAt || saved.expiresAt,
+          conversationStatus: data.conversation?.status || 'open',
+          lastMessage: data.messages?.at(-1)?.text || '',
+        };
+      } catch (error) {
+        console.error(`Could not refresh finder conversation ${saved.id}:`, error);
+        return { ...base, loadError: true };
+      }
+    })
+  );
 }
 
 function createFinderConversationToken() {
   const bytes = new Uint8Array(32);
   window.crypto.getRandomValues(bytes);
-  return [...bytes].map(byte => byte.toString(16).padStart(2, '0')).join('');
+  return [...bytes].map((byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
 function setFinderConversationLink(conversationId, token) {
   const fragment = `finderConversation=${encodeURIComponent(conversationId)}.${token}`;
-  window.history.replaceState(window.history.state, '', `${window.location.pathname}${window.location.search}#${fragment}`);
+  window.history.replaceState(
+    window.history.state,
+    '',
+    `${window.location.pathname}${window.location.search}#${fragment}`
+  );
 }
 
 function getFinderConversationLink() {
@@ -1501,7 +1556,9 @@ function showAnonymousFinderForItem(item, matchToken = '') {
   document.getElementById('finderShareContactToggle').checked = false;
   document.getElementById('finderContactField').hidden = true;
   const form = document.getElementById('anonymousFinderForm');
-  form.querySelectorAll('input:not([type="hidden"]), textarea').forEach(field => { field.disabled = false; });
+  form.querySelectorAll('input:not([type="hidden"]), textarea').forEach((field) => {
+    field.disabled = false;
+  });
   const sendButton = document.getElementById('finderSendBtn');
   sendButton.disabled = false;
   sendButton.textContent = '🚀 Send to Owner';
@@ -1544,9 +1601,9 @@ function closeAnonymousFinderModal() {
 
 async function handleAnonymousFinderSubmit(e) {
   e.preventDefault();
-  const refCode       = document.getElementById('finderRefCodeInput').value;
-  const matchToken    = document.getElementById('finderMatchTokenInput').value;
-  const message       = document.getElementById('finderMessageInput').value.trim();
+  const refCode = document.getElementById('finderRefCodeInput').value;
+  const matchToken = document.getElementById('finderMatchTokenInput').value;
+  const message = document.getElementById('finderMessageInput').value.trim();
   const locationFound = document.getElementById('finderLocationInput').value.trim();
   const finderContact = document.getElementById('finderContactInput').value.trim();
   const submissionKey = document.getElementById('finderSubmissionKeyInput').value;
@@ -1569,27 +1626,30 @@ async function handleAnonymousFinderSubmit(e) {
           message,
           locationFound,
           finderContact,
-          ...(activeFinderConversationToken ? { conversationToken: activeFinderConversationToken } : {})
+          ...(activeFinderConversationToken ? { conversationToken: activeFinderConversationToken } : {}),
         };
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Idempotency-Key': submissionKey },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (data.success) {
       showToast(data.message || 'Finder alert submitted.');
       loadMyNotifications();
       sendButton.textContent = 'Alert Sent';
-      document.getElementById('anonymousFinderForm')
+      document
+        .getElementById('anonymousFinderForm')
         .querySelectorAll('input:not([type="hidden"]), textarea')
-        .forEach(field => { field.disabled = true; });
+        .forEach((field) => {
+          field.disabled = true;
+        });
       if (data.conversation?.id && data.conversation?.token) {
         saveFinderConversation({
           id: data.conversation.id,
           token: data.conversation.token,
           itemTitle: data.itemTitle || refCode,
-          expiresAt: data.conversation.expiresAt
+          expiresAt: data.conversation.expiresAt,
         });
         setFinderConversationLink(data.conversation.id, data.conversation.token);
         const copyConversationButton = document.getElementById('finderCopyConversationLinkBtn');
@@ -1621,11 +1681,8 @@ async function handleAnonymousFinderSubmit(e) {
 function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole) {
   const button = document.getElementById('matchConversationBtn');
   if (!button) return;
-  const label = requesterRole === 'owner'
-    ? '💬 Message the finder'
-    : requesterRole === 'finder'
-      ? '💬 Message the owner'
-      : '';
+  const label =
+    requesterRole === 'owner' ? '💬 Message the finder' : requesterRole === 'finder' ? '💬 Message the owner' : '';
   button.style.display = canRequestClaim && label ? '' : 'none';
   button.dataset.lostId = lostId || '';
   button.dataset.foundId = foundId || '';
@@ -1637,7 +1694,9 @@ function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId
 
 async function openMatchQrModal(lostId, foundId) {
   try {
-    const response = await fetch(`/api/items/match-reference-token?lostId=${encodeURIComponent(lostId)}&foundId=${encodeURIComponent(foundId)}`);
+    const response = await fetch(
+      `/api/items/match-reference-token?lostId=${encodeURIComponent(lostId)}&foundId=${encodeURIComponent(foundId)}`
+    );
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.message || 'Could not create match reference.');
     const statusOnly = data.view === 'status-only';
@@ -1648,13 +1707,19 @@ async function openMatchQrModal(lostId, foundId) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole);
+    updateMatchConversationButton(
+      data.canRequestClaim,
+      lost.id,
+      found.id,
+      data.claimId,
+      found.title,
+      data.requesterRole
+    );
 
-    document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
+    document.getElementById('matchLostTitle').textContent = lost.title || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
-    document.getElementById('matchLostRef').textContent    = lost.refCode  || '—';
-    document.getElementById('matchFoundRef').textContent   = found.refCode || '—';
-
+    document.getElementById('matchLostRef').textContent = lost.refCode || '—';
+    document.getElementById('matchFoundRef').textContent = found.refCode || '—';
 
     document.getElementById('matchLostLocation').textContent = lost.location || 'Location unavailable';
     document.getElementById('matchFoundLocation').textContent = found.location || 'Location unavailable';
@@ -1682,7 +1747,12 @@ function openClaimThreadModalFromMatch() {
   if (button.dataset.claimId) {
     openClaimThreadModal(button.dataset.claimId);
   } else {
-    openClaimThreadStarter(button.dataset.lostId, button.dataset.foundId, button.dataset.foundTitle, button.dataset.role);
+    openClaimThreadStarter(
+      button.dataset.lostId,
+      button.dataset.foundId,
+      button.dataset.foundTitle,
+      button.dataset.role
+    );
   }
 }
 
@@ -1717,7 +1787,14 @@ async function openMatchReferenceFromQr(token) {
     document.getElementById('matchLostLocation').textContent = data.lost.location || 'Location unavailable';
     document.getElementById('matchFoundLocation').textContent = data.found.location || 'Location unavailable';
     document.getElementById('matchQrImage').src = qrImageUrl(window.location.href);
-    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole);
+    updateMatchConversationButton(
+      data.canRequestClaim,
+      data.lost.id,
+      data.found.id,
+      data.claimId,
+      data.found.title,
+      data.requesterRole
+    );
     document.getElementById('matchQrModal').classList.add('open');
   } catch (error) {
     showToast(error.message || 'Could not open match verification.', 'error');
@@ -1731,9 +1808,10 @@ async function openNotificationsModal() {
   const heading = document.getElementById('notificationsHeading');
   const subtitle = document.getElementById('notificationsSubtitle');
   if (heading) heading.textContent = currentUser ? 'Account Notifications' : 'Finder Notifications';
-  if (subtitle) subtitle.textContent = currentUser
-    ? 'Account alerts and QR finder conversations saved on this browser'
-    : 'Your QR finder conversations are saved on this browser';
+  if (subtitle)
+    subtitle.textContent = currentUser
+      ? 'Account alerts and QR finder conversations saved on this browser'
+      : 'Your QR finder conversations are saved on this browser';
   document.getElementById('notificationsModal').classList.add('open');
   await loadNotificationsIntoModal();
   // While the inbox is open, pick up the other person's reply to a location request.
@@ -1753,9 +1831,16 @@ function refreshOpenNotifications() {
     return;
   }
   // Never wipe a note being typed, a pending action or a selection in progress.
-  const busy = [...list.querySelectorAll('.meetup-note')].some(input => input.value || input === document.activeElement) ||
-    list.querySelector('button:disabled[data-busy]') || list.querySelector('.notification-select:checked');
-  if (!busy && list.querySelector('.notif-item--meetup, .notif-item--claim-conversation, .notif-item--finder-conversation, .notif-item--guest-finder-conversation')) {
+  const busy =
+    [...list.querySelectorAll('.meetup-note')].some((input) => input.value || input === document.activeElement) ||
+    list.querySelector('button:disabled[data-busy]') ||
+    list.querySelector('.notification-select:checked');
+  if (
+    !busy &&
+    list.querySelector(
+      '.notif-item--meetup, .notif-item--claim-conversation, .notif-item--finder-conversation, .notif-item--guest-finder-conversation'
+    )
+  ) {
     loadNotificationsIntoModal();
   }
 }
@@ -1771,7 +1856,8 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
   const other = escapeHtml(n.otherName);
   const otherRole = n.role === 'owner' ? 'the finder' : 'the owner';
   const claimArg = actionArgs(n.claimId, '$el');
-  const askButton = label => `<button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="requestMeetupLocation" data-args="${claimArg}">${label}</button>`;
+  const askButton = (label) =>
+    `<button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="requestMeetupLocation" data-args="${claimArg}">${label}</button>`;
 
   // Their location (what I asked for).
   const theirs = n.theirLocation || {};
@@ -1781,9 +1867,10 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
     // map per entry was heavy and cramped there. Keep the full map for the claim
     // conversation (idPrefix 'thread-', already behind its own Show Map toggle) and
     // give the notifications list a compact summary with a link to view it there.
-    theirsHtml = idPrefix === 'thread-'
-      ? meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded)
-      : meetupSharedSummaryHtml(theirs.location, n.otherName, n.claimId);
+    theirsHtml =
+      idPrefix === 'thread-'
+        ? meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded)
+        : meetupSharedSummaryHtml(theirs.location, n.otherName, n.claimId);
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -1791,8 +1878,12 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
     theirsHtml = `<p class="meetup-status">${other} declined to share their location.</p>
       ${canAsk ? askButton('Ask again') : `<p class="meetup-hint">You can ask again after ${meetupTime(theirs.askAgainAt)}.</p>`}`;
   } else {
-    const reason = theirs.status === 'expired' ? `${other}'s shared location has expired. `
-      : theirs.status === 'stopped' ? `${other} stopped sharing their location. ` : '';
+    const reason =
+      theirs.status === 'expired'
+        ? `${other}'s shared location has expired. `
+        : theirs.status === 'stopped'
+          ? `${other} stopped sharing their location. `
+          : '';
     theirsHtml = `<p class="meetup-status">${reason}Ask ${other} where to meet.</p>${askButton(`Ask ${other} for their location`)}`;
   }
 
@@ -1818,9 +1909,10 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
       </div>`;
   }
 
-  const intro = n.role === 'owner'
-    ? `Once you both agree the item matches, arrange where to meet ${otherRole}, ${other}.`
-    : `${other} has a claim open on the item you found. Once you both agree it matches, arrange where to meet ${otherRole}, ${other}.`;
+  const intro =
+    n.role === 'owner'
+      ? `Once you both agree the item matches, arrange where to meet ${otherRole}, ${other}.`
+      : `${other} has a claim open on the item you found. Once you both agree it matches, arrange where to meet ${otherRole}, ${other}.`;
   return `
     <p class="notif-msg"><strong>Handover meetup</strong> · ${intro}</p>
     ${mineHtml}
@@ -1877,35 +1969,35 @@ function meetupMapHtml(location, otherName, claimId, idPrefix = '', mapExpanded 
 const activeMeetupMaps = new Map();
 
 function destroyMeetupMaps() {
-  activeMeetupMaps.forEach(map => map.remove());
+  activeMeetupMaps.forEach((map) => map.remove());
   activeMeetupMaps.clear();
 }
 
 function initMeetupMaps(root = document.getElementById('notificationsList')) {
   if (typeof L === 'undefined' || !root) return;
-  root.querySelectorAll('[data-meetup-map]').forEach(container => {
+  root.querySelectorAll('[data-meetup-map]').forEach((container) => {
     const lat = Number(container.dataset.lat);
     const lng = Number(container.dataset.lng);
     const accuracy = Number(container.dataset.accuracy);
     const map = L.map(container, { attributionControl: false }).setView([lat, lng], MEETUP_MAP_ZOOM);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap'
+      attribution: '© OpenStreetMap',
     }).addTo(map);
     L.circle([lat, lng], {
       radius: accuracy,
       color: '#2563eb',
       weight: 2,
       fillColor: '#3b82f6',
-      fillOpacity: 0.16
+      fillOpacity: 0.16,
     }).addTo(map);
     L.marker([lat, lng], {
       icon: L.divIcon({
         className: 'meetup-pin-wrap',
         html: '<span class="meetup-pin" aria-hidden="true"></span>',
         iconSize: [18, 18],
-        iconAnchor: [9, 9]
-      })
+        iconAnchor: [9, 9],
+      }),
     }).addTo(map);
 
     const attribution = document.createElement('a');
@@ -1922,9 +2014,8 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
 
 async function meetupAction(claimId, path, body, button, busyLabel) {
   const registeredId = String(claimId).startsWith('registered:') ? String(claimId).slice('registered:'.length) : null;
-  const registeredConversation = registeredId && activeRegisteredFinderConversation?.id === registeredId
-    ? activeRegisteredFinderConversation
-    : null;
+  const registeredConversation =
+    registeredId && activeRegisteredFinderConversation?.id === registeredId ? activeRegisteredFinderConversation : null;
   button.disabled = true;
   button.dataset.busy = 'true';
   const label = button.textContent;
@@ -1940,7 +2031,7 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
     const res = await fetch(endpoint, {
       method: 'POST',
       headers,
-      body: JSON.stringify(body || {})
+      body: JSON.stringify(body || {}),
     });
     const data = await res.json();
     showToast(data.message || (data.success ? 'Done.' : 'Something went wrong.'), !data.success);
@@ -1982,26 +2073,36 @@ function shareMeetupLocation(claimId, button) {
   button.dataset.busy = 'true';
   const label = button.textContent;
   button.textContent = 'Getting your location…';
-  navigator.geolocation.getCurrentPosition(position => {
-    button.textContent = label;
-    meetupAction(claimId, 'respond', {
-      action: 'share',
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy,
-      note
-    }, button, 'Sharing…');
-  }, error => {
-    button.disabled = false;
-    delete button.dataset.busy;
-    button.textContent = label;
-    const messages = {
-      1: 'Location permission is blocked. Allow location for this site in your browser settings, then try again.',
-      2: 'Your location is not available right now. Turn on GPS or location services and try again.',
-      3: 'Getting your location took too long. Please try again.'
-    };
-    showToast(messages[error.code] || 'Your location could not be read.', true);
-  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      button.textContent = label;
+      meetupAction(
+        claimId,
+        'respond',
+        {
+          action: 'share',
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          note,
+        },
+        button,
+        'Sharing…'
+      );
+    },
+    (error) => {
+      button.disabled = false;
+      delete button.dataset.busy;
+      button.textContent = label;
+      const messages = {
+        1: 'Location permission is blocked. Allow location for this site in your browser settings, then try again.',
+        2: 'Your location is not available right now. Turn on GPS or location services and try again.',
+        3: 'Getting your location took too long. Please try again.',
+      };
+      showToast(messages[error.code] || 'Your location could not be read.', true);
+    },
+    { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+  );
 }
 
 // ── Claim conversation: messages + location sharing + mutual confirm ───────
@@ -2013,7 +2114,7 @@ function shareMeetupLocation(claimId, button) {
 // the input is in starter mode or a normal thread. The form would already submit
 // on Enter by default (it's a single text field plus a submit button), but this
 // makes it explicit instead of relying on that implicit-submission browser rule.
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event) => {
   if (event.target.id !== 'claimThreadInput' || event.key !== 'Enter') return;
   event.preventDefault();
   event.target.closest('form')?.requestSubmit();
@@ -2034,7 +2135,10 @@ let claimThreadPollTimer = null;
 function startClaimThreadPolling() {
   stopClaimThreadPolling();
   claimThreadPollTimer = setInterval(() => {
-    if (!activeClaimThreadId && !activeRegisteredFinderConversation) { stopClaimThreadPolling(); return; }
+    if (!activeClaimThreadId && !activeRegisteredFinderConversation) {
+      stopClaimThreadPolling();
+      return;
+    }
     if (document.visibilityState === 'visible') refreshClaimThread({ silent: true });
   }, 5000);
 }
@@ -2090,7 +2194,7 @@ async function openRegisteredFinderConversation(conversationId, token) {
 }
 
 function openSavedFinderConversation(conversationId) {
-  const saved = getSavedFinderConversations().find(entry => entry.id === conversationId);
+  const saved = getSavedFinderConversations().find((entry) => entry.id === conversationId);
   if (!saved) {
     showToast('This saved finder conversation is no longer available on this browser.', true);
     return;
@@ -2124,14 +2228,16 @@ function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
   lastKnownThreadMessageCount = 0;
   document.getElementById('claimThreadTitle').textContent = `Claim conversation · ${foundTitle || 'Item'}`;
   document.getElementById('claimThreadSubtitle').textContent = 'Starts once you send your first message';
-  document.getElementById('claimThreadBody').innerHTML = requesterRole === 'finder'
-    ? '<p class="thread-empty">Send the owner a message - where you found it, or ask them to confirm a detail - to start the conversation.</p>'
-    : '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
+  document.getElementById('claimThreadBody').innerHTML =
+    requesterRole === 'finder'
+      ? '<p class="thread-empty">Send the owner a message - where you found it, or ask them to confirm a detail - to start the conversation.</p>'
+      : '<p class="thread-empty">Describe an identifying detail only the real owner would know, then send it to start the conversation with the finder.</p>';
   document.getElementById('claimThreadMeetup').innerHTML = '';
   document.getElementById('claimThreadConfirm').innerHTML = '';
-  document.getElementById('claimThreadInput').placeholder = requesterRole === 'finder'
-    ? 'e.g. Found it near the gym entrance, handed it to campus security.'
-    : "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
+  document.getElementById('claimThreadInput').placeholder =
+    requesterRole === 'finder'
+      ? 'e.g. Found it near the gym entrance, handed it to campus security.'
+      : "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
   document.getElementById('claimThreadModal').classList.add('open');
 }
 
@@ -2155,11 +2261,13 @@ function claimThreadMessageHtml(message) {
 // Renders the thread and, on a background poll, toasts about any message the
 // other person sent since the last time this was called.
 function applyClaimThreadUpdate(thread, { silent = false } = {}) {
-  const newFromOther = thread.messages.slice(lastKnownThreadMessageCount).filter(m => !m.mine);
+  const newFromOther = thread.messages.slice(lastKnownThreadMessageCount).filter((m) => !m.mine);
   if (silent && newFromOther.length) {
-    showToast(newFromOther.length > 1
-      ? `${newFromOther.length} new messages from ${thread.otherName}`
-      : `New message from ${thread.otherName}`);
+    showToast(
+      newFromOther.length > 1
+        ? `${newFromOther.length} new messages from ${thread.otherName}`
+        : `New message from ${thread.otherName}`
+    );
   }
   lastKnownThreadMessageCount = thread.messages.length;
   renderClaimThread(thread);
@@ -2197,7 +2305,7 @@ function renderClaimThread(thread) {
 function renderClaimThreadMeetupNotification(notification) {
   const meetupBox = document.getElementById('claimThreadMeetup');
   const mapExpanded = Boolean(meetupBox.querySelector('.meetup-map-toggle[aria-expanded="true"]'));
-  meetupBox.querySelectorAll('[data-meetup-map]').forEach(container => {
+  meetupBox.querySelectorAll('[data-meetup-map]').forEach((container) => {
     const map = activeMeetupMaps.get(container.id);
     if (map) {
       map.remove();
@@ -2233,7 +2341,9 @@ async function refreshClaimThreadMeetup() {
   try {
     const res = await fetch('/api/items/my-notifications', { cache: 'no-store' });
     const data = await res.json();
-    const notification = data.notifications?.find(n => n.notificationType === 'meetup' && n.claimId === activeClaimThreadId);
+    const notification = data.notifications?.find(
+      (n) => n.notificationType === 'meetup' && n.claimId === activeClaimThreadId
+    );
     renderClaimThreadMeetupNotification(notification);
   } catch (error) {
     // Location sharing is secondary to the conversation itself; fail quietly.
@@ -2248,7 +2358,7 @@ async function refreshClaimThread({ silent = false } = {}) {
     const res = registeredConversation
       ? await fetch(registeredConversationEndpoint(registeredConversation), {
           cache: 'no-store',
-          headers: registeredConversationHeaders(registeredConversation)
+          headers: registeredConversationHeaders(registeredConversation),
         })
       : await fetch(`/api/items/claims/${encodeURIComponent(claimId)}/thread`, { cache: 'no-store' });
     const thread = await res.json();
@@ -2285,7 +2395,7 @@ async function sendClaimThreadMessage(event) {
       const res = await fetch(`/api/items/${encodeURIComponent(pendingClaimStart.foundId)}/claim-requests`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ proof: text, lostId: pendingClaimStart.lostId })
+        body: JSON.stringify({ proof: text, lostId: pendingClaimStart.lostId }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) throw new Error(data.message || 'Could not start the conversation.');
@@ -2302,13 +2412,13 @@ async function sendClaimThreadMessage(event) {
       ? await fetch(registeredConversationEndpoint(registeredConversation, '/messages'), {
           method: 'POST',
           headers: registeredConversationHeaders(registeredConversation, true),
-          body: JSON.stringify({ text })
+          body: JSON.stringify({ text }),
         })
       : await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-      });
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not send that message.');
     input.value = '';
@@ -2333,7 +2443,7 @@ async function confirmClaimThread() {
       ? await fetch(registeredConversationEndpoint(conversation, '/confirm'), {
           method: 'POST',
           headers: registeredConversationHeaders(conversation, true),
-          body: JSON.stringify({})
+          body: JSON.stringify({}),
         })
       : await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread/confirm`, { method: 'POST' });
     const data = await res.json();
@@ -2353,11 +2463,13 @@ async function deleteClaimThread() {
   const confirmed = await askConfirm('Delete this conversation? This cannot be undone.', {
     title: 'Delete conversation?',
     confirmLabel: 'Delete',
-    icon: '🗑️'
+    icon: '🗑️',
   });
   if (!confirmed) return;
   try {
-    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread`, { method: 'DELETE' });
+    const res = await fetch(`/api/items/claims/${encodeURIComponent(activeClaimThreadId)}/thread`, {
+      method: 'DELETE',
+    });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
     showToast(data.message || 'Conversation deleted.');
@@ -2393,7 +2505,10 @@ async function loadNotificationsIntoModal() {
 
     document.getElementById('notificationSelectionToolbar').hidden = !currentUser || !data.notifications.length;
     document.getElementById('selectAllNotifications').checked = false;
-    list.innerHTML = notifications.map(n => n.notificationType === 'guest-finder-conversation' ? `
+    list.innerHTML = notifications
+      .map((n) =>
+        n.notificationType === 'guest-finder-conversation'
+          ? `
       <div class="notif-item notif-item--message notif-item--guest-finder-conversation${n.conversationStatus === 'returned' ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
           <strong>💬 QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
@@ -2401,26 +2516,34 @@ async function loadNotificationsIntoModal() {
         </div>
         <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
         ${n.lastMessage ? `<p class="notif-msg">${escapeHtml(n.lastMessage)}</p>` : ''}
-        ${n.loadError
-          ? '<p class="notif-contact">Could not refresh this conversation. Your saved access is still available; try again shortly.</p>'
-          : n.conversationStatus === 'expired'
-            ? '<p class="notif-contact">This conversation has expired.</p>'
-            : n.conversationStatus === 'returned'
-              ? '<p class="notif-contact">Both sides confirmed the return.</p>'
-              : ''}
-        ${n.conversationStatus !== 'expired'
-          ? `<button type="button" class="btn-mark-read" data-action="openSavedFinderConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
-          : ''}
+        ${
+          n.loadError
+            ? '<p class="notif-contact">Could not refresh this conversation. Your saved access is still available; try again shortly.</p>'
+            : n.conversationStatus === 'expired'
+              ? '<p class="notif-contact">This conversation has expired.</p>'
+              : n.conversationStatus === 'returned'
+                ? '<p class="notif-contact">Both sides confirmed the return.</p>'
+                : ''
+        }
+        ${
+          n.conversationStatus !== 'expired'
+            ? `<button type="button" class="btn-mark-read" data-action="openSavedFinderConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+            : ''
+        }
         <button type="button" class="btn-delete-conversation" data-action="removeSavedFinderConversationFromInbox" data-args="${actionArgs(n.conversationId, '$el')}">Remove from this browser</button>
       </div>
-    ` : n.notificationType === 'finder-conversation' ? `
+    `
+          : n.notificationType === 'finder-conversation'
+            ? `
       <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(JSON.stringify({
-            kind: 'item',
-            recordId: String(n.itemId),
-            id: String(n.id)
-          }))}" data-change="updateNotificationSelection">
+          <input class="notification-select" type="checkbox" value="${escapeHtml(
+            JSON.stringify({
+              kind: 'item',
+              recordId: String(n.itemId),
+              id: String(n.id),
+            })
+          )}" data-change="updateNotificationSelection">
           <span>Select conversation</span>
         </label>
         <div class="notif-header">
@@ -2429,27 +2552,39 @@ async function loadNotificationsIntoModal() {
         </div>
         <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
         <p class="notif-msg">${escapeHtml(n.lastMessage || n.message || '')}</p>
-        ${Date.parse(n.conversationExpiresAt) > Date.now()
-          ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
-          : '<p class="notif-contact">This conversation has expired.</p>'}
+        ${
+          Date.parse(n.conversationExpiresAt) > Date.now()
+            ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+            : '<p class="notif-contact">This conversation has expired.</p>'
+        }
         <button type="button" class="btn-delete-conversation" data-action="deleteRegisteredConversationNotification" data-args="${actionArgs(n.id, n.itemId, '$el')}">Delete conversation</button>
       </div>
-    ` : n.notificationType === 'claim-conversation' ? `
+    `
+            : n.notificationType === 'claim-conversation'
+              ? `
       <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
           <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount
-          ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
-          : n.status === 'approved' ? ' · handover confirmed' : ' · conversation in progress'}</p>
-        ${n.message
-          ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
-          : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'}
+        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${
+          n.unreadCount
+            ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
+            : n.status === 'approved'
+              ? ' · handover confirmed'
+              : ' · conversation in progress'
+        }</p>
+        ${
+          n.message
+            ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
+            : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'
+        }
         <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
         <button type="button" class="btn-delete-conversation" data-action="deleteClaimConversationNotification" data-args="${actionArgs(n.claimId, '$el')}">Delete conversation</button>
       </div>
-    ` : n.notificationType === 'meetup' ? `
+    `
+              : n.notificationType === 'meetup'
+                ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
           <strong>🏷️ ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
@@ -2457,7 +2592,9 @@ async function loadNotificationsIntoModal() {
         </div>
         ${meetupNotificationHtml(n)}
       </div>
-    ` : n.notificationType === 'claim-message' ? `
+    `
+                : n.notificationType === 'claim-message'
+                  ? `
       <div class="notif-item notif-item--message unread" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
           <strong>💬 ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
@@ -2467,36 +2604,45 @@ async function loadNotificationsIntoModal() {
         <p class="notif-msg">${escapeHtml(n.message)}</p>
         <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
       </div>
-    ` : `
+    `
+                  : `
       <div class="notif-item${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(JSON.stringify({
-            kind: n.notificationType === 'claim' ? 'claim' : 'item',
-            recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
-            id: String(n.id)
-          }))}" data-change="updateNotificationSelection">
+          <input class="notification-select" type="checkbox" value="${escapeHtml(
+            JSON.stringify({
+              kind: n.notificationType === 'claim' ? 'claim' : 'item',
+              recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
+              id: String(n.id),
+            })
+          )}" data-change="updateNotificationSelection">
           <span>Select notification</span>
         </label>
         <div class="notif-header">
           <strong>🏷️ ${n.itemTitle || n.refCode}</strong>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        ${n.notificationType === 'match'
-          ? `<p class="notif-msg"><strong>Possible match—not confirmed</strong></p>
+        ${
+          n.notificationType === 'match'
+            ? `<p class="notif-msg"><strong>Possible match—not confirmed</strong></p>
              <p class="notif-msg">Found item: ${escapeHtml(n.matchItemTitle || n.matchRefCode || 'Found item')} ${n.matchRefCode ? `(${escapeHtml(n.matchRefCode)})` : ''}</p>
              ${n.matchLocation ? `<p class="notif-msg">Reported location: ${escapeHtml(n.matchLocation)}</p>` : ''}
              <p class="notif-msg">${escapeHtml(n.message)}</p>
              <a class="btn-mark-read" style="display:inline-block;text-decoration:none;" href="/?search=${encodeURIComponent(n.matchRefCode || '')}&amp;matchItemId=${encodeURIComponent(n.matchItemId || '')}#items">Review possible match</a>`
-          : n.notificationType === 'claim'
-            ? `<p class="notif-msg">Claim request update</p><p class="notif-msg">${escapeHtml(n.message)}</p>`
-            : `<p class="notif-msg">📍 <em>${escapeHtml(n.locationFound || 'Location not specified')}</em></p>
+            : n.notificationType === 'claim'
+              ? `<p class="notif-msg">Claim request update</p><p class="notif-msg">${escapeHtml(n.message)}</p>`
+              : `<p class="notif-msg">📍 <em>${escapeHtml(n.locationFound || 'Location not specified')}</em></p>
              <p class="notif-msg">💬 ${escapeHtml(n.message)}</p>
-             ${n.finderContact && n.finderContact !== 'Anonymous Student / Finder'
-               ? `<p class="notif-contact">📞 Contact the finder: ${contactLinkHtml(n.finderContact)}</p>`
-               : '<p class="notif-contact">🔒 Finder remained anonymous</p>'}`}
+             ${
+               n.finderContact && n.finderContact !== 'Anonymous Student / Finder'
+                 ? `<p class="notif-contact">📞 Contact the finder: ${contactLinkHtml(n.finderContact)}</p>`
+                 : '<p class="notif-contact">🔒 Finder remained anonymous</p>'
+             }`
+        }
         ${!n.read ? `<button class="btn-mark-read" data-action="markNotifRead" data-args="${actionArgs(n.id, '$el')}">Mark as read</button>` : ''}
       </div>
-    `).join('');
+    `
+      )
+      .join('');
     updateNotificationSelection();
     initMeetupMaps();
 
@@ -2517,7 +2663,7 @@ async function loadNotificationsIntoModal() {
 }
 
 function selectAllNotifications(checked) {
-  document.querySelectorAll('#notificationsList .notification-select').forEach(input => {
+  document.querySelectorAll('#notificationsList .notification-select').forEach((input) => {
     input.checked = checked;
   });
   updateNotificationSelection();
@@ -2525,7 +2671,7 @@ function selectAllNotifications(checked) {
 
 function updateNotificationSelection() {
   const checkboxes = [...document.querySelectorAll('#notificationsList .notification-select')];
-  const selectedCount = checkboxes.filter(input => input.checked).length;
+  const selectedCount = checkboxes.filter((input) => input.checked).length;
   const selectAll = document.getElementById('selectAllNotifications');
   selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
   selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
@@ -2534,8 +2680,9 @@ function updateNotificationSelection() {
 }
 
 async function deleteSelectedNotifications() {
-  const notificationIds = [...document.querySelectorAll('#notificationsList .notification-select:checked')]
-    .map(input => JSON.parse(input.value));
+  const notificationIds = [...document.querySelectorAll('#notificationsList .notification-select:checked')].map(
+    (input) => JSON.parse(input.value)
+  );
   if (!notificationIds.length) return;
   const confirmed = await askConfirm(
     `Delete ${notificationIds.length} selected notification${notificationIds.length === 1 ? '' : 's'}?`,
@@ -2549,7 +2696,7 @@ async function deleteSelectedNotifications() {
     const res = await fetch('/api/items/notifications', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ notificationIds })
+      body: JSON.stringify({ notificationIds }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete notifications.');
@@ -2576,8 +2723,8 @@ async function deleteRegisteredConversationNotification(notificationId, itemId, 
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        notificationIds: [{ kind: 'item', recordId: String(itemId), id: String(notificationId) }]
-      })
+        notificationIds: [{ kind: 'item', recordId: String(itemId), id: String(notificationId) }],
+      }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
@@ -2605,12 +2752,14 @@ async function deleteClaimConversationNotification(claimId, button) {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        notificationIds: [{
-          kind: 'claim-conversation',
-          recordId: String(claimId),
-          id: `claim-conversation-${claimId}`
-        }]
-      })
+        notificationIds: [
+          {
+            kind: 'claim-conversation',
+            recordId: String(claimId),
+            id: `claim-conversation-${claimId}`,
+          },
+        ],
+      }),
     });
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
@@ -2682,7 +2831,7 @@ async function loadMyNotifications() {
 
 function swayNotificationBellIfNew(unreadCount) {
   if (lastDisplayedUnreadNotificationCount !== null && unreadCount > lastDisplayedUnreadNotificationCount) {
-    document.querySelectorAll('.notif-bell-btn:not(#finderNotificationsBtn) svg').forEach(icon => {
+    document.querySelectorAll('.notif-bell-btn:not(#finderNotificationsBtn) svg').forEach((icon) => {
       icon.classList.remove('is-swaying');
       void icon.getBoundingClientRect();
       icon.classList.add('is-swaying');
@@ -2709,12 +2858,20 @@ function setItemPhotoState(image, state) {
 }
 
 // Image load/error events do not bubble, so listen during the capture phase.
-document.addEventListener('load', event => {
-  if (event.target.matches?.('img[data-item-photo]')) setItemPhotoState(event.target, 'loaded');
-}, true);
-document.addEventListener('error', event => {
-  if (event.target.matches?.('img[data-item-photo]')) setItemPhotoState(event.target, 'error');
-}, true);
+document.addEventListener(
+  'load',
+  (event) => {
+    if (event.target.matches?.('img[data-item-photo]')) setItemPhotoState(event.target, 'loaded');
+  },
+  true
+);
+document.addEventListener(
+  'error',
+  (event) => {
+    if (event.target.matches?.('img[data-item-photo]')) setItemPhotoState(event.target, 'error');
+  },
+  true
+);
 
 // ── Photo viewer (css/lightbox.css) ────────────────────────────────────────
 // Opening a card's photo shows it full screen with the item's details. The other
@@ -2724,20 +2881,26 @@ let lightboxIndex = 0;
 
 // Every card photo on the page that can be opened, in the order shown.
 function collectLightboxPhotos() {
-  return [...document.querySelectorAll('#itemsGrid .item-photo-frame[data-action="openImageModal"]')].map(frame => {
-    let src = '';
-    let title = '';
-    try { [src, title] = JSON.parse(frame.dataset.args); } catch { /* skip malformed */ }
-    const cardId = frame.closest('[id^="item-card-"]')?.id.replace('item-card-', '');
-    const item = loadedItems.find(entry => String(entry.id) === cardId);
-    return { src, title, item };
-  }).filter(photo => photo.src);
+  return [...document.querySelectorAll('#itemsGrid .item-photo-frame[data-action="openImageModal"]')]
+    .map((frame) => {
+      let src = '';
+      let title = '';
+      try {
+        [src, title] = JSON.parse(frame.dataset.args);
+      } catch {
+        /* skip malformed */
+      }
+      const cardId = frame.closest('[id^="item-card-"]')?.id.replace('item-card-', '');
+      const item = loadedItems.find((entry) => String(entry.id) === cardId);
+      return { src, title, item };
+    })
+    .filter((photo) => photo.src);
 }
 
 function openImageModal(photoSrc, title) {
   if (!photoSrc) return;
   lightboxPhotos = collectLightboxPhotos();
-  lightboxIndex = lightboxPhotos.findIndex(photo => photo.src === photoSrc);
+  lightboxIndex = lightboxPhotos.findIndex((photo) => photo.src === photoSrc);
   if (lightboxIndex === -1) {
     lightboxPhotos = [{ src: photoSrc, title }];
     lightboxIndex = 0;
@@ -2783,7 +2946,7 @@ function showLightboxPhoto(direction = 0) {
   document.getElementById('imageModalOpen').href = photo.src;
 
   // Load the neighbours now so the next arrow press is instant.
-  [lightboxIndex - 1, lightboxIndex + 1].forEach(index => {
+  [lightboxIndex - 1, lightboxIndex + 1].forEach((index) => {
     const neighbour = lightboxPhotos[(index + total) % total];
     if (neighbour && total > 1) new Image().src = neighbour.src;
   });
@@ -2811,14 +2974,16 @@ function renderLightboxCaption(photo) {
     [item.category, ''],
     [item.location, ''],
     [reported && !Number.isNaN(reported.getTime()) ? `Reported ${relativeTimeLabel(reported)}` : '', ''],
-    [item.refCode, 'lightbox-ref']
+    [item.refCode, 'lightbox-ref'],
   ];
-  parts.filter(([text]) => text).forEach(([text, className]) => {
-    const span = document.createElement('span');
-    span.textContent = text;
-    if (className) span.className = className;
-    meta.appendChild(span);
-  });
+  parts
+    .filter(([text]) => text)
+    .forEach(([text, className]) => {
+      const span = document.createElement('span');
+      span.textContent = text;
+      if (className) span.className = className;
+      meta.appendChild(span);
+    });
 }
 
 function showAdjacentPhoto(step) {
@@ -2855,40 +3020,43 @@ function setupPhotoLightbox() {
   const image = document.getElementById('imageModalImg');
   if (!modal || !stage || !image) return;
   const box = modal.querySelector('.lightbox');
-  const pointFraction = event => {
+  const pointFraction = (event) => {
     const rect = image.getBoundingClientRect();
     return [
       Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)),
-      Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))
+      Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)),
     ];
   };
 
   // Click the photo to zoom in where you clicked; click again to zoom out.
-  image.addEventListener('click', event => {
+  image.addEventListener('click', (event) => {
     if (swipeHandled) return;
     const zoomed = box.classList.contains('is-zoomed');
     setImageZoom(!zoomed, ...pointFraction(event));
   });
   // While zoomed, the visible part follows the pointer.
-  image.addEventListener('pointermove', event => {
+  image.addEventListener('pointermove', (event) => {
     if (!box.classList.contains('is-zoomed') || event.pointerType === 'touch') return;
     const [x, y] = pointFraction(event);
     image.style.transformOrigin = `${x * 100}% ${y * 100}%`;
   });
 
   // Clicking the dark area around the photo closes the viewer.
-  stage.addEventListener('click', event => {
+  stage.addEventListener('click', (event) => {
     if (event.target === stage || event.target.id === 'imageModalFrame') closeImageModal();
   });
 
   // Swipe left / right on touch screens.
   let swipeStart = null;
   let swipeHandled = false;
-  stage.addEventListener('pointerdown', event => {
+  stage.addEventListener('pointerdown', (event) => {
     swipeHandled = false;
-    swipeStart = event.pointerType === 'touch' && !box.classList.contains('is-zoomed') ? { x: event.clientX, y: event.clientY } : null;
+    swipeStart =
+      event.pointerType === 'touch' && !box.classList.contains('is-zoomed')
+        ? { x: event.clientX, y: event.clientY }
+        : null;
   });
-  stage.addEventListener('pointerup', event => {
+  stage.addEventListener('pointerup', (event) => {
     if (!swipeStart) return;
     const dx = event.clientX - swipeStart.x;
     const dy = event.clientY - swipeStart.y;
@@ -2899,10 +3067,15 @@ function setupPhotoLightbox() {
     }
   });
 
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     if (!modal.classList.contains('open')) return;
-    if (event.key === 'ArrowRight') { event.preventDefault(); showAdjacentPhoto(1); }
-    else if (event.key === 'ArrowLeft') { event.preventDefault(); showAdjacentPhoto(-1); }
+    if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      showAdjacentPhoto(1);
+    } else if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      showAdjacentPhoto(-1);
+    }
   });
 }
 
@@ -2926,7 +3099,7 @@ function openPhotoPicker() {
 function setupPhotoDropZone() {
   const area = document.getElementById('photoUploadArea');
   if (!area) return;
-  area.addEventListener('dragover', event => {
+  area.addEventListener('dragover', (event) => {
     event.preventDefault();
     area.classList.add('dragover');
   });
@@ -2941,7 +3114,7 @@ function setupItemLocationSuggestions() {
   const wrapper = input?.closest('.location-input-wrap');
   if (!input || !suggestions || !datalist || !wrapper) return;
 
-  const locations = [...datalist.options].map(option => option.value).filter(Boolean);
+  const locations = [...datalist.options].map((option) => option.value).filter(Boolean);
   let visibleLocations = [];
   let activeIndex = -1;
 
@@ -2954,7 +3127,7 @@ function setupItemLocationSuggestions() {
 
   const renderSuggestions = () => {
     const query = input.value.trim().toLocaleLowerCase();
-    visibleLocations = locations.filter(location => location.toLocaleLowerCase().includes(query));
+    visibleLocations = locations.filter((location) => location.toLocaleLowerCase().includes(query));
     activeIndex = -1;
     suggestions.replaceChildren();
 
@@ -2980,7 +3153,7 @@ function setupItemLocationSuggestions() {
     input.setAttribute('aria-expanded', 'true');
   };
 
-  const setActiveOption = index => {
+  const setActiveOption = (index) => {
     if (!visibleLocations.length) return;
     activeIndex = (index + visibleLocations.length) % visibleLocations.length;
     const options = suggestions.querySelectorAll('[role="option"]');
@@ -2994,7 +3167,7 @@ function setupItemLocationSuggestions() {
     activeOption.scrollIntoView({ block: 'nearest' });
   };
 
-  const selectLocation = location => {
+  const selectLocation = (location) => {
     input.value = location;
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -3006,7 +3179,7 @@ function setupItemLocationSuggestions() {
     if (suggestions.hidden) renderSuggestions();
   });
   input.addEventListener('input', renderSuggestions);
-  input.addEventListener('keydown', event => {
+  input.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (suggestions.hidden) renderSuggestions();
@@ -3025,17 +3198,17 @@ function setupItemLocationSuggestions() {
     }
   });
 
-  suggestions.addEventListener('mousedown', event => {
+  suggestions.addEventListener('mousedown', (event) => {
     if (event.target.closest('[role="option"]')) event.preventDefault();
   });
-  suggestions.addEventListener('click', event => {
+  suggestions.addEventListener('click', (event) => {
     const option = event.target.closest('[role="option"]');
     if (option && suggestions.contains(option)) selectLocation(option.dataset.location);
   });
   input.addEventListener('blur', () => {
     window.setTimeout(closeSuggestions, 120);
   });
-  document.addEventListener('click', event => {
+  document.addEventListener('click', (event) => {
     if (!wrapper.contains(event.target)) closeSuggestions();
   });
 }
@@ -3045,7 +3218,9 @@ function setupReportMoreDetails() {
   const form = document.getElementById('itemForm');
   const more = document.getElementById('reportMoreDetails');
   if (!form || !more) return;
-  form.addEventListener('reset', () => { more.open = false; });
+  form.addEventListener('reset', () => {
+    more.open = false;
+  });
 }
 
 // On wide screens the report form is sticky beside the items (css/polish.css).
@@ -3178,7 +3353,7 @@ async function handleFormSubmit(e) {
     const res = await fetch('/api/items', {
       method: 'POST',
       headers: { 'Idempotency-Key': reportSubmissionKey },
-      body: payload
+      body: payload,
     });
 
     const data = await res.json();
@@ -3200,9 +3375,8 @@ async function handleFormSubmit(e) {
       openReportSuccessModal(data.item.refCode, data.item.id, data.potentialMatch);
       document.getElementById('items').scrollIntoView({ behavior: 'smooth' });
     } else {
-      const message = Array.isArray(data.errors) && data.errors.length
-        ? data.errors.join(' ')
-        : data.message || 'Validation error';
+      const message =
+        Array.isArray(data.errors) && data.errors.length ? data.errors.join(' ') : data.message || 'Validation error';
       showToast(message, true);
     }
   } catch (err) {
@@ -3224,7 +3398,7 @@ let lastCreatedItemId = null;
 function openReportSuccessModal(refCode, itemId, potentialMatch) {
   lastCreatedItemId = itemId;
   document.getElementById('successRefCode').innerText = refCode || 'CSPC-LF-2026';
-  
+
   const matchAlert = document.getElementById('successMatchAlert');
   if (false && potentialMatch) {
     matchAlert.style.display = 'block';
@@ -3248,7 +3422,7 @@ function openQrFromSuccessModal() {
 }
 
 function openDeleteModal(id) {
-  const item = loadedItems.find(i => String(i.id) === String(id));
+  const item = loadedItems.find((i) => String(i.id) === String(id));
   targetDeleteId = id;
   const textEl = document.getElementById('deleteConfirmText');
   if (item) {
@@ -3286,7 +3460,7 @@ function deleteItem(id) {
 }
 
 function openClaimModal(id) {
-  const item = loadedItems.find(i => String(i.id) === String(id));
+  const item = loadedItems.find((i) => String(i.id) === String(id));
   if (!item) return;
   targetClaimId = id;
 
@@ -3342,7 +3516,7 @@ async function executeClaimToggle() {
     const response = await fetch(`/api/items/${id}/claim`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proof })
+      body: JSON.stringify({ proof }),
     });
     const data = await response.json();
     if (!response.ok || !data.success) throw new Error(data.message || 'Unable to update item status.');
@@ -3366,13 +3540,17 @@ function cleanFinderInstructions(value) {
 
 function escapeHtml(str) {
   if (!str) return '';
-  return String(str).replace(/[&<>'"]/g, tag => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    "'": '&#39;',
-    '"': '&quot;'
-  }[tag] || tag));
+  return String(str).replace(
+    /[&<>'"]/g,
+    (tag) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;',
+      })[tag] || tag
+  );
 }
 
 // Renders a contact string as a clickable tel:/mailto: link when it looks like one, plain text otherwise.
@@ -3380,7 +3558,8 @@ function contactLinkHtml(value) {
   const text = String(value || '').trim();
   if (!text) return '';
   if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return `<a href="mailto:${escapeHtml(text)}">${escapeHtml(text)}</a>`;
-  if (/^[+\d][\d\s().-]{6,}$/.test(text)) return `<a href="tel:${escapeHtml(text.replace(/[^\d+]/g, ''))}">${escapeHtml(text)}</a>`;
+  if (/^[+\d][\d\s().-]{6,}$/.test(text))
+    return `<a href="tel:${escapeHtml(text.replace(/[^\d+]/g, ''))}">${escapeHtml(text)}</a>`;
   return escapeHtml(text);
 }
 
@@ -3400,7 +3579,9 @@ function askConfirmItemReturned(isRegisteredConversation = false) {
     ? 'Confirm return'
     : 'Confirm';
   document.getElementById('confirmItemReturnedModal').classList.add('open');
-  return new Promise(resolve => { confirmItemReturnedResolve = resolve; });
+  return new Promise((resolve) => {
+    confirmItemReturnedResolve = resolve;
+  });
 }
 
 function closeConfirmItemReturned() {
@@ -3427,7 +3608,9 @@ function askConfirm(text, { title = 'Are you sure?', confirmLabel = 'Confirm', i
   document.getElementById('genericConfirmIcon').textContent = icon;
   document.getElementById('genericConfirmBtn').textContent = confirmLabel;
   document.getElementById('genericConfirmModal').classList.add('open');
-  return new Promise(resolve => { genericConfirmResolve = resolve; });
+  return new Promise((resolve) => {
+    genericConfirmResolve = resolve;
+  });
 }
 
 function closeGenericConfirm() {
@@ -3481,7 +3664,7 @@ function toggleTheme() {
 
 function updateThemeIcon() {
   const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-  document.querySelectorAll('.theme-toggle').forEach(btn => {
+  document.querySelectorAll('.theme-toggle').forEach((btn) => {
     btn.innerHTML = themeToggleIconHtml(theme);
     btn.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
     btn.setAttribute('aria-label', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
@@ -3499,7 +3682,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupPhotoDropZone();
   setupItemLocationSuggestions();
   setupReportMoreDetails();
-  ['deleteAccountPassword', 'deleteAccountConfirm'].forEach(id => {
+  ['deleteAccountPassword', 'deleteAccountConfirm'].forEach((id) => {
     document.getElementById(id)?.addEventListener('input', updateDeleteAccountButton);
   });
   setupReportPanelSticky();
@@ -3549,7 +3732,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   if (links) {
-    links.querySelectorAll('a, button').forEach(el => {
+    links.querySelectorAll('a, button').forEach((el) => {
       el.addEventListener('click', () => links.classList.remove('open'));
     });
   }

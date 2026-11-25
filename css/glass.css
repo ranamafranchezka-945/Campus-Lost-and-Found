@@ -18,15 +18,27 @@
      top-left and bottom-right), as gradients so they sit behind the glass, not on it. */
   --glow-rgb: 59, 130, 246;
   --scene:
-    radial-gradient(circle 440px at 130px 130px,
-      rgba(var(--glow-rgb), 0.23), rgba(var(--glow-rgb), 0.2) 27%, rgba(var(--glow-rgb), 0.15) 41%,
-      rgba(var(--glow-rgb), 0.09) 55%, rgba(var(--glow-rgb), 0.04) 68%, rgba(var(--glow-rgb), 0) 92%),
-    radial-gradient(circle 470px at calc(100% - 160px) calc(100% - 160px),
-      rgba(var(--glow-rgb), 0.24), rgba(var(--glow-rgb), 0.2) 32%, rgba(var(--glow-rgb), 0.15) 45%,
-      rgba(var(--glow-rgb), 0.09) 57%, rgba(var(--glow-rgb), 0.04) 70%, rgba(var(--glow-rgb), 0) 92%),
+    radial-gradient(
+      circle 440px at 130px 130px,
+      rgba(var(--glow-rgb), 0.23),
+      rgba(var(--glow-rgb), 0.2) 27%,
+      rgba(var(--glow-rgb), 0.15) 41%,
+      rgba(var(--glow-rgb), 0.09) 55%,
+      rgba(var(--glow-rgb), 0.04) 68%,
+      rgba(var(--glow-rgb), 0) 92%
+    ),
+    radial-gradient(
+      circle 470px at calc(100% - 160px) calc(100% - 160px),
+      rgba(var(--glow-rgb), 0.24),
+      rgba(var(--glow-rgb), 0.2) 32%,
+      rgba(var(--glow-rgb), 0.15) 45%,
+      rgba(var(--glow-rgb), 0.09) 57%,
+      rgba(var(--glow-rgb), 0.04) 70%,
+      rgba(var(--glow-rgb), 0) 92%
+    ),
     linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark2) 100%);
 
-  --panel-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.035));
+  --panel-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.035));
   --panel-border: rgba(160, 185, 255, 0.16);
   --panel-shadow: 0 24px 60px -28px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.09);
 
@@ -83,25 +95,60 @@
   /* Light mode: the same blue glows, larger and stronger, plus a soft one behind the
      middle of the page, so the more transparent glass below has colour to show through. */
   --scene:
-    radial-gradient(circle 560px at 130px 130px,
-      rgba(var(--glow-rgb), 0.34), rgba(var(--glow-rgb), 0.26) 25%, rgba(var(--glow-rgb), 0.17) 42%,
-      rgba(var(--glow-rgb), 0.09) 58%, rgba(var(--glow-rgb), 0.03) 74%, rgba(var(--glow-rgb), 0) 92%),
-    radial-gradient(circle 600px at calc(100% - 160px) calc(100% - 160px),
-      rgba(var(--glow-rgb), 0.34), rgba(var(--glow-rgb), 0.26) 25%, rgba(var(--glow-rgb), 0.17) 42%,
-      rgba(var(--glow-rgb), 0.09) 58%, rgba(var(--glow-rgb), 0.03) 74%, rgba(var(--glow-rgb), 0) 92%),
-    radial-gradient(ellipse 46% 40% at 38% 46%,
-      rgba(var(--glow-rgb), 0.2), rgba(var(--glow-rgb), 0.1) 45%, rgba(var(--glow-rgb), 0) 100%),
+    radial-gradient(
+      circle 560px at 130px 130px,
+      rgba(var(--glow-rgb), 0.34),
+      rgba(var(--glow-rgb), 0.26) 25%,
+      rgba(var(--glow-rgb), 0.17) 42%,
+      rgba(var(--glow-rgb), 0.09) 58%,
+      rgba(var(--glow-rgb), 0.03) 74%,
+      rgba(var(--glow-rgb), 0) 92%
+    ),
+    radial-gradient(
+      circle 600px at calc(100% - 160px) calc(100% - 160px),
+      rgba(var(--glow-rgb), 0.34),
+      rgba(var(--glow-rgb), 0.26) 25%,
+      rgba(var(--glow-rgb), 0.17) 42%,
+      rgba(var(--glow-rgb), 0.09) 58%,
+      rgba(var(--glow-rgb), 0.03) 74%,
+      rgba(var(--glow-rgb), 0) 92%
+    ),
+    radial-gradient(
+      ellipse 46% 40% at 38% 46%,
+      rgba(var(--glow-rgb), 0.2),
+      rgba(var(--glow-rgb), 0.1) 45%,
+      rgba(var(--glow-rgb), 0) 100%
+    ),
     linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-dark2) 100%);
 
   /* Bright top-left sheen fading to clear, with a white rim and a top-edge highlight. */
-  --panel-bg: linear-gradient(145deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.16) 55%, rgba(255, 255, 255, 0.08) 100%);
+  --panel-bg: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.16) 55%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
   --panel-border: rgba(255, 255, 255, 0.85);
-  --panel-shadow: 0 28px 64px -30px rgba(30, 58, 138, 0.38), inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(255, 255, 255, 0.35);
+  --panel-shadow:
+    0 28px 64px -30px rgba(30, 58, 138, 0.38), inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.35);
 
-  --card-glass: linear-gradient(160deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0.26) 60%, rgba(255, 255, 255, 0.18) 100%);
-  --card-glass-hover: linear-gradient(160deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.46) 60%, rgba(255, 255, 255, 0.36) 100%);
+  --card-glass: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.58) 0%,
+    rgba(255, 255, 255, 0.26) 60%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  --card-glass-hover: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.8) 0%,
+    rgba(255, 255, 255, 0.46) 60%,
+    rgba(255, 255, 255, 0.36) 100%
+  );
   --card-border: rgba(255, 255, 255, 0.9);
-  --card-shadow: 0 16px 34px -18px rgba(30, 58, 138, 0.32), inset 0 1px 0 rgba(255, 255, 255, 1), inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+  --card-shadow:
+    0 16px 34px -18px rgba(30, 58, 138, 0.32), inset 0 1px 0 rgba(255, 255, 255, 1),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.4);
   --well-bg: rgba(226, 232, 240, 0.45);
   --well-border: rgba(37, 99, 235, 0.2);
 
@@ -156,7 +203,9 @@
   background: var(--scene);
   pointer-events: none;
 }
-:root body::after { display: none; }
+:root body::after {
+  display: none;
+}
 
 /* ── Panels ─────────────────────────────────────────────────────────────── */
 :root .hero-section,
@@ -180,8 +229,12 @@
   margin: clamp(0.75rem, 2vw, 1.25rem) auto;
   padding: clamp(1.1rem, 3.5vw, 2.25rem) !important;
 }
-:root .section-divider { display: none; }
-:root .tools-section .simple-card { margin-bottom: 0; }
+:root .section-divider {
+  display: none;
+}
+:root .tools-section .simple-card {
+  margin-bottom: 0;
+}
 
 :root .about-hero {
   margin-top: 1.25rem;
@@ -211,21 +264,38 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-:root .project-card { border-radius: 22px; }
-:root .simple-card { border-radius: 22px; }
+:root .project-card {
+  border-radius: 22px;
+}
+:root .simple-card {
+  border-radius: 22px;
+}
 :root .stat-box,
 :root .about-card,
 :root .insight-card,
 :root .broadcast-card,
-:root .user-form-panel { border-radius: 18px; }
-:root .admin-table-card { border-radius: 20px; }
-:root .admin-table-wrap { background: transparent; border-color: transparent; box-shadow: none; }
-:root .admin-stats .stat-card { border-radius: 18px; box-shadow: var(--card-shadow); }
+:root .user-form-panel {
+  border-radius: 18px;
+}
+:root .admin-table-card {
+  border-radius: 20px;
+}
+:root .admin-table-wrap {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+:root .admin-stats .stat-card {
+  border-radius: 18px;
+  box-shadow: var(--card-shadow);
+}
 
 :root .project-card:hover {
   background: var(--card-glass-hover);
   border-color: var(--card-border);
-  box-shadow: var(--card-shadow), 0 18px 40px -22px rgba(29, 78, 216, 0.45);
+  box-shadow:
+    var(--card-shadow),
+    0 18px 40px -22px rgba(29, 78, 216, 0.45);
 }
 
 :root .stat-box:hover {
@@ -235,7 +305,9 @@
 :root .stat-box.active {
   background: var(--stat-active-bg);
   border-color: var(--card-border);
-  box-shadow: var(--card-shadow), 0 0 0 2px var(--stat-active-ring);
+  box-shadow:
+    var(--card-shadow),
+    0 0 0 2px var(--stat-active-ring);
 }
 
 :root .item-photo-frame {
@@ -247,11 +319,15 @@
 :root .hero-seal {
   border: 1px solid var(--panel-border);
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.05) 70%);
-  box-shadow: 0 22px 44px -20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 22px 44px -20px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 [data-theme='light'] .hero-seal {
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.45) 70%);
-  box-shadow: 0 22px 44px -20px rgba(30, 58, 138, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  box-shadow:
+    0 22px 44px -20px rgba(30, 58, 138, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 /* ── Status badges: readable pills in both themes ───────────────────────── */
@@ -266,20 +342,42 @@
   border-radius: 999px;
   white-space: nowrap;
 }
-:root .badge-lost { background: var(--badge-lost-bg); color: var(--badge-lost-fg); border: 1px solid var(--badge-lost-border); }
-:root .badge-found { background: var(--badge-found-bg); color: var(--badge-found-fg); border: 1px solid var(--badge-found-border); }
-:root .badge-claimed { background: var(--badge-claimed-bg); color: var(--badge-claimed-fg); border: 1px solid var(--badge-claimed-border); }
-:root .badge-registered { background: var(--badge-vault-bg); color: var(--badge-vault-fg); border: 1px solid var(--badge-vault-border); }
+:root .badge-lost {
+  background: var(--badge-lost-bg);
+  color: var(--badge-lost-fg);
+  border: 1px solid var(--badge-lost-border);
+}
+:root .badge-found {
+  background: var(--badge-found-bg);
+  color: var(--badge-found-fg);
+  border: 1px solid var(--badge-found-border);
+}
+:root .badge-claimed {
+  background: var(--badge-claimed-bg);
+  color: var(--badge-claimed-fg);
+  border: 1px solid var(--badge-claimed-border);
+}
+:root .badge-registered {
+  background: var(--badge-vault-bg);
+  color: var(--badge-vault-fg);
+  border: 1px solid var(--badge-vault-border);
+}
 
 /* ── Pills: buttons, chips, tabs, pages, search ─────────────────────────── */
 :root .btn,
 :root .btn-danger,
-:root .btn-success { border-radius: 999px; }
+:root .btn-success {
+  border-radius: 999px;
+}
 :root .btn-primary {
   background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
-  box-shadow: 0 10px 24px -10px rgba(37, 99, 235, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 10px 24px -10px rgba(37, 99, 235, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
-:root .btn-primary:hover { background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%); }
+:root .btn-primary:hover {
+  background: linear-gradient(180deg, #60a5fa 0%, #1d4ed8 100%);
+}
 /* --blue-light is the readable blue on glass in both themes (#93c5fd dark, #1d4ed8 light). */
 :root .btn-outline {
   background: var(--control-bg);
@@ -291,14 +389,18 @@
   border-color: var(--blue-main);
 }
 
-:root .filter-chips .chip { border-radius: 999px; }
+:root .filter-chips .chip {
+  border-radius: 999px;
+}
 /* "My Belongings" keeps its own blue tint (home.css / styles.css) when not selected. */
 :root .filter-chips .chip:not(.active):not(.chip-my-vault) {
   background: var(--control-bg) !important;
   border-color: var(--control-border) !important;
   color: var(--text-muted) !important;
 }
-:root .filter-chips .chip:not(.active):not(.chip-my-vault):hover { color: var(--text-main) !important; }
+:root .filter-chips .chip:not(.active):not(.chip-my-vault):hover {
+  color: var(--text-main) !important;
+}
 :root .filter-chips .chip.active {
   background: var(--pill-active-bg) !important;
   border-color: transparent !important;
@@ -306,7 +408,11 @@
   box-shadow: var(--pill-active-shadow);
 }
 
-:root .admin-tab { border-radius: 999px; background: var(--control-bg); border-color: var(--control-border); }
+:root .admin-tab {
+  border-radius: 999px;
+  background: var(--control-bg);
+  border-color: var(--control-border);
+}
 :root .admin-tab.active {
   background: var(--pill-active-bg);
   border-color: transparent;
@@ -314,7 +420,11 @@
   box-shadow: var(--pill-active-shadow);
 }
 
-:root .pagination-btn { border-radius: 999px; background: var(--control-bg); border-color: var(--control-border); }
+:root .pagination-btn {
+  border-radius: 999px;
+  background: var(--control-bg);
+  border-color: var(--control-border);
+}
 :root .pagination-btn.active {
   background: var(--pill-active-bg);
   border-color: transparent;
@@ -333,7 +443,9 @@
   padding-inline: 1.15rem 2.5rem;
 }
 /* The panel padding leaves less room; a smaller basis keeps office + sort on one row. */
-:root .location-filter-wrap { flex-basis: 300px; }
+:root .location-filter-wrap {
+  flex-basis: 300px;
+}
 :root .button-select-trigger,
 :root .category-picker {
   background: var(--field-bg);
@@ -342,7 +454,9 @@
 :root .input-field input,
 :root .input-field select,
 :root .input-field textarea,
-:root .category-picker { border-radius: 12px; }
+:root .category-picker {
+  border-radius: 12px;
+}
 
 /* Sign-in / register switch as a segmented pill control. */
 :root .auth-tabs {
@@ -351,7 +465,9 @@
   border-radius: 999px;
   background: var(--control-bg);
 }
-:root .auth-tab { border-radius: 999px; }
+:root .auth-tab {
+  border-radius: 999px;
+}
 :root .auth-tab.active {
   background: var(--pill-active-bg);
   color: var(--pill-active-fg);
@@ -404,8 +520,12 @@
   background: var(--float-bg) !important;
 }
 :root .slip-overlay .modal-card--danger,
-:root .del-modal { border-color: rgba(239, 68, 68, 0.45); }
-:root .slip-overlay .modal-card--success { border-color: rgba(34, 197, 94, 0.55); }
+:root .del-modal {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+:root .slip-overlay .modal-card--success {
+  border-color: rgba(34, 197, 94, 0.55);
+}
 
 :root .button-select-menu {
   background: var(--float-bg);
@@ -459,6 +579,12 @@
 }
 /* Without blur support, floating layers need a near-solid fill to stay readable. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  :root { --bar-bg: rgba(15, 21, 38, 0.95); --float-bg: rgba(15, 21, 38, 0.97); }
-  [data-theme='light'] { --bar-bg: rgba(248, 250, 252, 0.96); --float-bg: rgba(255, 255, 255, 0.98); }
+  :root {
+    --bar-bg: rgba(15, 21, 38, 0.95);
+    --float-bg: rgba(15, 21, 38, 0.97);
+  }
+  [data-theme='light'] {
+    --bar-bg: rgba(248, 250, 252, 0.96);
+    --float-bg: rgba(255, 255, 255, 0.98);
+  }
 }

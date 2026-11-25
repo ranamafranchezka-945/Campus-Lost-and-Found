@@ -14,13 +14,21 @@ const connection = {
   },
   release() {
     queries.push('RELEASE');
-  }
+  },
 };
 require.cache[require.resolve('pg')] = {
   id: require.resolve('pg'),
   filename: require.resolve('pg'),
   loaded: true,
-  exports: { Pool: class { on() {} async connect() { return connection; } async end() {} } }
+  exports: {
+    Pool: class {
+      on() {}
+      async connect() {
+        return connection;
+      }
+      async end() {}
+    },
+  },
 };
 process.env.DATABASE_URL = 'postgresql://stub/stub';
 const store = require('../services/postgresStore');
@@ -53,12 +61,12 @@ test.before(async () => {
     res.status(500).json({ ok: false });
   });
   server = app.listen(0);
-  await new Promise(resolve => server.once('listening', resolve));
+  await new Promise((resolve) => server.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${server.address().port}`;
 });
 
 test.after(async () => {
-  await new Promise(resolve => server.close(resolve));
+  await new Promise((resolve) => server.close(resolve));
   delete process.env.DATABASE_URL;
 });
 
@@ -66,7 +74,7 @@ test.beforeEach(() => {
   queries.length = 0;
 });
 
-const count = statement => queries.filter(entry => entry === statement).length;
+const count = (statement) => queries.filter((entry) => entry === statement).length;
 
 test('a request saves its changes and commits once when the response ends', async () => {
   const response = await fetch(`${baseUrl}/plain`, { method: 'POST' });

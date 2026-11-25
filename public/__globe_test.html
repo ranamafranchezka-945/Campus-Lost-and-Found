@@ -1,22 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <title>Globe hero test</title>
-  <link rel="stylesheet" href="/css/styles.css" />
-  <link rel="stylesheet" href="/css/landing.css" />
-  <link rel="stylesheet" href="/css/theme.css" />
-  <style>body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f8fafc; }</style>
-</head>
-<body class="landing-page">
-  <div class="hero-avatar">
-    <div class="hero-objects" data-cspc-logo-scene>
-      <span class="hero-objects-glow" aria-hidden="true"></span>
-      <div class="hero-3d-stage" data-cspc-logo-stage role="img" aria-label="Animated 3D CSPC globe logo. Drag to rotate."></div>
-      <span class="hero-objects-shadow" aria-hidden="true"></span>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Globe hero test</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <link rel="stylesheet" href="/css/landing.css" />
+    <link rel="stylesheet" href="/css/theme.css" />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #f8fafc;
+      }
+    </style>
+  </head>
+  <body class="landing-page">
+    <div class="hero-avatar">
+      <div class="hero-objects" data-cspc-logo-scene>
+        <span class="hero-objects-glow" aria-hidden="true"></span>
+        <div
+          class="hero-3d-stage"
+          data-cspc-logo-stage
+          role="img"
+          aria-label="Animated 3D CSPC globe logo. Drag to rotate."
+        ></div>
+        <span class="hero-objects-shadow" aria-hidden="true"></span>
+      </div>
     </div>
-  </div>
-  <script src="/vendor/three.min.js"></script>
-  <script src="/js/cspc-3d-logo.js"></script>
-</body>
+    <script src="/vendor/three.min.js"></script>
+    <script src="/js/cspc-3d-logo.js"></script>
+  </body>
 </html>
