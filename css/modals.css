@@ -141,6 +141,25 @@
 .modal-header-icon {
   font-size: 1.3rem;
 }
+.notifications-modal-header {
+  align-items: flex-start;
+}
+.notifications-modal-header-group {
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 0.75rem;
+}
+.notifications-modal-header .modal-header-icon {
+  flex: 0 0 1.5rem;
+  width: 1.5rem;
+  line-height: 1.25;
+  text-align: center;
+}
+.notifications-modal-copy {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .modal-header-logo {
   width: 32px;
   height: 32px;

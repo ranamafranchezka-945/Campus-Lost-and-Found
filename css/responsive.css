@@ -2644,6 +2644,16 @@ button {
   text-align: center;
 }
 
+@media (max-width: 480px) {
+  #notificationsModal .notifications-modal-header {
+    gap: 0.625rem;
+  }
+
+  #notificationsModal .notifications-modal-header-group {
+    gap: 0.625rem;
+  }
+}
+
 @media (max-width: 768px) {
   #itemsGrid.registered-belongings-grid {
     grid-template-columns: minmax(0, 1fr) !important;

@@ -1532,6 +1532,11 @@ h2 {
   background: rgba(30, 41, 59, 0.6);
 }
 
+.notifications-modal-close:focus-visible {
+  outline: 2px solid var(--blue-main);
+  outline-offset: 2px;
+}
+
 [data-theme='light'] .notifications-modal-close:hover,
 [data-theme='light'] .notifications-modal-close:focus-visible {
   color: #0f172a;
