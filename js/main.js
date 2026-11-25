@@ -300,9 +300,10 @@ function initializeMobileDrawer(navbar) {
     const label = link.textContent.trim().toLowerCase();
     link.dataset.mobileIcon = label.includes('report') ? 'report'
       : label.includes('register') ? 'register'
-        : label.includes('item') || label.includes('browse') ? 'items'
-          : label.includes('about') ? 'about'
-          : label.includes('dashboard') ? 'dashboard' : '';
+        : label.includes('belong') ? 'belongings'
+          : label.includes('item') || label.includes('browse') ? 'items'
+            : label.includes('about') ? 'about'
+              : label.includes('dashboard') ? 'dashboard' : '';
   });
 
   let backdrop = navbar.querySelector('.nav-drawer-backdrop');
@@ -393,6 +394,8 @@ function syncMobileDrawerAccount(navbar) {
   if (!profile || !footer) return;
 
   const account = navbar.querySelector('.user-pill, .user-account-wrap');
+  const belongingsLink = links.querySelector('.mobile-drawer-belongings');
+  if (belongingsLink) belongingsLink.hidden = !account;
   const name = account && account.querySelector('.user-name, .user-account-name')?.textContent.trim();
   const role = account?.querySelector('.role-badge')?.textContent.trim()
     || account?.dataset.role
