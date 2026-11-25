@@ -662,7 +662,7 @@
   line-height: 1.5;
 }
 
-/* ── Admin: items table ─────────────────────────────────────────────────── */
+/* ── Admin: items table ── */
 /* Text columns read left to right; only the row number and actions are centred. */
 :root #adminItemsTable th,
 :root #adminItemsTable td {
