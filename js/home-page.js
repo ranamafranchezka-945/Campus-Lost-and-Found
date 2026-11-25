@@ -744,7 +744,7 @@ function renderItemsGrid(items) {
           <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏷️</div>
           <h3 style="font-size: 1.15rem; font-weight: 800; color: #93c5fd; margin-bottom: 0.4rem;">Your Belongings Vault is Empty</h3>
           <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 480px; margin: 0 auto 1.25rem; line-height: 1.5;">
-            Save your personal belongings here for private record keeping. Report an item as lost or found to make it eligible for a QR sticker.
+            Save your personal belongings here for private record keeping. After registering, reopen or print its QR sticker from your vault whenever you need a replacement.
           </p>
           <button class="btn btn-primary" data-action="handleOpenRegisterBelonging">+ Register a Belonging Now</button>
         </div>
@@ -798,7 +798,7 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="registered-belonging-protection">
-            🛡️ <strong>Private Belongings Vault:</strong> These items stay private. Report an item as lost or found if you need to create a QR sticker for its listing.
+            🛡️ <strong>Private Belongings Vault:</strong> Reopen or print this item's QR sticker anytime. Scanning it lets a finder contact you without showing your private contact details.
           </div>
 
           <p class="item-card-description" style="margin-top: 0.25rem;">${escapeHtml(item.desc)}</p>
@@ -810,6 +810,7 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="card-actions" style="margin-top: 1rem;">
+            <button class="btn-sm btn-outline" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}">View / Print QR</button>
             <button class="btn-sm btn-outline btn-finder-test" data-action="openAnonymousFinderModal" data-args="${actionArgs(item.refCode)}">Test Finder Screen</button>
           </div>
         </div>
@@ -894,7 +895,10 @@ function isItemClaimed(item) {
 }
 
 function canShowItemQr(item) {
-  return Boolean(item && ['lost', 'found'].includes(item.type) && !isItemClaimed(item));
+  return Boolean(item && (
+    item.type === 'registered' ||
+    (['lost', 'found'].includes(item.type) && !isItemClaimed(item))
+  ));
 }
 
 // Category name → icon symbol defined in index.html (#category-icon-*).
@@ -1060,7 +1064,7 @@ function setLocationFilter(loc) {
   fetchAndRenderItems();
 }
 
-// Digital QR stickers are available only for unclaimed lost/found reports.
+// Digital QR stickers are available for registered belongings and unclaimed lost/found reports.
 async function openQrStickerModal(id) {
   let item = loadedItems.find(i => String(i.id) === String(id));
   if (!item) {
@@ -1083,7 +1087,7 @@ async function openQrStickerModal(id) {
     return;
   }
   if (!canShowItemQr(item)) {
-    showToast('QR stickers are available only for unclaimed lost or found reports.', true);
+    showToast('QR stickers are available for registered belongings and unclaimed lost or found reports.', true);
     return;
   }
 
