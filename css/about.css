@@ -9,7 +9,6 @@
   padding: clamp(2.5rem, 6vw, 4rem) 0 1.5rem;
   text-align: center;
 }
-
 .about-eyebrow {
   margin-bottom: 0.65rem;
   color: var(--blue-main);
