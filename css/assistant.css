@@ -475,25 +475,21 @@
     border-color 0.15s ease,
     background 0.15s ease;
 }
-
 .manual-report-toggle:hover,
 .manual-report-toggle:focus-visible {
   border-style: solid;
   border-color: var(--blue-main);
   background: var(--stat-active-bg);
 }
-
 .manual-report-toggle:focus-visible {
   outline: 2px solid var(--blue-main);
   outline-offset: 2px;
 }
-
 .manual-report-toggle-title {
   color: var(--blue-text);
   font-size: 0.9375rem;
   font-weight: 700;
 }
-
 .manual-report-toggle-hint {
   font-size: 0.875rem;
   color: var(--text-muted);
