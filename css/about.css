@@ -85,13 +85,11 @@
   font-size: 1rem;
   line-height: 1.7;
 }
-
 .about-card-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
 }
-
 .about-card,
 .benefit-row {
   border: 1px solid var(--border);
