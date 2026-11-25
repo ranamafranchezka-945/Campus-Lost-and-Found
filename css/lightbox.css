@@ -1,10 +1,10 @@
 /* Photo viewer on the home page (js/home-page.js: openImageModal). A dark full-screen
-   stage in both themes, so the photo stands out: toolbar on top, photo in the middle
-   with previous/next arrows, item details underneath. Click the photo to zoom in where
-   you clicked; move to look around; click again to zoom out. */
+  stage in both themes, so the photo stands out: toolbar on top, photo in the middle
+  with previous/next arrows, item details underneath. Click the photo to zoom in where
+  you clicked; move to look around; click again to zoom out. */
 
 /* Overrides the light theme's white popup panel, heading and paragraph colours
-   (styles.css), which use !important. */
+  (styles.css), which use !important. */
 :root .slip-overlay.photo-lightbox {
   padding: 0;
   background: rgba(2, 6, 23, 0.92);
