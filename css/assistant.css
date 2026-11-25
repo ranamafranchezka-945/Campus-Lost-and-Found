@@ -72,8 +72,7 @@
   border: 1px solid var(--badge-found-border);
 }
 
-/* ── Chat log ─────────────────────────────────────────────────────────────── */
-
+/* ── Chat log ──*/
 .assistant-log {
   max-height: 320px;
   overflow-y: auto;
@@ -164,8 +163,7 @@
   }
 }
 
-/* ── Extracted-field chips ────────────────────────────────────────────────── */
-
+/* ── Extracted-field chips ── */
 .assistant-chips {
   display: flex;
   flex-wrap: wrap;
@@ -211,8 +209,7 @@
   stroke-linejoin: round;
 }
 
-/* ── Possible matches ─────────────────────────────────────────────────────── */
-
+/* ── Possible matches ── */
 .assistant-matches {
   margin-top: 0.6rem;
   padding-top: 0.6rem;
@@ -288,8 +285,7 @@
   color: var(--blue-text);
 }
 
-/* ── Composer ─────────────────────────────────────────────────────────────── */
-
+/* ── Composer ── */
 .assistant-form {
   display: flex;
   gap: 0.5rem;
@@ -377,8 +373,7 @@
   cursor: progress;
 }
 
-/* ── Example prompts ──────────────────────────────────────────────────────── */
-
+/* ── Example prompts ── */
 .assistant-examples {
   display: flex;
   flex-wrap: wrap;
@@ -410,8 +405,7 @@
   color: var(--blue-text);
 }
 
-/* ── The flash on a form field the assistant just filled ──────────────────── */
-
+/* ── The flash on a form field the assistant just filled ── */
 .assistant-filled {
   animation: assistant-flash 1.8s ease-out;
   border-radius: 10px;
