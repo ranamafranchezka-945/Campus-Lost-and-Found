@@ -39,14 +39,18 @@
     '🗓️': '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18m4 4h.01m4 4h.01m4 0h.01"/>',
     '🚀': '<path d="M5 15c-2 0-3 2-3 5 3 0 5-1 5-3m-2-2 5 5c6-2 10-8 11-18-10 1-16 5-18 11z"/><circle cx="15" cy="9" r="2"/>',
     '🛡️': '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/><path d="m9 12 2 2 4-4"/>',
-    '🤝': '<path d="m8 12 3 3a2 2 0 0 0 3 0l3-3m-9 0 3-3 3 3m-7 4-4-4 4-4 3 2m8 6 4-4-4-4-4 2"/>'
+    '🤝': '<path d="m8 12 3 3a2 2 0 0 0 3 0l3-3m-9 0 3-3 3 3m-7 4-4-4 4-4 3 2m8 6 4-4-4-4-4 2"/>',
   };
   const emojiPattern = new RegExp(
-    `(${Object.keys(iconContent).sort((a, b) => b.length - a.length).map(value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`,
+    `(${Object.keys(iconContent)
+      .sort((a, b) => b.length - a.length)
+      .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('|')})`,
     'gu'
   );
   const style = document.createElement('style');
-  style.textContent = '.ui-icon{display:inline-flex;width:1em;height:1em;align-items:center;justify-content:center;vertical-align:-.14em;flex:0 0 auto}.ui-icon svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}';
+  style.textContent =
+    '.ui-icon{display:inline-flex;width:1em;height:1em;align-items:center;justify-content:center;vertical-align:-.14em;flex:0 0 auto}.ui-icon svg{display:block;width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}';
   document.head.appendChild(style);
 
   function convertTextNode(node) {
@@ -77,7 +81,8 @@
       convertTextNode(root);
       return;
     }
-    if (root.nodeType !== Node.ELEMENT_NODE || root.matches('script,style,textarea,input,select,option,svg,code,pre')) return;
+    if (root.nodeType !== Node.ELEMENT_NODE || root.matches('script,style,textarea,input,select,option,svg,code,pre'))
+      return;
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const textNodes = [];
     while (walker.nextNode()) textNodes.push(walker.currentNode);
@@ -85,7 +90,7 @@
   }
 
   convertSubtree(document.body);
-  new MutationObserver(records => {
+  new MutationObserver((records) => {
     for (const record of records) {
       for (const node of record.addedNodes) convertSubtree(node);
     }

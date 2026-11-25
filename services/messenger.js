@@ -17,7 +17,7 @@ const OAUTH_SCOPES = [
   'pages_manage_metadata',
   'pages_messaging',
   'business_management',
-  'public_profile'
+  'public_profile',
 ];
 
 function formatGraphError(data, status) {
@@ -104,8 +104,8 @@ async function sendMessengerText(psid, text) {
       body: JSON.stringify({
         recipient: { id: psid },
         message: { text },
-        messaging_type: 'RESPONSE'
-      })
+        messaging_type: 'RESPONSE',
+      }),
     }
   );
 
@@ -131,9 +131,14 @@ async function diagnose() {
   const result = {
     configured: true,
     connectedPage: stored
-      ? { pageId: stored.pageId, pageName: stored.pageName, connectedAt: stored.connectedAt, connectedByName: stored.connectedByName }
+      ? {
+          pageId: stored.pageId,
+          pageName: stored.pageName,
+          connectedAt: stored.connectedAt,
+          connectedByName: stored.connectedByName,
+        }
       : null,
-    usingManualToken: !stored
+    usingManualToken: !stored,
   };
 
   try {
@@ -159,7 +164,9 @@ async function diagnose() {
   }
 
   try {
-    const subsResponse = await fetch(`https://graph.facebook.com/${GRAPH_API_VERSION}/me/subscribed_apps?access_token=${encodeURIComponent(token)}`);
+    const subsResponse = await fetch(
+      `https://graph.facebook.com/${GRAPH_API_VERSION}/me/subscribed_apps?access_token=${encodeURIComponent(token)}`
+    );
     const subsData = await subsResponse.json().catch(() => ({}));
     if (!subsResponse.ok) {
       result.subscriptionNote = `Could not read webhook subscriptions (separate permission from messaging): ${formatGraphError(subsData, subsResponse.status)}`;
@@ -259,5 +266,5 @@ module.exports = {
   exchangeCodeForUserToken,
   exchangeForLongLivedUserToken,
   listManagedPages,
-  subscribePageWebhookFields
+  subscribePageWebhookFields,
 };

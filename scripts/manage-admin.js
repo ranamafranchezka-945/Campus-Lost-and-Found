@@ -22,7 +22,7 @@ const ADMIN_MIN_PASSWORD_LENGTH = 12;
 function setAdmin(email, passwordHash) {
   const users = readJsonArray(USERS_FILE);
   const now = new Date().toISOString();
-  const existing = users.find(user => String(user.email).toLowerCase() === email);
+  const existing = users.find((user) => String(user.email).toLowerCase() === email);
   let outcome;
   if (existing) {
     outcome = existing.role === 'admin' ? 'updated' : 'promoted';
@@ -35,8 +35,14 @@ function setAdmin(email, passwordHash) {
       existing.emailVerified = true;
       existing.emailVerifiedAt = now;
     }
-    ['verificationTokenHash', 'verificationExpiresAt', 'verificationSentAt',
-      'passwordResetTokenHash', 'passwordResetExpiresAt', 'passwordResetSentAt'].forEach(key => delete existing[key]);
+    [
+      'verificationTokenHash',
+      'verificationExpiresAt',
+      'verificationSentAt',
+      'passwordResetTokenHash',
+      'passwordResetExpiresAt',
+      'passwordResetSentAt',
+    ].forEach((key) => delete existing[key]);
   } else {
     outcome = 'created';
     users.push({
@@ -47,18 +53,20 @@ function setAdmin(email, passwordHash) {
       studentId: 'N/A',
       role: 'admin',
       department: 'Administration',
-      createdAt: now
+      createdAt: now,
     });
   }
   writeJsonArray(USERS_FILE, users);
-  return { outcome, admins: users.filter(user => user.role === 'admin').map(user => user.email) };
+  return { outcome, admins: users.filter((user) => user.role === 'admin').map((user) => user.email) };
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const allowWeak = args.includes('--allow-weak');
-  const [emailArg, passwordArg] = args.filter(arg => arg !== '--allow-weak');
-  const email = String(emailArg || process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const [emailArg, passwordArg] = args.filter((arg) => arg !== '--allow-weak');
+  const email = String(emailArg || process.env.ADMIN_EMAIL || '')
+    .trim()
+    .toLowerCase();
   const password = passwordArg || process.env.ADMIN_PASSWORD || '';
 
   if (!isAdminEmail(email)) {
@@ -67,8 +75,10 @@ async function main() {
   if (!password) throw new Error('Give a password, or set ADMIN_PASSWORD in .env.');
   const weaknesses = passwordStrengthErrors(password, ADMIN_MIN_PASSWORD_LENGTH);
   if (weaknesses.length && !allowWeak) {
-    throw new Error(`That password does not meet the administrator password rules:\n  - ${weaknesses.join('\n  - ')}\n`
-      + 'Choose a stronger one, or add --allow-weak to use it anyway.');
+    throw new Error(
+      `That password does not meet the administrator password rules:\n  - ${weaknesses.join('\n  - ')}\n` +
+        'Choose a stronger one, or add --allow-weak to use it anyway.'
+    );
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -81,14 +91,18 @@ async function main() {
   }
 
   const where = postgresStore.isConfigured() ? 'the Supabase database' : USERS_FILE;
-  const what = { created: 'New administrator account created', promoted: 'Existing account made an administrator', updated: 'Administrator password updated' }[result.outcome];
+  const what = {
+    created: 'New administrator account created',
+    promoted: 'Existing account made an administrator',
+    updated: 'Administrator password updated',
+  }[result.outcome];
   console.log(`${what}: ${email} (in ${where}).`);
   if (weaknesses.length) console.log('Warning: the password is weaker than the administrator password rules.');
   console.log(`Administrator accounts now: ${result.admins.join(', ')}`);
 }
 
 main()
-  .catch(error => {
+  .catch((error) => {
     console.error(error.message);
     process.exitCode = 1;
   })

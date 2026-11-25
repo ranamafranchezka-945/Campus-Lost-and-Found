@@ -16,7 +16,7 @@ const {
   sendFinderNotificationEmail,
   sendMatchFinderNotificationEmail,
   sendBroadcastEmail,
-  sendMeetupRequestEmail
+  sendMeetupRequestEmail,
 } = require('../services/email');
 const messenger = require('../services/messenger');
 const postgresStore = require('../services/postgresStore');
@@ -26,19 +26,25 @@ const imageModeration = require('../services/imageModeration');
 const matchScorer = require('../services/matchScorer');
 
 function finderSubmissionFingerprint(target, message, locationFound, finderContact) {
-  return crypto.createHash('sha256').update(JSON.stringify({
-    target,
-    message,
-    locationFound,
-    finderContact
-  })).digest('hex');
+  return crypto
+    .createHash('sha256')
+    .update(
+      JSON.stringify({
+        target,
+        message,
+        locationFound,
+        finderContact,
+      })
+    )
+    .digest('hex');
 }
 
 function findFinderSubmission(items, submissionKey) {
   if (!submissionKey) return null;
   for (const item of items) {
-    const notification = (Array.isArray(item.notifications) ? item.notifications : [])
-      .find(entry => entry.submissionKey === submissionKey);
+    const notification = (Array.isArray(item.notifications) ? item.notifications : []).find(
+      (entry) => entry.submissionKey === submissionKey
+    );
     if (notification) return notification;
   }
   return null;
@@ -49,7 +55,7 @@ function publicFinderNotification(notification) {
   if (conversation) {
     result.conversation = {
       status: conversation.status,
-      expiresAt: conversation.expiresAt
+      expiresAt: conversation.expiresAt,
     };
   }
   return result;
@@ -65,10 +71,15 @@ function finderConversationTokenHash(token) {
 
 function loadRegisteredConversation(req, res, role) {
   const items = getItems();
-  const item = items.find(entry => entry.type === 'registered' &&
-    Array.isArray(entry.notifications) &&
-    entry.notifications.some(notification => notification.id === req.params.conversationId && notification.conversation));
-  const notification = item?.notifications.find(entry => entry.id === req.params.conversationId);
+  const item = items.find(
+    (entry) =>
+      entry.type === 'registered' &&
+      Array.isArray(entry.notifications) &&
+      entry.notifications.some(
+        (notification) => notification.id === req.params.conversationId && notification.conversation
+      )
+  );
+  const notification = item?.notifications.find((entry) => entry.id === req.params.conversationId);
   const conversation = notification?.conversation;
   if (!item || !notification || !conversation) {
     res.status(404).json({ success: false, message: 'Finder conversation not found.' });
@@ -107,11 +118,12 @@ function registeredConversationView(context) {
   const meetup = conversation.meetup || {};
   const myRequest = meetup[role] || {};
   const theirRequest = meetup[otherRole] || {};
-  const otherName = role === 'owner'
-    ? notification.finderContact && notification.finderContact !== 'Anonymous Student / Finder'
-      ? notification.finderContact
-      : 'Anonymous finder'
-    : 'Item owner';
+  const otherName =
+    role === 'owner'
+      ? notification.finderContact && notification.finderContact !== 'Anonymous Student / Finder'
+        ? notification.finderContact
+        : 'Anonymous finder'
+      : 'Item owner';
 
   return {
     success: true,
@@ -120,11 +132,11 @@ function registeredConversationView(context) {
     item: { id: item.id, title: item.title },
     otherName,
     role,
-    messages: (conversation.messages || []).map(message => ({
+    messages: (conversation.messages || []).map((message) => ({
       id: message.id,
       text: message.text,
       mine: message.sender === role,
-      createdAt: message.createdAt
+      createdAt: message.createdAt,
     })),
     confirmedByMe: (conversation.confirmations || []).includes(role),
     confirmedByOther: (conversation.confirmations || []).includes(otherRole),
@@ -137,24 +149,25 @@ function registeredConversationView(context) {
       myLocation: {
         status: theirRequest.status,
         location: theirRequest.location,
-        expiresAt: theirRequest.location?.expiresAt
+        expiresAt: theirRequest.location?.expiresAt,
       },
       theirLocation: {
         status: myRequest.status,
         location: myRequest.location,
         expiresAt: myRequest.location?.expiresAt,
-        askAgainAt: myRequest.status === 'declined'
-          ? new Date(Date.parse(myRequest.respondedAt) + MEETUP_ASK_AGAIN_MS).toISOString()
-          : null
-      }
-    }
+        askAgainAt:
+          myRequest.status === 'declined'
+            ? new Date(Date.parse(myRequest.respondedAt) + MEETUP_ASK_AGAIN_MS).toISOString()
+            : null,
+      },
+    },
   };
 }
 
 function pruneRegisteredConversationMeetup(conversation, now = Date.now()) {
   if (!conversation.meetup) return false;
   let changed = false;
-  Object.values(conversation.meetup).forEach(request => {
+  Object.values(conversation.meetup).forEach((request) => {
     if (request.location && Date.parse(request.location.expiresAt) <= now) {
       delete request.location;
       request.status = 'expired';
@@ -191,7 +204,7 @@ const IMAGE_EXTENSIONS = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/gif': 'gif',
-  'image/webp': 'webp'
+  'image/webp': 'webp',
 };
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -201,7 +214,7 @@ const upload = multer({
       return callback(Object.assign(new Error('Upload a JPEG, PNG, GIF, or WebP image.'), { status: 400 }));
     }
     callback(null, true);
-  }
+  },
 });
 
 function isValidImage(file) {
@@ -209,7 +222,8 @@ function isValidImage(file) {
   if (file.mimetype === 'image/jpeg') return bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
   if (file.mimetype === 'image/png') return bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
   if (file.mimetype === 'image/gif') return ['GIF87a', 'GIF89a'].includes(bytes.toString('ascii', 0, 6));
-  if (file.mimetype === 'image/webp') return bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
+  if (file.mimetype === 'image/webp')
+    return bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP';
   return false;
 }
 
@@ -251,7 +265,7 @@ const assistantAttempts = new Map();
 // Letters and digits that are easy to confuse (0/O, 1/I/L) are left out.
 const REF_CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
 function newRefCode(items, prefix, length) {
-  const taken = new Set(items.map(item => String(item.refCode || '').toUpperCase()));
+  const taken = new Set(items.map((item) => String(item.refCode || '').toUpperCase()));
   for (;;) {
     let suffix = '';
     for (let index = 0; index < length; index += 1) {
@@ -278,7 +292,7 @@ function publicItemView(item, potentialMatch = null, canResolve = false, canRequ
     desc: item.desc || item.description || '',
     photo: supabaseStorage.objectKey(item.photo)
       ? `/api/items/${encodeURIComponent(item.id)}/photo`
-      : (item.photo || item.imageUrl || ''),
+      : item.photo || item.imageUrl || '',
     date: item.date,
     createdAt: item.createdAt,
     status: item.status,
@@ -286,12 +300,14 @@ function publicItemView(item, potentialMatch = null, canResolve = false, canRequ
     claimedAt: item.claimedAt || null,
     canResolve,
     canRequestClaim,
-    potentialMatch: potentialMatch ? {
-      id: potentialMatch.id,
-      title: potentialMatch.title,
-      location: potentialMatch.location,
-      type: potentialMatch.type
-    } : null
+    potentialMatch: potentialMatch
+      ? {
+          id: potentialMatch.id,
+          title: potentialMatch.title,
+          location: potentialMatch.location,
+          type: potentialMatch.type,
+        }
+      : null,
   };
 }
 
@@ -324,7 +340,7 @@ function addItemActivity(item, req, action, notes = '') {
     timestamp: new Date().toISOString(),
     actorId: req.session?.user?.id || 'system',
     actorName: req.session?.user?.fullName || req.session?.user?.email || 'System',
-    actorRole: req.session?.user?.role || 'system'
+    actorRole: req.session?.user?.role || 'system',
   });
   item.activityLog = item.activityLog.slice(0, 100);
 }
@@ -348,19 +364,24 @@ function parseMatchReferenceToken(token) {
   const [lostId, foundId, issuedAtText, expiresAtText, signature] = parts;
   const issuedAt = Number(issuedAtText);
   const expiresAt = Number(expiresAtText);
-  if (!lostId || !foundId || !Number.isSafeInteger(issuedAt) || !Number.isSafeInteger(expiresAt) || !signature) return null;
+  if (!lostId || !foundId || !Number.isSafeInteger(issuedAt) || !Number.isSafeInteger(expiresAt) || !signature)
+    return null;
 
   const payload = `${lostId}.${foundId}.${issuedAt}.${expiresAt}`;
   const expected = crypto.createHmac('sha256', matchReferenceSecret()).update(payload).digest('hex');
-  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected)))
+    return null;
   return { lostId, foundId, issuedAt, expiresAt };
 }
 
 function getMatchReferenceStatus(foundItem, claims) {
-  if (isItemClaimed(foundItem) || claims.some(claim => String(claim.itemId) === String(foundItem.id) && claim.status === 'approved')) {
+  if (
+    isItemClaimed(foundItem) ||
+    claims.some((claim) => String(claim.itemId) === String(foundItem.id) && claim.status === 'approved')
+  ) {
     return { key: 'approved', label: 'Approved for Claim' };
   }
-  if (claims.some(claim => String(claim.itemId) === String(foundItem.id) && claim.status === 'pending')) {
+  if (claims.some((claim) => String(claim.itemId) === String(foundItem.id) && claim.status === 'pending')) {
     return { key: 'review', label: 'Under Review' };
   }
   return { key: 'pending', label: 'Pending Verification' };
@@ -370,10 +391,12 @@ function getMatchReferenceStatus(foundItem, claims) {
 // them straight back to their claim conversation instead of the claim request form.
 function findOwnClaimId(foundItem, claims, userId) {
   if (!userId) return null;
-  const claim = claims.find(entry =>
-    String(entry.itemId) === String(foundItem.id) &&
-    String(entry.claimantId) === String(userId) &&
-    entry.status !== 'rejected');
+  const claim = claims.find(
+    (entry) =>
+      String(entry.itemId) === String(foundItem.id) &&
+      String(entry.claimantId) === String(userId) &&
+      entry.status !== 'rejected'
+  );
   return claim ? claim.id : null;
 }
 
@@ -400,14 +423,38 @@ function normalizeText(value) {
 
 function tokenizeText(value) {
   const stopWords = new Set([
-    'with', 'case', 'blue', 'black', 'item', 'lost', 'found', 'cspc', 'college',
-    'the', 'and', 'for', 'from', 'near', 'this', 'that', 'into', 'onto', 'there',
-    'please', 'return', 'owner', 'campus', 'building', 'student', 'report', 'reports'
+    'with',
+    'case',
+    'blue',
+    'black',
+    'item',
+    'lost',
+    'found',
+    'cspc',
+    'college',
+    'the',
+    'and',
+    'for',
+    'from',
+    'near',
+    'this',
+    'that',
+    'into',
+    'onto',
+    'there',
+    'please',
+    'return',
+    'owner',
+    'campus',
+    'building',
+    'student',
+    'report',
+    'reports',
   ]);
 
   return normalizeText(value)
     .split(' ')
-    .filter(word => word.length > 2 && !stopWords.has(word));
+    .filter((word) => word.length > 2 && !stopWords.has(word));
 }
 
 function computeTokenSimilarity(a, b) {
@@ -418,7 +465,7 @@ function computeTokenSimilarity(a, b) {
 
   const setA = new Set(tokensA);
   const setB = new Set(tokensB);
-  const intersection = [...setA].filter(token => setB.has(token)).length;
+  const intersection = [...setA].filter((token) => setB.has(token)).length;
   const union = new Set([...tokensA, ...tokensB]).size;
 
   if (union === 0) return 0;
@@ -435,7 +482,7 @@ function compareVerificationHints(left, right) {
 
   const tokensA = new Set(tokenizeText(a));
   const tokensB = new Set(tokenizeText(b));
-  const overlap = [...tokensA].filter(token => tokensB.has(token)).length;
+  const overlap = [...tokensA].filter((token) => tokensB.has(token)).length;
 
   return overlap > 0 ? 1 : 0;
 }
@@ -444,14 +491,19 @@ function scorePotentialMatch(item, other) {
   const categoryMatch = item.category && other.category && item.category === other.category;
   const locationA = normalizeText(item.location);
   const locationB = normalizeText(other.location);
-  const sameLocation = !!(locationA && locationB && (
-    locationA.includes(locationB.split(' ')[0]) ||
-    locationB.includes(locationA.split(' ')[0]) ||
-    locationA === locationB
-  ));
+  const sameLocation = !!(
+    locationA &&
+    locationB &&
+    (locationA.includes(locationB.split(' ')[0]) ||
+      locationB.includes(locationA.split(' ')[0]) ||
+      locationA === locationB)
+  );
 
   const nameSimilarity = computeTokenSimilarity(item.title, other.title);
-  const descSimilarity = computeTokenSimilarity(item.desc || item.description || '', other.desc || other.description || '');
+  const descSimilarity = computeTokenSimilarity(
+    item.desc || item.description || '',
+    other.desc || other.description || ''
+  );
   const verificationScore = compareVerificationHints(item.verification, other.verification);
 
   const categoryWeight = categoryMatch ? 0.46 : 0;
@@ -474,12 +526,10 @@ function isStrongPotentialMatch(meta) {
     meta.sameLocation && Math.max(meta.nameSimilarity, meta.descSimilarity) >= 0.55;
 
   return (
-    meta.categoryMatch &&
-    (hasStrongNameSimilarity || hasStrongDescriptionSimilarity || hasVerificationOverlap) &&
-    meta.score >= 0.58
-  ) || (
-    !meta.categoryMatch &&
-    (hasStrongKeywordOverlap || hasStrongLocationAndKeywordOverlap)
+    (meta.categoryMatch &&
+      (hasStrongNameSimilarity || hasStrongDescriptionSimilarity || hasVerificationOverlap) &&
+      meta.score >= 0.58) ||
+    (!meta.categoryMatch && (hasStrongKeywordOverlap || hasStrongLocationAndKeywordOverlap))
   );
 }
 
@@ -492,14 +542,12 @@ function isStrongPotentialMatch(meta) {
 function findMatches(item, allItems) {
   if (isItemClaimed(item)) return [];
   const targetType = item.type === 'lost' ? 'found' : 'lost';
-  const candidates = allItems.filter(other =>
-    other.id !== item.id &&
-    other.type === targetType &&
-    !isItemClaimed(other)
+  const candidates = allItems.filter(
+    (other) => other.id !== item.id && other.type === targetType && !isItemClaimed(other)
   );
 
   return candidates
-    .map(other => {
+    .map((other) => {
       const meta = scorePotentialMatch(item, other);
       let aiScore = null;
       if (meta.categoryMatch && matchScorer.isConfigured()) {
@@ -510,12 +558,12 @@ function findMatches(item, allItems) {
       return {
         item: other,
         isMatch: isStrongPotentialMatch(meta) || (aiScore !== null && aiScore >= matchScorer.MATCH_THRESHOLD),
-        rank: aiScore !== null ? Math.max(aiScore, meta.score) : meta.score
+        rank: aiScore !== null ? Math.max(aiScore, meta.score) : meta.score,
       };
     })
-    .filter(entry => entry.isMatch)
+    .filter((entry) => entry.isMatch)
     .sort((a, b) => b.rank - a.rank)
-    .map(entry => entry.item);
+    .map((entry) => entry.item);
 }
 
 function findMatch(item, allItems) {
@@ -524,23 +572,25 @@ function findMatch(item, allItems) {
 
 function addMatchLink(item, other, matchedAt) {
   if (!Array.isArray(item.matches)) item.matches = [];
-  if (item.matches.some(match => String(match.itemId) === String(other.id))) return;
+  if (item.matches.some((match) => String(match.itemId) === String(other.id))) return;
 
   item.matches.push({
     itemId: other.id,
     refCode: other.refCode,
     type: other.type,
     status: 'possible',
-    matchedAt
+    matchedAt,
   });
 }
 
 function createMatchNotification(lostItem, foundItem) {
   const notifications = Array.isArray(lostItem.notifications) ? lostItem.notifications : [];
-  if (notifications.some(notification =>
-    notification.notificationType === 'match' &&
-    String(notification.matchItemId) === String(foundItem.id)
-  )) {
+  if (
+    notifications.some(
+      (notification) =>
+        notification.notificationType === 'match' && String(notification.matchItemId) === String(foundItem.id)
+    )
+  ) {
     return null;
   }
 
@@ -555,7 +605,7 @@ function createMatchNotification(lostItem, foundItem) {
     matchLocation: foundItem.location,
     message: 'A found item may match your lost-item report. Sign in to review it.',
     timestamp: new Date().toISOString(),
-    read: false
+    read: false,
   };
   lostItem.notifications = [notification, ...notifications].slice(0, 100);
   return notification;
@@ -563,10 +613,7 @@ function createMatchNotification(lostItem, foundItem) {
 
 function getStudentReporter(lostItem, users) {
   if (!lostItem.reportedBy || lostItem.reportedBy === 'guest') return null;
-  return users.find(user =>
-    String(user.id) === String(lostItem.reportedBy) &&
-    user.role !== 'admin'
-  ) || null;
+  return users.find((user) => String(user.id) === String(lostItem.reportedBy) && user.role !== 'admin') || null;
 }
 
 /*
@@ -583,17 +630,17 @@ function linkMatchedItems(lostItem, foundItem, matchedAt) {
 // lists publicly: private registered belongings and archived reports are left out, and
 // Lost/Found count only items that have not been claimed yet.
 router.get('/stats', (req, res) => {
-  const items = getItems().filter(i => i.type !== 'registered' && i.status !== 'archived');
-  const open = items.filter(i => !isItemClaimed(i));
+  const items = getItems().filter((i) => i.type !== 'registered' && i.status !== 'archived');
+  const open = items.filter((i) => !isItemClaimed(i));
 
   res.json({
     success: true,
     stats: {
       total: items.length,
-      lost: open.filter(i => i.type === 'lost').length,
-      found: open.filter(i => i.type === 'found').length,
-      claimed: items.filter(isItemClaimed).length
-    }
+      lost: open.filter((i) => i.type === 'lost').length,
+      found: open.filter((i) => i.type === 'found').length,
+      claimed: items.filter(isItemClaimed).length,
+    },
   });
 });
 
@@ -608,7 +655,9 @@ router.post('/assistant/parse', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Describe the item in a few words first.' });
   }
   if (message.length > 1000) {
-    return res.status(400).json({ success: false, message: 'That message is too long. Keep it under 1000 characters.' });
+    return res
+      .status(400)
+      .json({ success: false, message: 'That message is too long. Keep it under 1000 characters.' });
   }
 
   const limitKey = req.session?.user ? `account:${req.session.user.id}` : `network:${req.ip}`;
@@ -616,7 +665,7 @@ router.post('/assistant/parse', async (req, res) => {
   if (isRateLimited(assistantAttempts, limitKey, limit)) {
     return res.status(429).json({
       success: false,
-      message: 'The assistant is busy right now. Wait a moment, or fill in the form directly.'
+      message: 'The assistant is busy right now. Wait a moment, or fill in the form directly.',
     });
   }
   recordAttempt(assistantAttempts, limitKey, limit);
@@ -626,7 +675,9 @@ router.post('/assistant/parse', async (req, res) => {
     result = await reportAssistant.parseReportMessage(message);
   } catch (error) {
     console.error('Report assistant failed:', error.message);
-    return res.status(500).json({ success: false, message: 'The assistant could not read that. Please fill in the form directly.' });
+    return res
+      .status(500)
+      .json({ success: false, message: 'The assistant could not read that. Please fill in the form directly.' });
   }
 
   const review = reportAssistant.reviewDraft(result);
@@ -636,7 +687,7 @@ router.post('/assistant/parse', async (req, res) => {
   // the public listing.
   let matches = [];
   if (result.draft.type && result.draft.category && result.draft.title) {
-    const items = getItems().filter(item => item.type !== 'registered' && item.status !== 'archived');
+    const items = getItems().filter((item) => item.type !== 'registered' && item.status !== 'archived');
     const probe = {
       id: '__assistant_draft__',
       type: result.draft.type,
@@ -644,9 +695,11 @@ router.post('/assistant/parse', async (req, res) => {
       title: result.draft.title,
       desc: result.draft.desc,
       location: result.draft.location,
-      verification: ''
+      verification: '',
     };
-    matches = findMatches(probe, items).slice(0, 3).map(item => publicItemView(item));
+    matches = findMatches(probe, items)
+      .slice(0, 3)
+      .map((item) => publicItemView(item));
   }
 
   res.json({
@@ -659,7 +712,7 @@ router.post('/assistant/parse', async (req, res) => {
     uncertain: review.uncertain,
     question: review.question,
     ready: review.ready,
-    matches
+    matches,
   });
 });
 
@@ -673,7 +726,7 @@ router.get('/claims', requireRole('admin'), (req, res) => {
 // pending count shown elsewhere (the Claims sidebar badge, the dashboard tile).
 router.patch('/claims/:claimId/seen', requireRole('admin'), (req, res) => {
   const claims = getClaims();
-  const claim = claims.find(entry => entry.id === req.params.claimId);
+  const claim = claims.find((entry) => entry.id === req.params.claimId);
   if (!claim) return res.status(404).json({ success: false, message: 'Claim not found.' });
   claim.seenByAdmin = Array.isArray(claim.seenByAdmin) ? claim.seenByAdmin : [];
   if (!claim.seenByAdmin.includes(req.session.user.id)) {
@@ -688,7 +741,7 @@ router.patch('/claims/:claimId/seen', requireRole('admin'), (req, res) => {
 // deleting the record isn't the same as undoing a handover that may have happened.
 router.delete('/claims/:claimId', requireRole('admin'), (req, res) => {
   const claims = getClaims();
-  const index = claims.findIndex(entry => entry.id === req.params.claimId);
+  const index = claims.findIndex((entry) => entry.id === req.params.claimId);
   if (index === -1) return res.status(404).json({ success: false, message: 'Claim not found.' });
   claims.splice(index, 1);
   saveClaims(claims);
@@ -702,13 +755,17 @@ router.post('/broadcast', requireRole('admin'), async (req, res) => {
   if (subject.length < 3 || subject.length > 120 || message.length < 5 || message.length > 2000) {
     return res.status(400).json({ success: false, message: 'Subject or message length is invalid.' });
   }
-  const recipients = readJsonArray(USERS_FILE).filter(user => user.role !== 'admin' && user.email);
+  const recipients = readJsonArray(USERS_FILE).filter((user) => user.role !== 'admin' && user.email);
   let sent = 0;
   // Nothing to save; unlock the database so the site keeps working while the emails go out.
   await postgresStore.commitRequest();
   for (const user of recipients) {
-    try { await sendBroadcastEmail(user, subject, message); sent += 1; }
-    catch (error) { console.error('Broadcast email could not be sent:', error.message); }
+    try {
+      await sendBroadcastEmail(user, subject, message);
+      sent += 1;
+    } catch (error) {
+      console.error('Broadcast email could not be sent:', error.message);
+    }
   }
   res.json({ success: true, recipients: recipients.length, sent });
 });
@@ -726,18 +783,20 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
     return res.status(400).json({ success: false, message: 'Pickup instructions must be 500 characters or fewer.' });
   }
   if (status === 'rejected' && (rejectionReason.length < 5 || rejectionReason.length > 500)) {
-    return res.status(400).json({ success: false, message: 'A rejection reason between 5 and 500 characters is required.' });
+    return res
+      .status(400)
+      .json({ success: false, message: 'A rejection reason between 5 and 500 characters is required.' });
   }
 
   const claims = getClaims();
-  const claim = claims.find(entry => entry.id === req.params.claimId);
+  const claim = claims.find((entry) => entry.id === req.params.claimId);
   if (!claim) return res.status(404).json({ success: false, message: 'Claim request not found.' });
   if (claim.status !== 'pending') {
     return res.status(409).json({ success: false, message: 'This claim request has already been reviewed.' });
   }
 
   const items = getItems();
-  const item = items.find(entry => String(entry.id) === String(claim.itemId));
+  const item = items.find((entry) => String(entry.id) === String(claim.itemId));
   if (!item || item.claimed) {
     return res.status(409).json({ success: false, message: 'The item is no longer available.' });
   }
@@ -751,23 +810,27 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
     id: `claim-notif-${crypto.randomUUID()}`,
     timestamp: claim.reviewedAt,
     read: false,
-    message: status === 'approved'
-      ? `Your claim for ${item.title} was approved.${pickupInstructions ? ` Pickup instructions: ${pickupInstructions}` : ''}`
-      : `Your claim for ${item.title} was not approved. Reason: ${rejectionReason}`
+    message:
+      status === 'approved'
+        ? `Your claim for ${item.title} was approved.${pickupInstructions ? ` Pickup instructions: ${pickupInstructions}` : ''}`
+        : `Your claim for ${item.title} was not approved. Reason: ${rejectionReason}`,
   };
-  claim.handover = status === 'approved' ? {
-    acknowledged: true,
-    acknowledgedAt: claim.reviewedAt,
-    acknowledgedBy: req.session.user.id,
-    acknowledgedByName: req.session.user.fullName,
-    signature: handoverSignature || req.session.user.fullName || 'Admin approval'
-  } : null;
+  claim.handover =
+    status === 'approved'
+      ? {
+          acknowledged: true,
+          acknowledgedAt: claim.reviewedAt,
+          acknowledgedBy: req.session.user.id,
+          acknowledgedByName: req.session.user.fullName,
+          signature: handoverSignature || req.session.user.fullName || 'Admin approval',
+        }
+      : null;
   if (status === 'approved') {
     item.claimed = true;
     item.status = 'claimed';
     item.claimedAt = claim.reviewedAt;
     item.claimantProof = claim.proof;
-    claims.forEach(other => {
+    claims.forEach((other) => {
       if (other.itemId === claim.itemId && other.id !== claim.id && other.status === 'pending') {
         other.status = 'rejected';
         other.reviewedAt = claim.reviewedAt;
@@ -777,7 +840,7 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
           id: `claim-notif-${crypto.randomUUID()}`,
           timestamp: claim.reviewedAt,
           read: false,
-          message: `Your claim for ${item.title} was not approved because the item was awarded to another claimant.`
+          message: `Your claim for ${item.title} was not approved because the item was awarded to another claimant.`,
         };
       }
     });
@@ -786,9 +849,14 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
     item.status = 'active';
     item.claimedAt = null;
   }
-  addItemActivity(item, req, status === 'approved' ? 'Claim approved' : 'Claim rejected', status === 'approved' ? pickupInstructions : rejectionReason);
+  addItemActivity(
+    item,
+    req,
+    status === 'approved' ? 'Claim approved' : 'Claim rejected',
+    status === 'approved' ? pickupInstructions : rejectionReason
+  );
   if (status === 'approved') {
-    const lostItem = items.find(entry => String(entry.id) === String(claim.lostItemId));
+    const lostItem = items.find((entry) => String(entry.id) === String(claim.lostItemId));
     if (lostItem && !lostItem.claimed) {
       lostItem.claimed = true;
       lostItem.status = 'claimed';
@@ -808,10 +876,11 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
     }
   }
 
-  const users = readJsonArray(USERS_FILE).filter(user =>
-    user.email &&
-    String(user.id) !== String(claim.claimantId) &&
-    (user.role === 'admin' || String(user.id) === String(item.reportedBy))
+  const users = readJsonArray(USERS_FILE).filter(
+    (user) =>
+      user.email &&
+      String(user.id) !== String(claim.claimantId) &&
+      (user.role === 'admin' || String(user.id) === String(item.reportedBy))
   );
   for (const recipient of users) {
     try {
@@ -827,11 +896,19 @@ router.patch('/claims/:claimId', requireRole('admin'), async (req, res) => {
 // PATCH /api/items/claims/:claimId/handover - Record the physical handover acknowledgment.
 router.patch('/claims/:claimId/handover', requireRole('admin'), (req, res) => {
   const claims = getClaims();
-  const claim = claims.find(entry => entry.id === req.params.claimId);
-  if (!claim || claim.status !== 'approved') return res.status(404).json({ success: false, message: 'Approved claim not found.' });
+  const claim = claims.find((entry) => entry.id === req.params.claimId);
+  if (!claim || claim.status !== 'approved')
+    return res.status(404).json({ success: false, message: 'Approved claim not found.' });
   const signature = sanitizeString(req.body.signature || '');
-  if (signature.length < 2 || signature.length > 120) return res.status(400).json({ success: false, message: 'A handover acknowledgment is required.' });
-  claim.handover = { acknowledged: true, acknowledgedAt: new Date().toISOString(), acknowledgedBy: req.session.user.id, acknowledgedByName: req.session.user.fullName, signature };
+  if (signature.length < 2 || signature.length > 120)
+    return res.status(400).json({ success: false, message: 'A handover acknowledgment is required.' });
+  claim.handover = {
+    acknowledged: true,
+    acknowledgedAt: new Date().toISOString(),
+    acknowledgedBy: req.session.user.id,
+    acknowledgedByName: req.session.user.fullName,
+    signature,
+  };
   saveClaims(claims);
   res.json({ success: true, handover: claim.handover });
 });
@@ -849,7 +926,11 @@ const MEETUP_REQUEST_TTL_MS = 24 * 60 * 60 * 1000;
 const MEETUP_ASK_AGAIN_MS = 2 * 60 * 1000;
 
 function firstName(fullName, fallback) {
-  return String(fullName || '').trim().split(/\s+/)[0] || fallback;
+  return (
+    String(fullName || '')
+      .trim()
+      .split(/\s+/)[0] || fallback
+  );
 }
 
 // Owner and finder of a non-rejected claim from the last 7 days, both with accounts.
@@ -859,18 +940,18 @@ function firstName(fullName, fallback) {
 function meetupParties(claim, items, users) {
   if (claim.status === 'rejected') return null;
   if (Date.now() - Date.parse(claim.createdAt) > MEETUP_WINDOW_MS) return null;
-  const item = items.find(entry => String(entry.id) === String(claim.itemId));
-  const owner = users.find(user => String(user.id) === String(claim.claimantId));
-  const finder = item && users.find(user => String(user.id) === String(item.reportedBy));
+  const item = items.find((entry) => String(entry.id) === String(claim.itemId));
+  const owner = users.find((user) => String(user.id) === String(claim.claimantId));
+  const finder = item && users.find((user) => String(user.id) === String(item.reportedBy));
   if (!owner || !finder || String(owner.id) === String(finder.id)) return null;
   return { owner, finder, item };
 }
 
 function claimConversationParties(claim, items, users) {
   if (claim.status === 'rejected') return null;
-  const item = items.find(entry => String(entry.id) === String(claim.itemId));
-  const owner = users.find(user => String(user.id) === String(claim.claimantId));
-  const finder = item && users.find(user => String(user.id) === String(item.reportedBy));
+  const item = items.find((entry) => String(entry.id) === String(claim.itemId));
+  const owner = users.find((user) => String(user.id) === String(claim.claimantId));
+  const finder = item && users.find((user) => String(user.id) === String(item.reportedBy));
   if (!item || !owner || !finder || String(owner.id) === String(finder.id)) return null;
   return { owner, finder, item };
 }
@@ -884,7 +965,7 @@ function pruneMeetup(claim, now = Date.now()) {
     return true;
   }
   let changed = false;
-  Object.values(claim.meetup).forEach(request => {
+  Object.values(claim.meetup).forEach((request) => {
     if (request.location && Date.parse(request.location.expiresAt) <= now) {
       delete request.location;
       request.status = 'expired';
@@ -901,7 +982,7 @@ function pruneMeetup(claim, now = Date.now()) {
 // Loads the claim for a meetup route and works out who is who; sends the error itself.
 function loadMeetup(req, res) {
   const claims = getClaims();
-  const claim = claims.find(entry => entry.id === req.params.claimId);
+  const claim = claims.find((entry) => entry.id === req.params.claimId);
   const parties = claim && meetupParties(claim, getItems(), readJsonArray(USERS_FILE));
   const userId = String(req.session.user.id);
   if (!parties || ![String(parties.owner.id), String(parties.finder.id)].includes(userId)) {
@@ -926,13 +1007,18 @@ router.post('/claims/:claimId/meetup/request', requireAuth, async (req, res) => 
     return res.status(409).json({ success: false, message: `You already asked. Waiting for ${otherName} to respond.` });
   }
   if (existing?.status === 'shared') {
-    return res.status(409).json({ success: false, message: `${otherName} is already sharing their location with you.` });
+    return res
+      .status(409)
+      .json({ success: false, message: `${otherName} is already sharing their location with you.` });
   }
   if (existing?.status === 'declined') {
     const waitMs = MEETUP_ASK_AGAIN_MS - (Date.now() - Date.parse(existing.respondedAt));
     if (waitMs > 0) {
-      return res.status(429).json({ success: false, retryAfter: Math.ceil(waitMs / 1000),
-        message: `${otherName} declined. You can ask again in ${Math.ceil(waitMs / 60000)} minute(s).` });
+      return res.status(429).json({
+        success: false,
+        retryAfter: Math.ceil(waitMs / 1000),
+        message: `${otherName} declined. You can ask again in ${Math.ceil(waitMs / 60000)} minute(s).`,
+      });
     }
   }
 
@@ -946,9 +1032,12 @@ router.post('/claims/:claimId/meetup/request', requireAuth, async (req, res) => 
   }
   if (other.messengerPsid) {
     const requesterName = firstName(me.fullName, 'The other person');
-    messenger.sendMessengerText(other.messengerPsid,
-      `${requesterName} asked for your current location to meet and hand over "${item.title}". Sign in to Back2You and open your notifications (the bell icon) to respond.`
-    ).catch(error => console.error('Location request Messenger alert could not be sent:', error.message));
+    messenger
+      .sendMessengerText(
+        other.messengerPsid,
+        `${requesterName} asked for your current location to meet and hand over "${item.title}". Sign in to Back2You and open your notifications (the bell icon) to respond.`
+      )
+      .catch((error) => console.error('Location request Messenger alert could not be sent:', error.message));
   }
   res.status(201).json({ success: true, message: `We asked ${otherName} to share their location.` });
 });
@@ -978,12 +1067,21 @@ router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
   const longitude = Number(req.body.longitude);
   const accuracy = Number(req.body.accuracy);
   const note = sanitizeString(req.body.note || '');
-  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-      !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+  if (
+    !Number.isFinite(latitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    !Number.isFinite(longitude) ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
     return res.status(400).json({ success: false, message: 'Your location could not be read. Please try again.' });
   }
   if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 5000) {
-    return res.status(400).json({ success: false, message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.' });
+    return res.status(400).json({
+      success: false,
+      message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.',
+    });
   }
   if (note.length > 160) {
     return res.status(400).json({ success: false, message: 'The note must be 160 characters or fewer.' });
@@ -997,11 +1095,14 @@ router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
     accuracy: Math.round(accuracy),
     note,
     sharedAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString()
+    expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString(),
   };
   saveClaims(claims);
-  res.json({ success: true, message: `Your location is shared with ${firstName(other.fullName, 'them')} for one hour.`,
-    expiresAt: request.location.expiresAt });
+  res.json({
+    success: true,
+    message: `Your location is shared with ${firstName(other.fullName, 'them')} for one hour.`,
+    expiresAt: request.location.expiresAt,
+  });
 });
 
 // POST /api/items/claims/:claimId/meetup/stop - Delete the location I shared.
@@ -1039,15 +1140,20 @@ function pruneClaimThread(claim, now = Date.now()) {
 
 function loadClaimThread(req, res) {
   const claims = getClaims();
-  const claim = claims.find(entry => entry.id === req.params.claimId);
+  const claim = claims.find((entry) => entry.id === req.params.claimId);
   const items = getItems();
-  const item = claim && items.find(entry => String(entry.id) === String(claim.itemId));
+  const item = claim && items.find((entry) => String(entry.id) === String(claim.itemId));
   const users = item && readJsonArray(USERS_FILE);
-  const claimant = users && users.find(user => String(user.id) === String(claim.claimantId));
-  const finder = users && users.find(user => String(user.id) === String(item.reportedBy));
+  const claimant = users && users.find((user) => String(user.id) === String(claim.claimantId));
+  const finder = users && users.find((user) => String(user.id) === String(item.reportedBy));
   const userId = String(req.session.user.id);
-  if (!claim || claim.status === 'rejected' || !claimant || !finder ||
-      ![String(claimant.id), String(finder.id)].includes(userId)) {
+  if (
+    !claim ||
+    claim.status === 'rejected' ||
+    !claimant ||
+    !finder ||
+    ![String(claimant.id), String(finder.id)].includes(userId)
+  ) {
     res.status(404).json({ success: false, message: 'Claim conversation not found.' });
     return null;
   }
@@ -1060,7 +1166,7 @@ function loadClaimThread(req, res) {
   // notification clears the moment you open the conversation.
   const previousRead = claim.lastReadAt[userId];
   const now = new Date().toISOString();
-  if (!previousRead || claim.messages.some(entry => Date.parse(entry.createdAt) > Date.parse(previousRead))) {
+  if (!previousRead || claim.messages.some((entry) => Date.parse(entry.createdAt) > Date.parse(previousRead))) {
     claim.lastReadAt[userId] = now;
     changed = true;
   }
@@ -1076,14 +1182,14 @@ function claimThreadView(claim, item, me, other) {
     claim: { id: claim.id, status: claim.status },
     item: { id: item.id, title: item.title },
     otherName: other.fullName || 'The other person',
-    messages: claim.messages.map(entry => ({
+    messages: claim.messages.map((entry) => ({
       id: entry.id,
       text: entry.text,
       mine: String(entry.senderId) === String(me.id),
-      createdAt: entry.createdAt
+      createdAt: entry.createdAt,
     })),
     confirmedByMe: claim.confirmations.includes(String(me.id)),
-    confirmedByOther: claim.confirmations.includes(String(other.id))
+    confirmedByOther: claim.confirmations.includes(String(other.id)),
   };
 }
 
@@ -1116,7 +1222,8 @@ router.post('/claims/:claimId/thread/confirm', requireAuth, async (req, res) => 
   if (!context) return;
   const { claims, claim, items, item, me, other } = context;
   if (!claim.confirmations.includes(String(me.id))) claim.confirmations.push(String(me.id));
-  const bothConfirmed = claim.confirmations.includes(String(claim.claimantId)) && claim.confirmations.includes(String(item.reportedBy));
+  const bothConfirmed =
+    claim.confirmations.includes(String(claim.claimantId)) && claim.confirmations.includes(String(item.reportedBy));
   const justResolved = bothConfirmed && claim.status !== 'approved';
 
   if (justResolved) {
@@ -1128,7 +1235,7 @@ router.post('/claims/:claimId/thread/confirm', requireAuth, async (req, res) => 
     claim.status = 'approved';
     claim.reviewedAt = now;
     claim.reviewedBy = 'mutual-confirmation';
-    claims.forEach(rival => {
+    claims.forEach((rival) => {
       if (rival.itemId === claim.itemId && rival.id !== claim.id && rival.status === 'pending') {
         rival.status = 'rejected';
         rival.reviewedAt = now;
@@ -1138,7 +1245,7 @@ router.post('/claims/:claimId/thread/confirm', requireAuth, async (req, res) => 
     addItemActivity(item, req, 'Claim confirmed by both parties', '');
     // The matching lost report is resolved too - without this it would keep sitting
     // in the Lost tab forever, even though the owner already has their item back.
-    const lostItem = items.find(entry => String(entry.id) === String(claim.lostItemId));
+    const lostItem = items.find((entry) => String(entry.id) === String(claim.lostItemId));
     if (lostItem && !lostItem.claimed) {
       lostItem.claimed = true;
       lostItem.status = 'claimed';
@@ -1169,7 +1276,9 @@ router.delete('/claims/:claimId/thread', requireAuth, (req, res) => {
   if (!context) return;
   const { claims, claim } = context;
   if (claim.status !== 'approved') {
-    return res.status(409).json({ success: false, message: 'The conversation can be deleted once the claim is resolved.' });
+    return res
+      .status(409)
+      .json({ success: false, message: 'The conversation can be deleted once the claim is resolved.' });
   }
   claim.messages = [];
   saveClaims(claims);
@@ -1179,12 +1288,20 @@ router.delete('/claims/:claimId/thread', requireAuth, (req, res) => {
 // Inbox entry describing both directions of a meetup for one person.
 function meetupNotification(claim, item, me, other, isOwner) {
   const meetup = claim.meetup || {};
-  const mine = meetup[String(me.id)];     // my request: their location for me
+  const mine = meetup[String(me.id)]; // my request: their location for me
   const theirs = meetup[String(other.id)]; // their request: my location for them
   // claim.reviewedAt is only set once approved - for a still-pending claim with no
   // meetup activity yet, fall back to claim.createdAt so this always has a time.
-  const times = [claim.reviewedAt, claim.createdAt, mine?.createdAt, mine?.respondedAt, theirs?.createdAt, theirs?.respondedAt]
-    .filter(Boolean).map(Date.parse);
+  const times = [
+    claim.reviewedAt,
+    claim.createdAt,
+    mine?.createdAt,
+    mine?.respondedAt,
+    theirs?.createdAt,
+    theirs?.respondedAt,
+  ]
+    .filter(Boolean)
+    .map(Date.parse);
   return {
     id: `meetup-${claim.id}`,
     notificationType: 'meetup',
@@ -1198,13 +1315,14 @@ function meetupNotification(claim, item, me, other, isOwner) {
     read: theirs?.status !== 'pending',
     theirLocation: {
       status: mine?.status || 'none',
-      askAgainAt: mine?.status === 'declined' ? new Date(Date.parse(mine.respondedAt) + MEETUP_ASK_AGAIN_MS).toISOString() : null,
-      location: mine?.status === 'shared' ? mine.location : null
+      askAgainAt:
+        mine?.status === 'declined' ? new Date(Date.parse(mine.respondedAt) + MEETUP_ASK_AGAIN_MS).toISOString() : null,
+      location: mine?.status === 'shared' ? mine.location : null,
     },
     myLocation: {
       status: theirs?.status || 'none',
-      expiresAt: theirs?.location?.expiresAt || null
-    }
+      expiresAt: theirs?.location?.expiresAt || null,
+    },
   };
 }
 
@@ -1213,9 +1331,10 @@ function meetupNotification(claim, item, me, other, isOwner) {
 function claimConversationNotification(claim, item, me, other) {
   const messages = Array.isArray(claim.messages) ? claim.messages : [];
   const lastRead = claim.lastReadAt?.[String(me.id)];
-  const unread = messages.filter(entry =>
-    String(entry.senderId) !== String(me.id) &&
-    (!lastRead || Date.parse(entry.createdAt) > Date.parse(lastRead)));
+  const unread = messages.filter(
+    (entry) =>
+      String(entry.senderId) !== String(me.id) && (!lastRead || Date.parse(entry.createdAt) > Date.parse(lastRead))
+  );
   const latest = messages[messages.length - 1];
   return {
     id: `claim-conversation-${claim.id}`,
@@ -1229,7 +1348,7 @@ function claimConversationNotification(claim, item, me, other) {
     unreadCount: unread.length,
     status: claim.status,
     timestamp: latest?.createdAt || claim.createdAt,
-    read: unread.length === 0
+    read: unread.length === 0,
   };
 }
 
@@ -1241,68 +1360,92 @@ router.get('/', (req, res) => {
   // Registered belongings isolation: only owner can see their registered belongings
   if (type === 'registered') {
     if (!req.session?.user) {
-      return res.status(401).json({ success: false, message: 'Authentication required to view registered belongings.' });
+      return res
+        .status(401)
+        .json({ success: false, message: 'Authentication required to view registered belongings.' });
     }
-    items = items.filter(i => i.type === 'registered' && (i.reportedBy === req.session.user.id || req.session.user.role === 'admin'));
+    items = items.filter(
+      (i) => i.type === 'registered' && (i.reportedBy === req.session.user.id || req.session.user.role === 'admin')
+    );
   } else {
     // Public feed strictly excludes private preventive belongings
-    items = items.filter(i => i.type !== 'registered' && (req.session?.user?.role === 'admin' || i.status !== 'archived'));
+    items = items.filter(
+      (i) => i.type !== 'registered' && (req.session?.user?.role === 'admin' || i.status !== 'archived')
+    );
   }
 
   // Type filter: lost | found
   if (type && ['lost', 'found'].includes(type)) {
-    items = items.filter(i => i.type === type && !isItemClaimed(i));
+    items = items.filter((i) => i.type === type && !isItemClaimed(i));
   }
 
   // Status filter: claimed | active | archived
   if (status === 'claimed') {
     items = items.filter(isItemClaimed);
   } else if (status === 'archived') {
-    items = items.filter(i => i.status === 'archived');
+    items = items.filter((i) => i.status === 'archived');
   } else if (status === 'active') {
-    items = items.filter(i => !isItemClaimed(i));
+    items = items.filter((i) => !isItemClaimed(i));
   }
 
   // Category filter
   if (category) {
-    items = items.filter(i => (i.category || '').toLowerCase() === category.toLowerCase());
+    items = items.filter((i) => (i.category || '').toLowerCase() === category.toLowerCase());
   }
 
   // Location filter
   if (location) {
     const locFilter = location.toLowerCase();
-    items = items.filter(i => (i.location || '').toLowerCase().includes(locFilter));
+    items = items.filter((i) => (i.location || '').toLowerCase().includes(locFilter));
   }
 
   // Search keyword filter
   if (search) {
     const q = search.toLowerCase().trim();
-    items = items.filter(i =>
-      (i.title || '').toLowerCase().includes(q) ||
-      (i.desc || i.description || '').toLowerCase().includes(q) ||
-      (i.location || '').toLowerCase().includes(q) ||
-      (i.category || '').toLowerCase().includes(q) ||
-      (i.refCode && i.refCode.toLowerCase().includes(q))
+    items = items.filter(
+      (i) =>
+        (i.title || '').toLowerCase().includes(q) ||
+        (i.desc || i.description || '').toLowerCase().includes(q) ||
+        (i.location || '').toLowerCase().includes(q) ||
+        (i.category || '').toLowerCase().includes(q) ||
+        (i.refCode && i.refCode.toLowerCase().includes(q))
     );
   }
 
   // Attach match previews for active items
   const allItems = getItems();
-  const enhancedItems = items.map(item => {
+  const enhancedItems = items.map((item) => {
     const match = findMatch(item, allItems);
     const user = req.session?.user;
     const canViewPrivateFields = user && (user.role === 'admin' || item.reportedBy === user.id);
-    const canRequestClaim = Boolean(user && item.type === 'found' && !item.claimed
-      && match?.type === 'lost' && String(match.reportedBy) === String(user.id));
+    const canRequestClaim = Boolean(
+      user &&
+      item.type === 'found' &&
+      !item.claimed &&
+      match?.type === 'lost' &&
+      String(match.reportedBy) === String(user.id)
+    );
     return canViewPrivateFields
-      ? { ...item, canResolve: true, canRequestClaim, potentialMatch: match ? { id: match.id, title: match.title, location: match.location, type: match.type } : null }
-      : publicItemView(item, match, Boolean(user && (user.role === 'admin' || String(item.reportedBy) === String(user.id))), canRequestClaim);
+      ? {
+          ...item,
+          canResolve: true,
+          canRequestClaim,
+          potentialMatch: match
+            ? { id: match.id, title: match.title, location: match.location, type: match.type }
+            : null,
+        }
+      : publicItemView(
+          item,
+          match,
+          Boolean(user && (user.role === 'admin' || String(item.reportedBy) === String(user.id))),
+          canRequestClaim
+        );
   });
 
   res.json({
     success: true,
     count: enhancedItems.length,
-    items: enhancedItems
+    items: enhancedItems,
   });
 });
 
@@ -1310,7 +1453,7 @@ router.get('/', (req, res) => {
 router.get('/qr-lookup/:refCode', (req, res) => {
   const items = getItems();
   const searchRef = req.params.refCode.toUpperCase().trim();
-  const item = items.find(i => i.refCode && i.refCode.toUpperCase().trim() === searchRef);
+  const item = items.find((i) => i.refCode && i.refCode.toUpperCase().trim() === searchRef);
 
   if (!item) {
     return res.status(404).json({ success: false, message: 'Item not found for this QR code.' });
@@ -1326,8 +1469,8 @@ router.get('/qr-lookup/:refCode', (req, res) => {
       type: item.type,
       location: item.location,
       instructions: item.instructions || '',
-      isRegisteredBelonging: item.type === 'registered'
-    }
+      isRegisteredBelonging: item.type === 'registered',
+    },
   });
 });
 
@@ -1345,26 +1488,42 @@ router.post('/anonymous-notify', async (req, res) => {
     if (submissionKey && !/^[A-Za-z0-9_-]{16,128}$/.test(submissionKey)) {
       return res.status(400).json({ success: false, message: 'Invalid finder alert submission key.' });
     }
-    if (String(message).length > 1000 || String(locationFound || '').length > 150 || String(finderContact || '').length > 150) {
+    if (
+      String(message).length > 1000 ||
+      String(locationFound || '').length > 150 ||
+      String(finderContact || '').length > 150
+    ) {
       return res.status(400).json({ success: false, message: 'Finder message fields exceed the allowed length.' });
     }
     if (isRateLimited(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT)) {
-      return res.status(429).json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
+      return res
+        .status(429)
+        .json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
     }
 
     const items = getItems();
     const searchRef = String(refCode).toUpperCase().trim();
     const submissionFingerprint = finderSubmissionFingerprint(
-      searchRef, message, locationFound || '', finderContact || ''
+      searchRef,
+      message,
+      locationFound || '',
+      finderContact || ''
     );
     const previousSubmission = findFinderSubmission(items, submissionKey);
     if (previousSubmission) {
       if (previousSubmission.submissionFingerprint !== submissionFingerprint) {
-        return res.status(409).json({ success: false, message: 'This finder alert key was already used for a different alert.' });
+        return res
+          .status(409)
+          .json({ success: false, message: 'This finder alert key was already used for a different alert.' });
       }
-      if (conversationToken && previousSubmission.conversation &&
-          previousSubmission.conversation.tokenHash !== finderConversationTokenHash(conversationToken)) {
-        return res.status(409).json({ success: false, message: 'This finder alert key was already used for a different conversation.' });
+      if (
+        conversationToken &&
+        previousSubmission.conversation &&
+        previousSubmission.conversation.tokenHash !== finderConversationTokenHash(conversationToken)
+      ) {
+        return res
+          .status(409)
+          .json({ success: false, message: 'This finder alert key was already used for a different conversation.' });
       }
       return res.json({
         success: true,
@@ -1376,14 +1535,14 @@ router.post('/anonymous-notify', async (req, res) => {
               conversation: {
                 id: previousSubmission.id,
                 token: conversationToken,
-                expiresAt: previousSubmission.conversation.expiresAt
-              }
+                expiresAt: previousSubmission.conversation.expiresAt,
+              },
             }
-          : {})
+          : {}),
       });
     }
 
-    const itemIndex = items.findIndex(i => i.refCode && i.refCode.toUpperCase().trim() === searchRef);
+    const itemIndex = items.findIndex((i) => i.refCode && i.refCode.toUpperCase().trim() === searchRef);
 
     if (itemIndex === -1) {
       return res.status(404).json({ success: false, message: 'Item not found with this reference code.' });
@@ -1394,7 +1553,10 @@ router.post('/anonymous-notify', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Registered belonging not found.' });
     }
     if (isRateLimited(finderAlertItems, String(item.id), FINDER_ALERT_ITEM_LIMIT)) {
-      return res.status(429).json({ success: false, message: 'The owner has already received several alerts about this item. Please try again later.' });
+      return res.status(429).json({
+        success: false,
+        message: 'The owner has already received several alerts about this item. Please try again later.',
+      });
     }
     if (!item.notifications) item.notifications = [];
 
@@ -1407,23 +1569,27 @@ router.post('/anonymous-notify', async (req, res) => {
       finderContact: sanitizeString(finderContact || 'Anonymous Student / Finder'),
       timestamp: new Date().toISOString(),
       read: false,
-      ...(conversationToken ? {
-        conversation: {
-          tokenHash: finderConversationTokenHash(conversationToken),
-          status: 'open',
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + REGISTERED_CONVERSATION_TTL_MS).toISOString(),
-          messages: [{
-            id: `msg-${crypto.randomUUID()}`,
-            sender: 'finder',
-            text: sanitizeString(message).slice(0, 500),
-            createdAt: new Date().toISOString()
-          }],
-          confirmations: [],
-          meetup: {}
-        }
-      } : {}),
-      ...(submissionKey ? { submissionKey, submissionFingerprint } : {})
+      ...(conversationToken
+        ? {
+            conversation: {
+              tokenHash: finderConversationTokenHash(conversationToken),
+              status: 'open',
+              createdAt: new Date().toISOString(),
+              expiresAt: new Date(Date.now() + REGISTERED_CONVERSATION_TTL_MS).toISOString(),
+              messages: [
+                {
+                  id: `msg-${crypto.randomUUID()}`,
+                  sender: 'finder',
+                  text: sanitizeString(message).slice(0, 500),
+                  createdAt: new Date().toISOString(),
+                },
+              ],
+              confirmations: [],
+              meetup: {},
+            },
+          }
+        : {}),
+      ...(submissionKey ? { submissionKey, submissionFingerprint } : {}),
     };
 
     item.notifications.unshift(newNotification);
@@ -1435,7 +1601,7 @@ router.post('/anonymous-notify', async (req, res) => {
 
     const owner = item.ownerEmail
       ? { email: item.ownerEmail, fullName: item.ownerName }
-      : readJsonArray(USERS_FILE).find(user => String(user.id) === String(item.reportedBy));
+      : readJsonArray(USERS_FILE).find((user) => String(user.id) === String(item.reportedBy));
 
     let emailSent = false;
     try {
@@ -1446,33 +1612,40 @@ router.post('/anonymous-notify', async (req, res) => {
       console.error('Finder alert email could not be sent:', error.message);
     }
     if (owner?.messengerPsid) {
-      messenger.sendMessengerText(owner.messengerPsid,
-        `Someone scanned the QR code on your item "${item.title}" (${item.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
-      ).catch(error => console.error('QR scan Messenger alert could not be sent:', error.message));
+      messenger
+        .sendMessengerText(
+          owner.messengerPsid,
+          `Someone scanned the QR code on your item "${item.title}" (${item.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
+        )
+        .catch((error) => console.error('QR scan Messenger alert could not be sent:', error.message));
     }
 
     res.json({
       success: true,
       message: emailSent
-        ? 'Finder alert saved to the owner\'s inbox and sent by email.'
-        : 'Finder alert saved to the owner\'s inbox, but email delivery is unavailable.',
+        ? "Finder alert saved to the owner's inbox and sent by email."
+        : "Finder alert saved to the owner's inbox, but email delivery is unavailable.",
       emailSent,
       itemTitle: item.title,
       notification: publicFinderNotification(newNotification),
-      ...(conversationToken ? {
-        conversation: {
-          id: newNotification.id,
-          token: conversationToken,
-          expiresAt: newNotification.conversation.expiresAt
-        }
-      } : {})
+      ...(conversationToken
+        ? {
+            conversation: {
+              id: newNotification.id,
+              token: conversationToken,
+              expiresAt: newNotification.conversation.expiresAt,
+            },
+          }
+        : {}),
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to deliver notification.' });
   }
 });
 
-router.get('/registered-conversations/:conversationId', requireAuth,
+router.get(
+  '/registered-conversations/:conversationId',
+  requireAuth,
   registeredConversationHandler('owner', async (context, req, res) => {
     let changed = false;
     if (!context.notification.read) {
@@ -1485,16 +1658,19 @@ router.get('/registered-conversations/:conversationId', requireAuth,
       await postgresStore.commitRequest();
     }
     res.json(registeredConversationView(context));
-  }));
+  })
+);
 
-router.get('/registered-conversations/:conversationId/guest',
+router.get(
+  '/registered-conversations/:conversationId/guest',
   registeredConversationHandler('finder', (context, req, res) => {
     if (pruneRegisteredConversationMeetup(context.conversation)) {
       saveItems(context.items);
       return postgresStore.commitRequest().then(() => res.json(registeredConversationView(context)));
     }
     res.json(registeredConversationView(context));
-  }));
+  })
+);
 
 function sendRegisteredConversationMessage(role) {
   return registeredConversationHandler(role, async (context, req, res) => {
@@ -1514,7 +1690,7 @@ function sendRegisteredConversationMessage(role) {
       id: `msg-${crypto.randomUUID()}`,
       sender: role,
       text,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
     conversation.messages = conversation.messages.slice(-500);
     if (role === 'finder') context.notification.read = false;
@@ -1524,10 +1700,12 @@ function sendRegisteredConversationMessage(role) {
   });
 }
 
-router.post('/registered-conversations/:conversationId/messages', requireAuth,
-  sendRegisteredConversationMessage('owner'));
-router.post('/registered-conversations/:conversationId/guest/messages',
-  sendRegisteredConversationMessage('finder'));
+router.post(
+  '/registered-conversations/:conversationId/messages',
+  requireAuth,
+  sendRegisteredConversationMessage('owner')
+);
+router.post('/registered-conversations/:conversationId/guest/messages', sendRegisteredConversationMessage('finder'));
 
 function confirmRegisteredConversation(role) {
   return registeredConversationHandler(role, async (context, req, res) => {
@@ -1546,10 +1724,8 @@ function confirmRegisteredConversation(role) {
   });
 }
 
-router.post('/registered-conversations/:conversationId/confirm', requireAuth,
-  confirmRegisteredConversation('owner'));
-router.post('/registered-conversations/:conversationId/guest/confirm',
-  confirmRegisteredConversation('finder'));
+router.post('/registered-conversations/:conversationId/confirm', requireAuth, confirmRegisteredConversation('owner'));
+router.post('/registered-conversations/:conversationId/guest/confirm', confirmRegisteredConversation('finder'));
 
 function registeredMeetupAction(role) {
   return registeredConversationHandler(role, async (context, req, res) => {
@@ -1565,7 +1741,9 @@ function registeredMeetupAction(role) {
     if (action === 'request') {
       const existing = conversation.meetup[role];
       if (existing?.status === 'pending') {
-        return res.status(409).json({ success: false, message: 'Your location request is already waiting for a response.' });
+        return res
+          .status(409)
+          .json({ success: false, message: 'Your location request is already waiting for a response.' });
       }
       if (existing?.status === 'shared') {
         return res.status(409).json({ success: false, message: 'The other person has already shared their location.' });
@@ -1573,8 +1751,11 @@ function registeredMeetupAction(role) {
       if (existing?.status === 'declined') {
         const waitMs = MEETUP_ASK_AGAIN_MS - (Date.now() - Date.parse(existing.respondedAt));
         if (waitMs > 0) {
-          return res.status(429).json({ success: false, retryAfter: Math.ceil(waitMs / 1000),
-            message: `You can ask again in ${Math.ceil(waitMs / 60000)} minute(s).` });
+          return res.status(429).json({
+            success: false,
+            retryAfter: Math.ceil(waitMs / 1000),
+            message: `You can ask again in ${Math.ceil(waitMs / 60000)} minute(s).`,
+          });
         }
       }
       conversation.meetup[role] = { status: 'pending', createdAt: new Date().toISOString() };
@@ -1594,12 +1775,23 @@ function registeredMeetupAction(role) {
         const longitude = Number(req.body.longitude);
         const accuracy = Number(req.body.accuracy);
         const note = sanitizeString(req.body.note || '');
-        if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-            !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
-          return res.status(400).json({ success: false, message: 'Your location could not be read. Please try again.' });
+        if (
+          !Number.isFinite(latitude) ||
+          latitude < -90 ||
+          latitude > 90 ||
+          !Number.isFinite(longitude) ||
+          longitude < -180 ||
+          longitude > 180
+        ) {
+          return res
+            .status(400)
+            .json({ success: false, message: 'Your location could not be read. Please try again.' });
         }
         if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 5000) {
-          return res.status(400).json({ success: false, message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.' });
+          return res.status(400).json({
+            success: false,
+            message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.',
+          });
         }
         if (note.length > 160) {
           return res.status(400).json({ success: false, message: 'The note must be 160 characters or fewer.' });
@@ -1612,7 +1804,7 @@ function registeredMeetupAction(role) {
           accuracy: Math.round(accuracy),
           note,
           sharedAt: now.toISOString(),
-          expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString()
+          expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString(),
         };
         changed = true;
       } else {
@@ -1635,22 +1827,24 @@ function registeredMeetupAction(role) {
       saveItems(context.items);
       await postgresStore.commitRequest();
     }
-    const recipient = role === 'owner' ? 'the anonymous finder' : (item.ownerName || 'the owner');
+    const recipient = role === 'owner' ? 'the anonymous finder' : item.ownerName || 'the owner';
     res.json({
       success: true,
-      message: action === 'request' ? `We asked ${recipient} to share their location.`
-        : action === 'stop' ? 'You stopped sharing your location. It has been deleted.'
-          : req.body.action === 'decline' ? 'You declined to share your location.'
-            : `Your location is shared with ${recipient} for one hour.`,
-      conversation: registeredConversationView(context)
+      message:
+        action === 'request'
+          ? `We asked ${recipient} to share their location.`
+          : action === 'stop'
+            ? 'You stopped sharing your location. It has been deleted.'
+            : req.body.action === 'decline'
+              ? 'You declined to share your location.'
+              : `Your location is shared with ${recipient} for one hour.`,
+      conversation: registeredConversationView(context),
     });
   });
 }
 
-router.post('/registered-conversations/:conversationId/meetup/:action', requireAuth,
-  registeredMeetupAction('owner'));
-router.post('/registered-conversations/:conversationId/guest/meetup/:action',
-  registeredMeetupAction('finder'));
+router.post('/registered-conversations/:conversationId/meetup/:action', requireAuth, registeredMeetupAction('owner'));
+router.post('/registered-conversations/:conversationId/guest/meetup/:action', registeredMeetupAction('finder'));
 
 // POST /api/items/match-reference-notify - Anonymous alert for a scanned match QR.
 router.post('/match-reference-notify', async (req, res) => {
@@ -1663,11 +1857,17 @@ router.post('/match-reference-notify', async (req, res) => {
     if (submissionKey && !/^[A-Za-z0-9_-]{16,128}$/.test(submissionKey)) {
       return res.status(400).json({ success: false, message: 'Invalid finder alert submission key.' });
     }
-    if (String(message).length > 1000 || String(locationFound || '').length > 150 || String(finderContact || '').length > 150) {
+    if (
+      String(message).length > 1000 ||
+      String(locationFound || '').length > 150 ||
+      String(finderContact || '').length > 150
+    ) {
       return res.status(400).json({ success: false, message: 'Finder message fields exceed the allowed length.' });
     }
     if (isRateLimited(finderAlertSenders, req.ip, FINDER_ALERT_SENDER_LIMIT)) {
-      return res.status(429).json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
+      return res
+        .status(429)
+        .json({ success: false, message: 'Too many alerts were sent from this network. Please try again later.' });
     }
 
     const reference = parseMatchReferenceToken(token);
@@ -1676,28 +1876,28 @@ router.post('/match-reference-notify', async (req, res) => {
     }
 
     const items = getItems();
-    const submissionFingerprint = finderSubmissionFingerprint(
-      token, message, locationFound || '', finderContact || ''
-    );
+    const submissionFingerprint = finderSubmissionFingerprint(token, message, locationFound || '', finderContact || '');
     const previousSubmission = findFinderSubmission(items, submissionKey);
     if (previousSubmission) {
       if (previousSubmission.submissionFingerprint !== submissionFingerprint) {
-        return res.status(409).json({ success: false, message: 'This finder alert key was already used for a different alert.' });
+        return res
+          .status(409)
+          .json({ success: false, message: 'This finder alert key was already used for a different alert.' });
       }
       return res.json({
         success: true,
         duplicate: true,
         message: 'This alert was already sent to the owner.',
-        notification: publicFinderNotification(previousSubmission)
+        notification: publicFinderNotification(previousSubmission),
       });
     }
 
-    const lost = items.find(item => String(item.id) === String(reference.lostId));
-    const found = items.find(item => String(item.id) === String(reference.foundId));
+    const lost = items.find((item) => String(item.id) === String(reference.lostId));
+    const found = items.find((item) => String(item.id) === String(reference.foundId));
     if (!lost || !found || lost.type !== 'lost' || found.type !== 'found') {
       return res.status(404).json({ success: false, message: 'The matched reports are no longer available.' });
     }
-    if (!findMatches(lost, items).some(match => String(match.id) === String(found.id))) {
+    if (!findMatches(lost, items).some((match) => String(match.id) === String(found.id))) {
       return res.status(403).json({ success: false, message: 'This item pair is no longer an available match.' });
     }
 
@@ -1706,7 +1906,10 @@ router.post('/match-reference-notify', async (req, res) => {
       return res.status(404).json({ success: false, message: 'The lost-item owner account could not be found.' });
     }
     if (isRateLimited(finderAlertItems, String(lost.id), FINDER_ALERT_ITEM_LIMIT)) {
-      return res.status(429).json({ success: false, message: 'The owner has already received several alerts about this item. Please try again later.' });
+      return res.status(429).json({
+        success: false,
+        message: 'The owner has already received several alerts about this item. Please try again later.',
+      });
     }
 
     const notification = {
@@ -1722,7 +1925,7 @@ router.post('/match-reference-notify', async (req, res) => {
       finderContact: sanitizeString(finderContact || 'Anonymous Student / Finder'),
       timestamp: new Date().toISOString(),
       read: false,
-      ...(submissionKey ? { submissionKey, submissionFingerprint } : {})
+      ...(submissionKey ? { submissionKey, submissionFingerprint } : {}),
     };
 
     lost.notifications = [notification, ...(Array.isArray(lost.notifications) ? lost.notifications : [])].slice(0, 100);
@@ -1739,18 +1942,21 @@ router.post('/match-reference-notify', async (req, res) => {
       console.error(`Match finder alert email could not be sent to ${owner.email}:`, error.message);
     }
     if (owner.messengerPsid) {
-      messenger.sendMessengerText(owner.messengerPsid,
-        `Someone scanned the QR match reference for your lost report "${lost.title}" (${lost.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
-      ).catch(error => console.error('QR match-reference Messenger alert could not be sent:', error.message));
+      messenger
+        .sendMessengerText(
+          owner.messengerPsid,
+          `Someone scanned the QR match reference for your lost report "${lost.title}" (${lost.refCode}) and says they found it. Sign in to Back2You and open your notifications (the bell icon) to see their message.`
+        )
+        .catch((error) => console.error('QR match-reference Messenger alert could not be sent:', error.message));
     }
 
     return res.json({
       success: true,
       emailSent,
       message: emailSent
-        ? 'Alert saved to the owner\'s inbox and sent by email.'
-        : 'Alert saved to the owner\'s inbox, but email delivery is unavailable.',
-      notification: publicFinderNotification(notification)
+        ? "Alert saved to the owner's inbox and sent by email."
+        : "Alert saved to the owner's inbox, but email delivery is unavailable.",
+      notification: publicFinderNotification(notification),
     });
   } catch (error) {
     console.error('Match finder alert failed:', error.message);
@@ -1762,45 +1968,49 @@ router.post('/match-reference-notify', async (req, res) => {
 router.get('/my-notifications', requireAuth, (req, res) => {
   const items = getItems();
   const userId = req.session.user.id;
-  const userItems = items.filter(i => String(i.reportedBy) === String(userId));
+  const userItems = items.filter((i) => String(i.reportedBy) === String(userId));
   const notifications = [];
 
-  userItems.forEach(i => {
+  userItems.forEach((i) => {
     if (i.notifications && Array.isArray(i.notifications)) {
-      i.notifications.forEach(n => {
+      i.notifications.forEach((n) => {
         notifications.push({
           ...publicFinderNotification(n),
-          ...(n.conversation ? {
-            notificationType: 'finder-conversation',
-            conversationId: n.id,
-            conversationStatus: n.conversation.status,
-            conversationExpiresAt: n.conversation.expiresAt,
-            lastMessage: n.conversation.messages?.[n.conversation.messages.length - 1]?.text || n.message
-          } : {}),
+          ...(n.conversation
+            ? {
+                notificationType: 'finder-conversation',
+                conversationId: n.id,
+                conversationStatus: n.conversation.status,
+                conversationExpiresAt: n.conversation.expiresAt,
+                lastMessage: n.conversation.messages?.[n.conversation.messages.length - 1]?.text || n.message,
+              }
+            : {}),
           itemId: i.id,
           itemTitle: i.title,
-          refCode: i.refCode
+          refCode: i.refCode,
         });
       });
     }
   });
 
   const claims = getClaims();
-  claims.filter(claim => claim.claimantId === userId && claim.notification).forEach(claim => {
-    notifications.push({
-      ...claim.notification,
-      notificationType: 'claim',
-      claimId: claim.id,
-      itemId: claim.itemId,
-      itemTitle: claim.itemTitle,
-      refCode: claim.itemRefCode
+  claims
+    .filter((claim) => claim.claimantId === userId && claim.notification)
+    .forEach((claim) => {
+      notifications.push({
+        ...claim.notification,
+        notificationType: 'claim',
+        claimId: claim.id,
+        itemId: claim.itemId,
+        itemTitle: claim.itemTitle,
+        refCode: claim.itemRefCode,
+      });
     });
-  });
 
   // Handover meetup (location sharing) for non-rejected claims this user is part of.
   const users = readJsonArray(USERS_FILE);
   let claimsChanged = false;
-  claims.forEach(claim => {
+  claims.forEach((claim) => {
     if (pruneMeetup(claim)) claimsChanged = true;
     if (pruneClaimThread(claim)) claimsChanged = true;
     const conversationParties = claimConversationParties(claim, items, users);
@@ -1833,25 +2043,28 @@ router.get('/my-notifications', requireAuth, (req, res) => {
   res.json({
     success: true,
     notifications,
-    unreadCount: notifications.filter(n => !n.read).length
+    unreadCount: notifications.filter((n) => !n.read).length,
   });
 });
 
 // GET /api/items/match-reference-token - Create a short-lived verification link.
 router.get('/match-reference-token', requireAuth, (req, res) => {
   const items = getItems();
-  const first = items.find(item => String(item.id) === String(req.query.lostId) || String(item.id) === String(req.query.foundId));
-  const second = items.find(item =>
-    String(item.id) !== String(first?.id) &&
-    (String(item.id) === String(req.query.lostId) || String(item.id) === String(req.query.foundId))
+  const first = items.find(
+    (item) => String(item.id) === String(req.query.lostId) || String(item.id) === String(req.query.foundId)
   );
-  const lost = [first, second].find(item => item?.type === 'lost');
-  const found = [first, second].find(item => item?.type === 'found');
+  const second = items.find(
+    (item) =>
+      String(item.id) !== String(first?.id) &&
+      (String(item.id) === String(req.query.lostId) || String(item.id) === String(req.query.foundId))
+  );
+  const lost = [first, second].find((item) => item?.type === 'lost');
+  const found = [first, second].find((item) => item?.type === 'found');
   if (!lost || !found) {
     return res.status(404).json({ success: false, message: 'The matched lost and found reports could not be found.' });
   }
   const isAdmin = req.session.user.role === 'admin';
-  if (!isAdmin && !findMatches(lost, items).some(match => String(match.id) === String(found.id))) {
+  if (!isAdmin && !findMatches(lost, items).some((match) => String(match.id) === String(found.id))) {
     return res.status(403).json({ success: false, message: 'This report pair is not an available match reference.' });
   }
 
@@ -1879,7 +2092,7 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
       expiresAt: new Date(expiresAt).toISOString(),
       status,
       lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
-      found: { id: found.id, title: found.title, refCode: found.refCode }
+      found: { id: found.id, title: found.title, refCode: found.refCode },
     });
   }
   res.json({
@@ -1891,7 +2104,7 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
     expiresAt: new Date(expiresAt).toISOString(),
     status,
     lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
-    found: { id: found.id, title: found.title, refCode: found.refCode }
+    found: { id: found.id, title: found.title, refCode: found.refCode },
   });
 });
 
@@ -1899,13 +2112,16 @@ router.get('/match-reference-token', requireAuth, (req, res) => {
 router.get('/match-reference/:token', (req, res) => {
   const reference = parseMatchReferenceToken(req.params.token);
   if (!reference || reference.expiresAt <= Date.now()) {
-    return res.status(410).json({ success: false, message: 'This match reference has expired. Generate a new QR code.' });
+    return res
+      .status(410)
+      .json({ success: false, message: 'This match reference has expired. Generate a new QR code.' });
   }
 
   const items = getItems();
-  const lost = items.find(item => String(item.id) === reference.lostId && item.type === 'lost');
-  const found = items.find(item => String(item.id) === reference.foundId && item.type === 'found');
-  if (!lost || !found) return res.status(404).json({ success: false, message: 'Match reports are no longer available.' });
+  const lost = items.find((item) => String(item.id) === reference.lostId && item.type === 'lost');
+  const found = items.find((item) => String(item.id) === reference.foundId && item.type === 'found');
+  if (!lost || !found)
+    return res.status(404).json({ success: false, message: 'Match reports are no longer available.' });
 
   const claims = getClaims();
   const status = getMatchReferenceStatus(found, claims);
@@ -1914,7 +2130,7 @@ router.get('/match-reference/:token', (req, res) => {
   found.matchScanLog.unshift({
     scannedAt: new Date().toISOString(),
     scannerId: req.session?.user?.id || 'anonymous',
-    scannerRole: req.session?.user?.role || 'anonymous'
+    scannerRole: req.session?.user?.role || 'anonymous',
   });
   found.matchScanLog = found.matchScanLog.slice(0, 100);
   saveItems(items);
@@ -1932,7 +2148,7 @@ router.get('/match-reference/:token', (req, res) => {
       claimId: findOwnClaimId(found, claims, lost.reportedBy),
       status,
       lost: { id: lost.id, title: lost.title, refCode: lost.refCode },
-      found: { id: found.id, title: found.title, refCode: found.refCode }
+      found: { id: found.id, title: found.title, refCode: found.refCode },
     });
   }
 
@@ -1947,14 +2163,15 @@ router.get('/match-reference/:token', (req, res) => {
     status,
     lost: publicItemView(lost),
     found: publicItemView(found),
-    pendingClaims: claims.filter(claim => String(claim.itemId) === String(found.id) && claim.status === 'pending').length
+    pendingClaims: claims.filter((claim) => String(claim.itemId) === String(found.id) && claim.status === 'pending')
+      .length,
   });
 });
 
 // GET /api/items/:id/photo - Serve an uploaded item photo through the API origin.
 // This avoids browser/proxy differences when loading the raw /uploads path.
 router.get('/:id/photo', async (req, res) => {
-  const item = getItems().find(entry => String(entry.id) === String(req.params.id));
+  const item = getItems().find((entry) => String(entry.id) === String(req.params.id));
   if (!item || typeof item.photo !== 'string' || !item.photo) {
     return res.sendStatus(404);
   }
@@ -1989,47 +2206,68 @@ router.get('/:id/photo', async (req, res) => {
     }
   }
 
-  res.sendFile(path.join(UPLOADS_DIR, filename), {
-    headers: {
-      'Cache-Control': 'public, max-age=86400'
+  res.sendFile(
+    path.join(UPLOADS_DIR, filename),
+    {
+      headers: {
+        'Cache-Control': 'public, max-age=86400',
+      },
+    },
+    (error) => {
+      if (error && !res.headersSent) res.sendStatus(error.code === 'ENOENT' ? 404 : 500);
     }
-  }, error => {
-    if (error && !res.headersSent) res.sendStatus(error.code === 'ENOENT' ? 404 : 500);
-  });
+  );
 });
 
 // PATCH /api/items/notifications/:notifId/read - Mark notification as read
 router.delete('/notifications', requireAuth, (req, res) => {
   const notificationIds = req.body?.notificationIds;
-  if (!Array.isArray(notificationIds) || notificationIds.length < 1 || notificationIds.length > 1000
-    || notificationIds.some(reference => !reference || typeof reference !== 'object'
-      || !['item', 'claim', 'claim-conversation'].includes(reference.kind)
-      || typeof reference.recordId !== 'string' || !reference.recordId.trim() || reference.recordId.length > 200
-      || typeof reference.id !== 'string' || !reference.id.trim() || reference.id.length > 200)) {
+  if (
+    !Array.isArray(notificationIds) ||
+    notificationIds.length < 1 ||
+    notificationIds.length > 1000 ||
+    notificationIds.some(
+      (reference) =>
+        !reference ||
+        typeof reference !== 'object' ||
+        !['item', 'claim', 'claim-conversation'].includes(reference.kind) ||
+        typeof reference.recordId !== 'string' ||
+        !reference.recordId.trim() ||
+        reference.recordId.length > 200 ||
+        typeof reference.id !== 'string' ||
+        !reference.id.trim() ||
+        reference.id.length > 200
+    )
+  ) {
     return res.status(400).json({ success: false, message: 'Select between 1 and 1000 valid notifications.' });
   }
 
-  const identities = new Set(notificationIds.map(reference => `${reference.kind}:${reference.recordId}:${reference.id}`));
+  const identities = new Set(
+    notificationIds.map((reference) => `${reference.kind}:${reference.recordId}:${reference.id}`)
+  );
   const userId = String(req.session.user.id);
   const items = getItems();
   const claims = getClaims();
   const users = readJsonArray(USERS_FILE);
   let deletedCount = 0;
 
-  items.forEach(item => {
+  items.forEach((item) => {
     if (String(item.reportedBy) !== userId || !Array.isArray(item.notifications)) return;
-    const ownedNotifications = item.notifications.filter(notification =>
+    const ownedNotifications = item.notifications.filter((notification) =>
       identities.has(`item:${item.id}:${notification.id}`)
     );
     deletedCount += ownedNotifications.length;
-    item.notifications = item.notifications.filter(notification =>
-      !identities.has(`item:${item.id}:${notification.id}`)
+    item.notifications = item.notifications.filter(
+      (notification) => !identities.has(`item:${item.id}:${notification.id}`)
     );
   });
 
-  claims.forEach(claim => {
-    if (String(claim.claimantId) === userId && claim.notification
-      && identities.has(`claim:${claim.id}:${claim.notification.id}`)) {
+  claims.forEach((claim) => {
+    if (
+      String(claim.claimantId) === userId &&
+      claim.notification &&
+      identities.has(`claim:${claim.id}:${claim.notification.id}`)
+    ) {
       claim.notification = null;
       deletedCount += 1;
     }
@@ -2059,9 +2297,9 @@ router.patch('/notifications/:notifId/read', requireAuth, (req, res) => {
   const notifId = req.params.notifId;
   let found = false;
 
-  items.forEach(i => {
+  items.forEach((i) => {
     if (i.reportedBy === userId && i.notifications) {
-      const targetNotif = i.notifications.find(n => n.id === notifId);
+      const targetNotif = i.notifications.find((n) => n.id === notifId);
       if (targetNotif) {
         targetNotif.read = true;
         found = true;
@@ -2070,7 +2308,7 @@ router.patch('/notifications/:notifId/read', requireAuth, (req, res) => {
   });
 
   const claims = getClaims();
-  claims.forEach(claim => {
+  claims.forEach((claim) => {
     if (claim.claimantId === userId && claim.notification?.id === notifId) {
       claim.notification.read = true;
       found = true;
@@ -2089,7 +2327,7 @@ router.patch('/notifications/:notifId/read', requireAuth, (req, res) => {
 // GET /api/items/:id - Single item
 router.get('/:id', (req, res) => {
   const items = getItems();
-  const item = items.find(i => String(i.id) === String(req.params.id));
+  const item = items.find((i) => String(i.id) === String(req.params.id));
   const user = req.session?.user;
   const canViewPrivateFields = user && (user.role === 'admin' || (item && String(item.reportedBy) === String(user.id)));
   if (!item || (item.type === 'registered' && !canViewPrivateFields)) {
@@ -2105,8 +2343,8 @@ router.get('/:id', (req, res) => {
     success: true,
     item: {
       ...item,
-      potentialMatch: match ? { id: match.id, title: match.title, location: match.location, type: match.type } : null
-    }
+      potentialMatch: match ? { id: match.id, title: match.title, location: match.location, type: match.type } : null,
+    },
   });
 });
 
@@ -2117,7 +2355,9 @@ router.get('/:id', (req, res) => {
 router.post('/:id/claim-requests', requireAuth, async (req, res) => {
   const proof = sanitizeString(req.body.proof || '');
   if (proof.length < 5 || proof.length > 500) {
-    return res.status(400).json({ success: false, message: 'Describe the item or an identifying detail, between 5 and 500 characters.' });
+    return res
+      .status(400)
+      .json({ success: false, message: 'Describe the item or an identifying detail, between 5 and 500 characters.' });
   }
   const courseYear = sanitizeString(req.body.courseYear || '');
   const contactNumber = sanitizeString(req.body.contactNumber || '');
@@ -2126,16 +2366,14 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
   }
 
   const items = getItems();
-  const item = items.find(entry => String(entry.id) === String(req.params.id));
+  const item = items.find((entry) => String(entry.id) === String(req.params.id));
   if (!item || item.type !== 'found' || item.claimed) {
     return res.status(404).json({ success: false, message: 'Found item is no longer available for a claim.' });
   }
 
-  const lostItem = items.find(entry =>
-    String(entry.id) === String(req.body.lostId) &&
-    entry.type === 'lost'
-  );
-  const isPotentialMatch = lostItem && findMatches(lostItem, items).some(match => String(match.id) === String(item.id));
+  const lostItem = items.find((entry) => String(entry.id) === String(req.body.lostId) && entry.type === 'lost');
+  const isPotentialMatch =
+    lostItem && findMatches(lostItem, items).some((match) => String(match.id) === String(item.id));
   const userId = String(req.session.user.id);
   const isOwner = lostItem && String(lostItem.reportedBy) === userId;
   const isFinder = String(item.reportedBy) === userId;
@@ -2143,27 +2381,39 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     return res.status(403).json({ success: false, message: 'You cannot start a conversation with yourself.' });
   }
   if (!isPotentialMatch || (!isOwner && !isFinder)) {
-    return res.status(403).json({ success: false, message: "Only the lost item's owner or the found item's finder can start this conversation." });
+    return res.status(403).json({
+      success: false,
+      message: "Only the lost item's owner or the found item's finder can start this conversation.",
+    });
   }
 
-  const claimant = isOwner ? req.session.user : readJsonArray(USERS_FILE).find(user => String(user.id) === String(lostItem.reportedBy));
+  const claimant = isOwner
+    ? req.session.user
+    : readJsonArray(USERS_FILE).find((user) => String(user.id) === String(lostItem.reportedBy));
   if (!claimant) {
     return res.status(404).json({ success: false, message: "The lost item's owner account could not be found." });
   }
   // The body's courseYear/contactNumber are only ever honored when the claimant is
   // submitting for themselves - letting the finder set the owner's contact details
   // through the conversation's starter message would let them spoof that data.
-  const claimantContact = isOwner ? (contactNumber || claimant.phone || claimant.contactNumber || '') : (claimant.phone || claimant.contactNumber || '');
-  const claimantCourseYear = isOwner ? (courseYear || claimant.courseYear || claimant.yearLevel || '') : (claimant.courseYear || claimant.yearLevel || '');
+  const claimantContact = isOwner
+    ? contactNumber || claimant.phone || claimant.contactNumber || ''
+    : claimant.phone || claimant.contactNumber || '';
+  const claimantCourseYear = isOwner
+    ? courseYear || claimant.courseYear || claimant.yearLevel || ''
+    : claimant.courseYear || claimant.yearLevel || '';
 
   const claims = getClaims();
-  const duplicate = claims.some(claim =>
-    String(claim.itemId) === String(item.id) &&
-    String(claim.claimantId) === String(claimant.id) &&
-    claim.status === 'pending'
+  const duplicate = claims.some(
+    (claim) =>
+      String(claim.itemId) === String(item.id) &&
+      String(claim.claimantId) === String(claimant.id) &&
+      claim.status === 'pending'
   );
   if (duplicate) {
-    return res.status(409).json({ success: false, message: 'There is already a pending claim conversation for this item.' });
+    return res
+      .status(409)
+      .json({ success: false, message: 'There is already a pending claim conversation for this item.' });
   }
 
   const claim = {
@@ -2183,22 +2433,24 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     claimantDepartment: claimant.department || '',
     proof,
     status: 'pending',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
   // The proof doubles as the opening message of the claim conversation, so
   // whoever started it sees what they just sent rather than an empty thread.
-  claim.messages = [{ id: `msg-${crypto.randomUUID()}`, senderId: req.session.user.id, text: proof, createdAt: claim.createdAt }];
+  claim.messages = [
+    { id: `msg-${crypto.randomUUID()}`, senderId: req.session.user.id, text: proof, createdAt: claim.createdAt },
+  ];
   claims.unshift(claim);
   saveClaims(claims);
   await postgresStore.commitRequest();
 
   const users = readJsonArray(USERS_FILE);
-  const recipients = users.filter(user =>
-    user.email && (
-      user.role === 'admin' ||
-      String(user.id) === String(item.reportedBy) ||
-      String(user.id) === String(claim.claimantId)
-    )
+  const recipients = users.filter(
+    (user) =>
+      user.email &&
+      (user.role === 'admin' ||
+        String(user.id) === String(item.reportedBy) ||
+        String(user.id) === String(claim.claimantId))
   );
   for (const recipient of recipients) {
     try {
@@ -2213,7 +2465,7 @@ router.post('/:id/claim-requests', requireAuth, async (req, res) => {
     message: isOwner
       ? 'Claim request submitted. Open the conversation to talk with the finder.'
       : 'Message sent. Open the conversation to talk with the owner.',
-    claim: { id: claim.id, status: claim.status }
+    claim: { id: claim.id, status: claim.status },
   });
 });
 
@@ -2232,26 +2484,33 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
     }
 
     const reporterId = req.session?.user ? req.session.user.id : 'guest';
-    const submissionFingerprint = crypto.createHash('sha256').update(JSON.stringify({
-      title,
-      category,
-      type,
-      location,
-      locationDetails,
-      contact,
-      desc,
-      verification,
-      photo: req.file ? crypto.createHash('sha256').update(req.file.buffer).digest('hex') : ''
-    })).digest('hex');
+    const submissionFingerprint = crypto
+      .createHash('sha256')
+      .update(
+        JSON.stringify({
+          title,
+          category,
+          type,
+          location,
+          locationDetails,
+          contact,
+          desc,
+          verification,
+          photo: req.file ? crypto.createHash('sha256').update(req.file.buffer).digest('hex') : '',
+        })
+      )
+      .digest('hex');
 
     if (submissionKey) {
-      const previousSubmission = items.find(item => item.submissionKey === submissionKey);
+      const previousSubmission = items.find((item) => item.submissionKey === submissionKey);
       if (previousSubmission) {
         if (String(previousSubmission.reportedBy) !== String(reporterId)) {
           return res.status(409).json({ success: false, message: 'This submission key is already in use.' });
         }
         if (previousSubmission.submissionFingerprint !== submissionFingerprint) {
-          return res.status(409).json({ success: false, message: 'This submission key was already used for a different report.' });
+          return res
+            .status(409)
+            .json({ success: false, message: 'This submission key was already used for a different report.' });
         }
 
         const responseItem = { ...previousSubmission };
@@ -2262,7 +2521,7 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
           duplicate: true,
           message: `This report was already received with Reference Code: ${previousSubmission.refCode}`,
           item: responseItem,
-          potentialMatch: null
+          potentialMatch: null,
         });
       }
     }
@@ -2270,7 +2529,9 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
     const reporterKey = req.session?.user ? `account:${reporterId}` : `network:${req.ip}`;
     const reportLimit = req.session?.user ? ACCOUNT_REPORT_LIMIT : GUEST_REPORT_LIMIT;
     if (isRateLimited(reportAttempts, reporterKey, reportLimit)) {
-      return res.status(429).json({ success: false, message: 'Too many reports were submitted in the last hour. Please try again later.' });
+      return res
+        .status(429)
+        .json({ success: false, message: 'Too many reports were submitted in the last hour. Please try again later.' });
     }
 
     if (req.file) {
@@ -2278,7 +2539,7 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
       if (!moderation.allowed) {
         return res.status(422).json({
           success: false,
-          message: `This photo could not be used${moderation.reason ? `: ${moderation.reason}` : '.'} Please choose another photo, or submit the report without one.`
+          message: `This photo could not be used${moderation.reason ? `: ${moderation.reason}` : '.'} Please choose another photo, or submit the report without one.`,
         });
       }
     }
@@ -2303,7 +2564,7 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
       claimed: false,
       reportedBy: reporterId,
       ...(submissionKey ? { submissionKey, submissionFingerprint } : {}),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     items.unshift(newItem);
@@ -2338,9 +2599,12 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
         console.error('Possible-match notification email could not be sent:', error.message);
       }
       if (student.messengerPsid) {
-        messenger.sendMessengerText(student.messengerPsid,
-          `A found item may match your lost-item report "${lostItem.title}". Sign in to Back2You to review the possible match (${foundItem.title}, ${foundItem.refCode}).`
-        ).catch(error => console.error('Possible-match Messenger alert could not be sent:', error.message));
+        messenger
+          .sendMessengerText(
+            student.messengerPsid,
+            `A found item may match your lost-item report "${lostItem.title}". Sign in to Back2You to review the possible match (${foundItem.title}, ${foundItem.refCode}).`
+          )
+          .catch((error) => console.error('Possible-match Messenger alert could not be sent:', error.message));
       }
     }
 
@@ -2351,7 +2615,7 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
       success: true,
       message: `Item successfully reported with Reference Code: ${refCode}`,
       item: responseItem,
-      potentialMatch: match ? { id: match.id, title: match.title, location: match.location, type: match.type } : null
+      potentialMatch: match ? { id: match.id, title: match.title, location: match.location, type: match.type } : null,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to record item report.' });
@@ -2360,7 +2624,7 @@ router.post('/', upload.single('photo'), postgresStore.requestMiddleware(), vali
 
 // GET /api/items/:id/activity - Read the audit trail for an item.
 router.get('/:id/activity', requireRole('admin'), (req, res) => {
-  const item = getItems().find(entry => String(entry.id) === String(req.params.id));
+  const item = getItems().find((entry) => String(entry.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
   res.json({ success: true, activity: Array.isArray(item.activityLog) ? item.activityLog : [] });
 });
@@ -2368,7 +2632,7 @@ router.get('/:id/activity', requireRole('admin'), (req, res) => {
 // POST /api/items/:id/activity - Add an admin note to an item audit trail.
 router.post('/:id/activity', requireRole('admin'), (req, res) => {
   const items = getItems();
-  const item = items.find(entry => String(entry.id) === String(req.params.id));
+  const item = items.find((entry) => String(entry.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
   const notes = sanitizeString(req.body.notes || '');
   if (notes.length < 1 || notes.length > 500) {
@@ -2383,16 +2647,19 @@ router.post('/:id/activity', requireRole('admin'), (req, res) => {
 router.patch('/bulk', requireRole('admin'), (req, res) => {
   const ids = Array.isArray(req.body.ids) ? req.body.ids.map(String).filter(Boolean) : [];
   const action = req.body.action;
-  if (!ids.length || ids.length > 100) return res.status(400).json({ success: false, message: 'Select between 1 and 100 items.' });
-  if (!['claim', 'delete', 'archive', 'status'].includes(action)) return res.status(400).json({ success: false, message: 'Unsupported bulk action.' });
+  if (!ids.length || ids.length > 100)
+    return res.status(400).json({ success: false, message: 'Select between 1 and 100 items.' });
+  if (!['claim', 'delete', 'archive', 'status'].includes(action))
+    return res.status(400).json({ success: false, message: 'Unsupported bulk action.' });
   const status = action === 'status' ? sanitizeString(req.body.status || '') : action === 'archive' ? 'archived' : '';
-  if (action === 'status' && !['active', 'claimed', 'archived'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid bulk status.' });
+  if (action === 'status' && !['active', 'claimed', 'archived'].includes(status))
+    return res.status(400).json({ success: false, message: 'Invalid bulk status.' });
 
   let items = getItems();
-  const selected = items.filter(item => ids.includes(String(item.id)));
+  const selected = items.filter((item) => ids.includes(String(item.id)));
   if (!selected.length) return res.status(404).json({ success: false, message: 'No selected items were found.' });
   if (action === 'claim' || action === 'archive' || action === 'status') {
-    selected.forEach(item => {
+    selected.forEach((item) => {
       if (action === 'claim' && !isItemClaimed(item)) {
         item.claimed = true;
         item.status = 'claimed';
@@ -2412,10 +2679,10 @@ router.patch('/bulk', requireRole('admin'), (req, res) => {
     });
     saveItems(items);
   } else {
-    selected.forEach(item => addItemActivity(item, req, 'Deleted', 'Bulk admin action.'));
-    items = items.filter(item => !ids.includes(String(item.id)));
+    selected.forEach((item) => addItemActivity(item, req, 'Deleted', 'Bulk admin action.'));
+    items = items.filter((item) => !ids.includes(String(item.id)));
     saveItems(items);
-    saveClaims(getClaims().filter(claim => !ids.includes(String(claim.itemId))));
+    saveClaims(getClaims().filter((claim) => !ids.includes(String(claim.itemId))));
   }
   res.json({ success: true, affected: selected.length, action });
 });
@@ -2423,9 +2690,10 @@ router.patch('/bulk', requireRole('admin'), (req, res) => {
 // PATCH /api/items/:id/status - Update active, claimed, or archived status.
 router.patch('/:id/status', requireRole('admin'), (req, res) => {
   const status = sanitizeString(req.body.status || '');
-  if (!['active', 'claimed', 'archived'].includes(status)) return res.status(400).json({ success: false, message: 'Invalid item status.' });
+  if (!['active', 'claimed', 'archived'].includes(status))
+    return res.status(400).json({ success: false, message: 'Invalid item status.' });
   const items = getItems();
-  const item = items.find(entry => String(entry.id) === String(req.params.id));
+  const item = items.find((entry) => String(entry.id) === String(req.params.id));
   if (!item) return res.status(404).json({ success: false, message: 'Item not found.' });
   item.status = status;
   item.claimed = status === 'claimed';
@@ -2439,16 +2707,17 @@ router.patch('/:id/status', requireRole('admin'), (req, res) => {
 // PATCH /api/items/:id/claim - Resolve or restore item for admins and the original reporter.
 router.patch('/:id/claim', requireAuth, async (req, res) => {
   const items = getItems();
-  const itemIndex = items.findIndex(i => String(i.id) === String(req.params.id));
+  const itemIndex = items.findIndex((i) => String(i.id) === String(req.params.id));
   if (itemIndex === -1) {
     return res.status(404).json({ success: false, message: 'Item not found.' });
   }
 
   const item = items[itemIndex];
-  const canResolve = req.session.user.role === 'admin'
-    || String(item.reportedBy) === String(req.session.user.id);
+  const canResolve = req.session.user.role === 'admin' || String(item.reportedBy) === String(req.session.user.id);
   if (!canResolve) {
-    return res.status(403).json({ success: false, message: 'Only the original reporter or an administrator can resolve this item.' });
+    return res
+      .status(403)
+      .json({ success: false, message: 'Only the original reporter or an administrator can resolve this item.' });
   }
 
   // If already claimed, allow unclaiming/restoring
@@ -2474,7 +2743,12 @@ router.patch('/:id/claim', requireAuth, async (req, res) => {
   await postgresStore.commitRequest();
   if (item.reporterEmail) {
     try {
-      await sendClaimStatusEmail({ fullName: item.reporterName, email: item.reporterEmail }, item, { claimantName: item.reporterName, claimantEmail: item.reporterEmail }, 'approved');
+      await sendClaimStatusEmail(
+        { fullName: item.reporterName, email: item.reporterEmail },
+        item,
+        { claimantName: item.reporterName, claimantEmail: item.reporterEmail },
+        'approved'
+      );
     } catch (error) {
       console.error('Claim notification email could not be sent:', error.message);
     }
@@ -2482,17 +2756,19 @@ router.patch('/:id/claim', requireAuth, async (req, res) => {
   res.json({
     success: true,
     message: `Item ${item.refCode} marked as claimed.`,
-    item
+    item,
   });
 });
 
 // PATCH /api/items/:id/registered - Update a student's registered belonging.
 router.patch('/:id/registered', requireAuth, (req, res) => {
   const items = getItems();
-  const item = items.find(entry => String(entry.id) === String(req.params.id));
-  if (!item || item.type !== 'registered') return res.status(404).json({ success: false, message: 'Registered belonging not found.' });
+  const item = items.find((entry) => String(entry.id) === String(req.params.id));
+  if (!item || item.type !== 'registered')
+    return res.status(404).json({ success: false, message: 'Registered belonging not found.' });
   const isOwner = String(item.reportedBy) === String(req.session.user.id);
-  if (req.session.user.role !== 'admin' && !isOwner) return res.status(403).json({ success: false, message: 'You can only edit your own registered belongings.' });
+  if (req.session.user.role !== 'admin' && !isOwner)
+    return res.status(403).json({ success: false, message: 'You can only edit your own registered belongings.' });
 
   const { title, category, location, identifiers, instructions } = req.body;
   const cleanTitle = sanitizeString(title || '');
@@ -2505,7 +2781,9 @@ router.patch('/:id/registered', requireAuth, (req, res) => {
   item.location = sanitizeString(location || 'Campus-wide');
   item.locationDetails = sanitizeString(identifiers || '');
   item.verification = item.locationDetails || 'Registered by verified CSPC account';
-  item.desc = item.locationDetails ? `Valuable belonging: ${item.locationDetails}` : 'Valuable personal belonging registered in student vault.';
+  item.desc = item.locationDetails
+    ? `Valuable belonging: ${item.locationDetails}`
+    : 'Valuable personal belonging registered in student vault.';
   item.instructions = sanitizeString(instructions || '');
   item.updatedAt = new Date().toISOString();
   saveItems(items);
@@ -2515,30 +2793,39 @@ router.patch('/:id/registered', requireAuth, (req, res) => {
 // DELETE /api/items/:id - Remove item (owner of a registered belonging or admin)
 router.delete('/:id', requireAuth, async (req, res) => {
   let items = getItems();
-  const item = items.find(i => String(i.id) === String(req.params.id));
+  const item = items.find((i) => String(i.id) === String(req.params.id));
   if (!item) {
     return res.status(404).json({ success: false, message: 'Item not found.' });
   }
   const isAdmin = req.session.user.role === 'admin';
   const isOwner = String(item.reportedBy) === String(req.session.user.id);
-  if (!isAdmin && !isOwner) return res.status(403).json({ success: false, message: 'You do not have permission to delete this item.' });
+  if (!isAdmin && !isOwner)
+    return res.status(403).json({ success: false, message: 'You do not have permission to delete this item.' });
 
   // A student can't delete their own registered belonging while an unread finder
   // alert is waiting on it - that alert lives only on this item record, so deleting
   // it now would erase someone's "I found this" message before the owner ever saw
   // it. Lost/found reports can be deleted by their reporter regardless of status
   // (including already claimed) - admins can always delete regardless either way.
-  if (!isAdmin && item.type === 'registered' && Array.isArray(item.notifications) && item.notifications.some(n => !n.read)) {
-    return res.status(409).json({ success: false, message: 'Someone reported finding this item. Please review that notification before deleting it.' });
+  if (
+    !isAdmin &&
+    item.type === 'registered' &&
+    Array.isArray(item.notifications) &&
+    item.notifications.some((n) => !n.read)
+  ) {
+    return res.status(409).json({
+      success: false,
+      message: 'Someone reported finding this item. Please review that notification before deleting it.',
+    });
   }
 
-  items = items.filter(i => String(i.id) !== String(req.params.id));
+  items = items.filter((i) => String(i.id) !== String(req.params.id));
   saveItems(items);
   if (typeof item.photo === 'string' && item.photo.startsWith('/uploads/')) {
     fs.rmSync(path.join(UPLOADS_DIR, path.basename(item.photo)), { force: true });
   }
   if (supabaseStorage.objectKey(item.photo)) await supabaseStorage.deleteImage(item.photo);
-  saveClaims(getClaims().filter(claim => String(claim.itemId) !== String(item.id)));
+  saveClaims(getClaims().filter((claim) => String(claim.itemId) !== String(item.id)));
 
   res.json({ success: true, message: 'Item report deleted.' });
 });
@@ -2566,7 +2853,9 @@ router.post('/register-belonging', requireAuth, (req, res) => {
       locationDetails: sanitizeString(identifiers || ''),
       instructions: sanitizeString(instructions || ''),
       contact: `${user.fullName} (${user.studentId || user.email})`,
-      desc: identifiers ? `Valuable belonging: ${sanitizeString(identifiers)}` : 'Valuable personal belonging registered in student vault.',
+      desc: identifiers
+        ? `Valuable belonging: ${sanitizeString(identifiers)}`
+        : 'Valuable personal belonging registered in student vault.',
       verification: identifiers || 'Registered by verified CSPC account',
       photo: '',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
@@ -2576,7 +2865,7 @@ router.post('/register-belonging', requireAuth, (req, res) => {
       ownerName: user.fullName,
       ownerEmail: user.email,
       notifications: [],
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     items.unshift(newBelonging);
@@ -2585,7 +2874,7 @@ router.post('/register-belonging', requireAuth, (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Belonging successfully registered in your private vault!',
-      item: newBelonging
+      item: newBelonging,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to register belonging.' });

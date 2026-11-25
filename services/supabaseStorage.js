@@ -14,9 +14,7 @@ function isConfigured() {
 }
 
 function objectKey(photo) {
-  return typeof photo === 'string' && photo.startsWith(STORAGE_PREFIX)
-    ? photo.slice(STORAGE_PREFIX.length)
-    : null;
+  return typeof photo === 'string' && photo.startsWith(STORAGE_PREFIX) ? photo.slice(STORAGE_PREFIX.length) : null;
 }
 
 function storageUrl(config, key) {
@@ -37,9 +35,9 @@ async function uploadImage(file) {
       Authorization: `Bearer ${config.key}`,
       apikey: config.key,
       'Content-Type': file.mimetype,
-      'x-upsert': 'false'
+      'x-upsert': 'false',
     },
-    body: file.buffer
+    body: file.buffer,
   });
   if (!response.ok) throw new Error(`Supabase Storage upload failed (${response.status}).`);
   return `${STORAGE_PREFIX}${key}`;
@@ -50,7 +48,7 @@ async function downloadImage(photo) {
   const key = objectKey(photo);
   if (!config || !key) return null;
   const response = await fetch(storageUrl(config, key), {
-    headers: { Authorization: `Bearer ${config.key}`, apikey: config.key }
+    headers: { Authorization: `Bearer ${config.key}`, apikey: config.key },
   });
   if (!response.ok) return null;
   return response;
@@ -62,7 +60,7 @@ async function deleteImage(photo) {
   if (!config || !key) return;
   await fetch(storageUrl(config, key), {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${config.key}`, apikey: config.key }
+    headers: { Authorization: `Bearer ${config.key}`, apikey: config.key },
   });
 }
 

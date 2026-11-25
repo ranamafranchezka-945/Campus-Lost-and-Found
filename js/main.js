@@ -32,7 +32,11 @@ function togglePasswordVisibility(inputId, btn) {
 const SPLASH_SEEN_KEY = 'back2you.splashSeen';
 (function setupSplash() {
   let seen = false;
-  try { seen = sessionStorage.getItem(SPLASH_SEEN_KEY) === '1'; } catch { /* storage blocked: show it */ }
+  try {
+    seen = sessionStorage.getItem(SPLASH_SEEN_KEY) === '1';
+  } catch {
+    /* storage blocked: show it */
+  }
   if (seen) {
     document.documentElement.classList.add('skip-splash');
     return;
@@ -40,26 +44,42 @@ const SPLASH_SEEN_KEY = 'back2you.splashSeen';
   document.addEventListener('DOMContentLoaded', () => {
     const splash = document.getElementById('appSplash');
     if (!splash) return;
-    try { sessionStorage.setItem(SPLASH_SEEN_KEY, '1'); } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem(SPLASH_SEEN_KEY, '1');
+    } catch {
+      /* ignore */
+    }
 
     if (
-      splash.querySelector('[data-cspc-logo-scene]')
-      && !window.THREE
-      && !document.querySelector('script[src^="/js/cspc-3d-logo.js"]')
+      splash.querySelector('[data-cspc-logo-scene]') &&
+      !window.THREE &&
+      !document.querySelector('script[src^="/js/cspc-3d-logo.js"]')
     ) {
       const threeScript = document.createElement('script');
       threeScript.src = '/vendor/three.min.js';
-      threeScript.addEventListener('load', () => {
-        const logoScript = document.createElement('script');
-        logoScript.src = '/js/cspc-3d-logo.js';
-        logoScript.addEventListener('error', () => {
-          console.error('The intro logo animation script could not be loaded.');
-        }, { once: true });
-        document.head.appendChild(logoScript);
-      }, { once: true });
-      threeScript.addEventListener('error', () => {
-        console.error('Three.js could not be loaded for the intro logo animation.');
-      }, { once: true });
+      threeScript.addEventListener(
+        'load',
+        () => {
+          const logoScript = document.createElement('script');
+          logoScript.src = '/js/cspc-3d-logo.js';
+          logoScript.addEventListener(
+            'error',
+            () => {
+              console.error('The intro logo animation script could not be loaded.');
+            },
+            { once: true }
+          );
+          document.head.appendChild(logoScript);
+        },
+        { once: true }
+      );
+      threeScript.addEventListener(
+        'error',
+        () => {
+          console.error('Three.js could not be loaded for the intro logo animation.');
+        },
+        { once: true }
+      );
       document.head.appendChild(threeScript);
     }
 
@@ -67,7 +87,7 @@ const SPLASH_SEEN_KEY = 'back2you.splashSeen';
     splash.addEventListener('click', leave);
     document.addEventListener('keydown', leave, { once: true });
     // Remove it once its own fade-out ends (letters fire animationend too).
-    splash.addEventListener('animationend', event => {
+    splash.addEventListener('animationend', (event) => {
       if (event.target === splash && event.animationName === 'splash-out') splash.remove();
     });
   });
@@ -100,8 +120,7 @@ function installDashboardBackGuard() {
   restoreDashboardEntry();
   restoreDashboardEntry();
   window.addEventListener('popstate', () => {
-    const logoutModal = document.getElementById('adminLogoutModal')
-      || document.getElementById('logoutConfirmModal');
+    const logoutModal = document.getElementById('adminLogoutModal') || document.getElementById('logoutConfirmModal');
     if (logoutModal?.classList.contains('open')) {
       restoreDashboardEntry();
       return;
@@ -149,7 +168,9 @@ function resolveTheme() {
     savedDevice = localStorage.getItem(THEME_DEVICE_KEY);
     if ((saved === 'light' || saved === 'dark') && saved !== device && savedDevice === device) return saved;
     clearThemeOverride();
-  } catch { /* storage blocked: just follow the device */ }
+  } catch {
+    /* storage blocked: just follow the device */
+  }
   return device;
 }
 
@@ -160,7 +181,11 @@ function loadTheme() {
 
 // The device switched between light and dark: follow it, with the same cross-fade.
 deviceDarkQuery.addEventListener('change', () => {
-  try { clearThemeOverride(); } catch { /* ignore */ }
+  try {
+    clearThemeOverride();
+  } catch {
+    /* ignore */
+  }
   applyTheme(deviceTheme());
 });
 
@@ -180,7 +205,9 @@ function switchTheme(nextTheme) {
       localStorage.setItem(THEME_STORAGE_KEY, nextTheme);
       localStorage.setItem(THEME_DEVICE_KEY, deviceTheme());
     }
-  } catch { /* storage blocked: the choice lasts for this page only */ }
+  } catch {
+    /* storage blocked: the choice lasts for this page only */
+  }
   applyTheme(nextTheme);
 }
 
@@ -206,8 +233,9 @@ function applyTheme(nextTheme) {
 
 // Sun is shown in light mode, moon in dark mode. Same markup and styling as the other .ui-icon SVGs.
 const THEME_TOGGLE_ICON_PATHS = {
-  light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>',
-  dark: '<path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14z"/>'
+  light:
+    '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>',
+  dark: '<path d="M20.5 14A8.5 8.5 0 0 1 10 3.5 8.5 8.5 0 1 0 20.5 14z"/>',
 };
 
 function themeToggleIconHtml(theme) {
@@ -217,7 +245,7 @@ function themeToggleIconHtml(theme) {
 
 function updateThemeIcon() {
   const theme = document.documentElement.getAttribute('data-theme') || 'dark';
-  document.querySelectorAll('.theme-toggle').forEach(button => {
+  document.querySelectorAll('.theme-toggle').forEach((button) => {
     button.innerHTML = themeToggleIconHtml(theme);
     button.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
     button.setAttribute('aria-label', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
@@ -226,10 +254,10 @@ function updateThemeIcon() {
 
 function initNav() {
   updateThemeIcon();
-  document.querySelectorAll('.theme-toggle').forEach(button => {
+  document.querySelectorAll('.theme-toggle').forEach((button) => {
     if (button.dataset.themeBound === 'true') return;
     button.dataset.themeBound = 'true';
-    button.addEventListener('click', event => {
+    button.addEventListener('click', (event) => {
       event.preventDefault();
       event.stopPropagation();
       toggleTheme();
@@ -255,7 +283,8 @@ function initializeMobileDrawer(navbar) {
     closeButton.type = 'button';
     closeButton.className = 'mobile-drawer-close';
     closeButton.setAttribute('aria-label', 'Close navigation menu');
-    closeButton.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>';
+    closeButton.innerHTML =
+      '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg>';
   }
 
   let drawerHeader = links.querySelector('.mobile-drawer-header');
@@ -296,13 +325,19 @@ function initializeMobileDrawer(navbar) {
     links.append(footer);
   }
 
-  links.querySelectorAll('a, .nav-register-mobile').forEach(link => {
+  links.querySelectorAll('a, .nav-register-mobile').forEach((link) => {
     const label = link.textContent.trim().toLowerCase();
-    link.dataset.mobileIcon = label.includes('report') ? 'report'
-      : label.includes('register') ? 'register'
-        : label.includes('item') || label.includes('browse') ? 'items'
-          : label.includes('about') ? 'about'
-          : label.includes('dashboard') ? 'dashboard' : '';
+    link.dataset.mobileIcon = label.includes('report')
+      ? 'report'
+      : label.includes('register')
+        ? 'register'
+        : label.includes('item') || label.includes('browse')
+          ? 'items'
+          : label.includes('about')
+            ? 'about'
+            : label.includes('dashboard')
+              ? 'dashboard'
+              : '';
   });
 
   let backdrop = navbar.querySelector('.nav-drawer-backdrop');
@@ -329,8 +364,7 @@ function initializeMobileDrawer(navbar) {
       new MutationObserver(() => {
         syncMobileHeaderControls(navbar);
         syncMobileDrawerAccount(navbar);
-      })
-        .observe(accountSlot, { childList: true, subtree: true });
+      }).observe(accountSlot, { childList: true, subtree: true });
     }
   }
 }
@@ -370,7 +404,7 @@ function syncMobileHeaderControls(navbar) {
   if ((authenticated || hasFinderNotifications) && notification && !navbar.classList.contains('admin-navbar')) {
     notification.classList.add('mobile-header-notification-source');
     if (mobileNotification) mobileNotification.remove();
-    notifications.forEach(candidate => {
+    notifications.forEach((candidate) => {
       if (candidate !== notification) candidate.remove();
     });
   } else if (authenticated && notification && navbar.classList.contains('admin-navbar')) {
@@ -378,7 +412,7 @@ function syncMobileHeaderControls(navbar) {
       mobileNotification = notification.cloneNode(true);
       mobileNotification.classList.add('mobile-header-notification');
       mobileNotification.removeAttribute('id');
-      mobileNotification.querySelectorAll('[id]').forEach(element => element.removeAttribute('id'));
+      mobileNotification.querySelectorAll('[id]').forEach((element) => element.removeAttribute('id'));
       actions.append(mobileNotification);
     }
   } else {
@@ -394,9 +428,10 @@ function syncMobileDrawerAccount(navbar) {
 
   const account = navbar.querySelector('.user-pill, .user-account-wrap');
   const name = account && account.querySelector('.user-name, .user-account-name')?.textContent.trim();
-  const role = account?.querySelector('.role-badge')?.textContent.trim()
-    || account?.dataset.role
-    || (navbar.classList.contains('admin-navbar') ? 'Administrator' : '');
+  const role =
+    account?.querySelector('.role-badge')?.textContent.trim() ||
+    account?.dataset.role ||
+    (navbar.classList.contains('admin-navbar') ? 'Administrator' : '');
 
   profile.replaceChildren();
   profile.hidden = !name;
@@ -404,7 +439,12 @@ function syncMobileDrawerAccount(navbar) {
     const avatar = document.createElement('span');
     avatar.className = 'mobile-drawer-avatar';
     avatar.setAttribute('aria-hidden', 'true');
-    avatar.textContent = name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase();
+    avatar.textContent = name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0])
+      .join('')
+      .toUpperCase();
 
     const details = document.createElement('span');
     details.className = 'mobile-drawer-account-details';
@@ -445,14 +485,15 @@ function syncButtonSelect(select) {
   const selectedOption = select.options[select.selectedIndex];
   trigger.textContent = selectedOption ? selectedOption.textContent.trim() : 'Select an option...';
   trigger.classList.toggle('has-value', Boolean(select.value));
-  menu.querySelectorAll('[role="option"]').forEach(button => {
+  menu.querySelectorAll('[role="option"]').forEach((button) => {
     const selected = button.dataset.value === select.value;
     button.setAttribute('aria-selected', String(selected));
     button.classList.toggle('selected', selected);
   });
 
-  const selectedButton = [...menu.querySelectorAll('[role="option"]')]
-    .find(button => button.dataset.value === select.value);
+  const selectedButton = [...menu.querySelectorAll('[role="option"]')].find(
+    (button) => button.dataset.value === select.value
+  );
   if (selectedButton) selectedButton.scrollIntoView({ block: 'nearest' });
 }
 
@@ -465,7 +506,7 @@ function closeButtonSelect(control, returnFocus = false) {
 
 function renderButtonSelectOptions(select, menu) {
   menu.replaceChildren();
-  const addOption = option => {
+  const addOption = (option) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'button-select-option';
@@ -485,7 +526,7 @@ function renderButtonSelectOptions(select, menu) {
     menu.append(button);
   };
 
-  [...select.children].forEach(child => {
+  [...select.children].forEach((child) => {
     if (child.tagName === 'OPTGROUP') {
       const group = document.createElement('div');
       group.className = 'button-select-group-label';
@@ -528,23 +569,23 @@ function enhanceSelect(select) {
   trigger.addEventListener('click', () => {
     syncButtonSelect(select);
     const opening = !control.classList.contains('open');
-    document.querySelectorAll('.button-select.open').forEach(openSelect => closeButtonSelect(openSelect));
+    document.querySelectorAll('.button-select.open').forEach((openSelect) => closeButtonSelect(openSelect));
     control.classList.toggle('open', opening);
     trigger.setAttribute('aria-expanded', String(opening));
   });
-  trigger.addEventListener('keydown', event => {
+  trigger.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
       event.preventDefault();
       if (!control.classList.contains('open')) trigger.click();
       const options = [...menu.querySelectorAll('[role="option"]:not(:disabled)')];
-      const selectedIndex = options.findIndex(option => option.getAttribute('aria-selected') === 'true');
+      const selectedIndex = options.findIndex((option) => option.getAttribute('aria-selected') === 'true');
       options[Math.max(0, selectedIndex)].focus();
     } else if (event.key === 'Escape' && control.classList.contains('open')) {
       event.preventDefault();
       closeButtonSelect(control);
     }
   });
-  menu.addEventListener('keydown', event => {
+  menu.addEventListener('keydown', (event) => {
     const options = [...menu.querySelectorAll('[role="option"]:not(:disabled)')];
     const currentIndex = options.indexOf(document.activeElement);
     if (event.key === 'Escape') {
@@ -569,10 +610,10 @@ function enhanceSelect(select) {
 
 function initButtonSelects() {
   document.querySelectorAll('select').forEach(enhanceSelect);
-  const observer = new MutationObserver(records => {
-    records.forEach(record => {
+  const observer = new MutationObserver((records) => {
+    records.forEach((record) => {
       if (record.type === 'childList') {
-        record.addedNodes.forEach(node => {
+        record.addedNodes.forEach((node) => {
           if (node.nodeType !== Node.ELEMENT_NODE) return;
           if (node.matches('select')) enhanceSelect(node);
           node.querySelectorAll('select').forEach(enhanceSelect);
@@ -587,11 +628,11 @@ function initButtonSelects() {
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  document.addEventListener('click', event => {
+  document.addEventListener('click', (event) => {
     if (event.target.closest('.button-select')) return;
-    document.querySelectorAll('.button-select.open').forEach(control => closeButtonSelect(control));
+    document.querySelectorAll('.button-select.open').forEach((control) => closeButtonSelect(control));
   });
-  document.querySelectorAll('form').forEach(form => {
+  document.querySelectorAll('form').forEach((form) => {
     form.addEventListener('reset', () => {
       window.setTimeout(() => form.querySelectorAll('select').forEach(syncButtonSelect));
     });
@@ -642,12 +683,18 @@ function handleNavPageLeave(event) {
   if (!link || link.target === '_blank' || link.hasAttribute('download')) return false;
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
   let url;
-  try { url = new URL(link.href, location.href); } catch { return false; }
+  try {
+    url = new URL(link.href, location.href);
+  } catch {
+    return false;
+  }
   if (url.origin !== location.origin) return false;
   if (url.pathname === location.pathname && url.hash) return false; // same-page anchors (#items, #report) keep their own handling
   event.preventDefault();
   document.documentElement.classList.add('page-leaving');
-  setTimeout(() => { location.href = url.href; }, 140);
+  setTimeout(() => {
+    location.href = url.href;
+  }, 140);
   return true;
 }
 
@@ -656,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNav();
   initButtonSelects();
 });
-document.addEventListener('click', event => {
+document.addEventListener('click', (event) => {
   const itemsLink = event.target.closest('.navbar .nav-links a[href="#items"]');
   const itemsSection = document.getElementById('items');
   if (itemsLink && itemsSection) {
@@ -701,15 +748,15 @@ document.addEventListener('click', event => {
     return;
   }
 
-  document.querySelectorAll('.nav-links.open').forEach(links => {
+  document.querySelectorAll('.nav-links.open').forEach((links) => {
     const navbar = links.closest('.navbar');
     if (event.target.closest('.nav-links a, .nav-links button')) {
       closeMobileNav(navbar);
     }
   });
 });
-document.addEventListener('keydown', event => {
+document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    document.querySelectorAll('.nav-links.open').forEach(links => closeMobileNav(links.closest('.navbar'), true));
+    document.querySelectorAll('.nav-links.open').forEach((links) => closeMobileNav(links.closest('.navbar'), true));
   }
 });

@@ -32,7 +32,7 @@ const PROMPT = [
   'a blurry or low-quality one, is NOT a violation. When in doubt, do not flag it.',
   '',
   'Reply with ONLY a JSON object, no prose and no code fence:',
-  '  {"appropriate": true or false, "reason": "short reason if false, else \\"\\""}'
+  '  {"appropriate": true or false, "reason": "short reason if false, else \\"\\""}',
 ].join('\n');
 
 async function callClaude(file) {
@@ -45,29 +45,37 @@ async function callClaude(file) {
       headers: {
         'content-type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: MODERATION_MODEL,
         max_tokens: 200,
         temperature: 0,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: file.mimetype, data: file.buffer.toString('base64') } },
-            { type: 'text', text: PROMPT }
-          ]
-        }]
-      })
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: { type: 'base64', media_type: file.mimetype, data: file.buffer.toString('base64') },
+              },
+              { type: 'text', text: PROMPT },
+            ],
+          },
+        ],
+      }),
     });
     if (!response.ok) throw new Error(`Claude API responded ${response.status}`);
     const payload = await response.json();
     const text = (payload.content || [])
-      .filter(block => block && block.type === 'text')
-      .map(block => block.text)
+      .filter((block) => block && block.type === 'text')
+      .map((block) => block.text)
       .join('')
       .trim();
-    const json = text.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    const json = text
+      .replace(/^```(?:json)?/i, '')
+      .replace(/```$/, '')
+      .trim();
     return JSON.parse(json);
   } finally {
     clearTimeout(timer);
@@ -94,7 +102,7 @@ async function moderateImage(file) {
     return {
       allowed: result.appropriate,
       reason: result.appropriate ? '' : String(result.reason || '').slice(0, 200),
-      checked: true
+      checked: true,
     };
   } catch (error) {
     console.warn('Image moderation check failed; allowing the upload:', error.message);
