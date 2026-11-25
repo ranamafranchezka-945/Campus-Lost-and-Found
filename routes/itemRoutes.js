@@ -833,11 +833,12 @@ router.patch('/claims/:claimId/handover', requireRole('admin'), (req, res) => {
   res.json({ success: true, handover: claim.handover });
 });
 
-// ── Handover meetup: one-time location sharing on an approved claim ────────
+// ── Handover meetup: live location sharing on an approved claim ────────────
 // The owner (who claimed the item) and the finder (who reported it found) can ask
 // each other for their current location to arrange the handover. Nothing is shared
-// until the other person agrees; a shared location is one reading that is deleted
-// after an hour, or earlier when its sender stops sharing.
+// until the other person agrees; once shared, the sender's device keeps posting
+// updated readings as they move, each one resetting the hour-long expiry, until
+// either the hour passes with no new reading or the sender stops sharing.
 //   claim.meetup[requesterId] = { status: 'pending' | 'shared' | 'declined' | 'stopped' | 'expired',
 //                                 createdAt, respondedAt, location? }  (location = the other person's)
 const MEETUP_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
@@ -950,13 +951,17 @@ router.post('/claims/:claimId/meetup/request', requireAuth, async (req, res) => 
   res.status(201).json({ success: true, message: `We asked ${otherName} to share their location.` });
 });
 
-// POST /api/items/claims/:claimId/meetup/respond - Share my location once, or decline.
+// POST /api/items/claims/:claimId/meetup/respond - Share my location (once, and again
+// as I move while sharing stays on), or decline.
 router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
   const context = loadMeetup(req, res);
   if (!context) return;
   const { claims, claim, other } = context;
   const request = claim.meetup[String(other.id)];
-  if (!request || request.status !== 'pending') {
+  // A later 'share' call while already 'shared' is a live-tracking update, not a
+  // fresh response to a request - the request only stays 'pending' once.
+  const isTrackingUpdate = request?.status === 'shared' && req.body.action === 'share';
+  if (!request || (request.status !== 'pending' && !isTrackingUpdate)) {
     return res.status(404).json({ success: false, message: 'There is no location request waiting for you.' });
   }
   const now = new Date();
@@ -974,7 +979,7 @@ router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
   const latitude = Number(req.body.latitude);
   const longitude = Number(req.body.longitude);
   const accuracy = Number(req.body.accuracy);
-  const note = sanitizeString(req.body.note || '');
+  const incomingNote = sanitizeString(req.body.note || '');
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
       !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
     return res.status(400).json({ success: false, message: 'Your location could not be read. Please try again.' });
@@ -982,9 +987,12 @@ router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
   if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 5000) {
     return res.status(400).json({ success: false, message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.' });
   }
-  if (note.length > 160) {
+  if (incomingNote.length > 160) {
     return res.status(400).json({ success: false, message: 'The note must be 160 characters or fewer.' });
   }
+  // A background tracking update carries no new note text - keep whatever note was
+  // last shared instead of blanking it out.
+  const note = incomingNote || (isTrackingUpdate ? (request.location?.note || '') : '');
 
   request.status = 'shared';
   request.respondedAt = now.toISOString();
@@ -997,8 +1005,11 @@ router.post('/claims/:claimId/meetup/respond', requireAuth, (req, res) => {
     expiresAt: new Date(now.getTime() + MEETUP_LOCATION_TTL_MS).toISOString()
   };
   saveClaims(claims);
-  res.json({ success: true, message: `Your location is shared with ${firstName(other.fullName, 'them')} for one hour.`,
-    expiresAt: request.location.expiresAt });
+  res.json({
+    success: true,
+    message: isTrackingUpdate ? 'Location updated.' : `Your location is shared with ${firstName(other.fullName, 'them')} for one hour, and will keep updating as you move.`,
+    expiresAt: request.location.expiresAt
+  });
 });
 
 // POST /api/items/claims/:claimId/meetup/stop - Delete the location I shared.
@@ -1558,6 +1569,7 @@ function registeredMeetupAction(role) {
     conversation.meetup = conversation.meetup || {};
     const otherRole = role === 'owner' ? 'finder' : 'owner';
     const action = req.params.action;
+    let isTrackingUpdate = false;
 
     if (action === 'request') {
       const existing = conversation.meetup[role];
@@ -1578,7 +1590,10 @@ function registeredMeetupAction(role) {
       changed = true;
     } else if (action === 'respond') {
       const request = conversation.meetup[otherRole];
-      if (!request || request.status !== 'pending') {
+      // A later 'share' call while already 'shared' is a live-tracking update, not a
+      // fresh response to a request - the request only stays 'pending' once.
+      isTrackingUpdate = request?.status === 'shared' && req.body.action === 'share';
+      if (!request || (request.status !== 'pending' && !isTrackingUpdate)) {
         return res.status(404).json({ success: false, message: 'There is no location request waiting for you.' });
       }
       const now = new Date();
@@ -1590,7 +1605,7 @@ function registeredMeetupAction(role) {
         const latitude = Number(req.body.latitude);
         const longitude = Number(req.body.longitude);
         const accuracy = Number(req.body.accuracy);
-        const note = sanitizeString(req.body.note || '');
+        const incomingNote = sanitizeString(req.body.note || '');
         if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
             !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
           return res.status(400).json({ success: false, message: 'Your location could not be read. Please try again.' });
@@ -1598,9 +1613,12 @@ function registeredMeetupAction(role) {
         if (!Number.isFinite(accuracy) || accuracy < 0 || accuracy > 5000) {
           return res.status(400).json({ success: false, message: 'Your location is too imprecise to share. Turn on GPS or move near a window and try again.' });
         }
-        if (note.length > 160) {
+        if (incomingNote.length > 160) {
           return res.status(400).json({ success: false, message: 'The note must be 160 characters or fewer.' });
         }
+        // A background tracking update carries no new note text - keep whatever note
+        // was last shared instead of blanking it out.
+        const note = incomingNote || (isTrackingUpdate ? (request.location?.note || '') : '');
         request.status = 'shared';
         request.respondedAt = now.toISOString();
         request.location = {
@@ -1638,7 +1656,8 @@ function registeredMeetupAction(role) {
       message: action === 'request' ? `We asked ${recipient} to share their location.`
         : action === 'stop' ? 'You stopped sharing your location. It has been deleted.'
           : req.body.action === 'decline' ? 'You declined to share your location.'
-            : `Your location is shared with ${recipient} for one hour.`,
+            : isTrackingUpdate ? 'Location updated.'
+              : `Your location is shared with ${recipient} for one hour, and will keep updating as you move.`,
       conversation: registeredConversationView(context)
     });
   });
