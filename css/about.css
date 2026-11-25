@@ -145,10 +145,6 @@
 
 :root .about-page .benefit-row p a:link,
 :root .about-page .benefit-row p a:visited {
-  display: inline;
-  padding: 0 0.3em;
-  border-radius: 0.25em;
-  background-color: #1d4ed8;
   color: #ffffff;
   font-weight: 700;
   text-decoration: underline;
@@ -156,10 +152,9 @@
   text-underline-offset: 0.15em;
 }
 
-:root .about-page .benefit-row p a:hover,
-:root .about-page .benefit-row p a:focus-visible {
-  background-color: #1e40af;
-  color: #ffffff;
+:root[data-theme='light'] .about-page .benefit-row p a:link,
+:root[data-theme='light'] .about-page .benefit-row p a:visited {
+  color: #551a8b;
 }
 
 :root .about-page .benefit-row p a:focus-visible {
