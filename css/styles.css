@@ -118,7 +118,7 @@ html {
 }
 
 /* opacity + transform only: both are compositor-only (no layout, no repaint), so this
-   stays smooth on low-end devices no matter how heavy the page underneath it is. */
+  stays smooth on low-end devices no matter how heavy the page underneath it is. */
 @keyframes app-page-exit {
   to {
     opacity: 0;
