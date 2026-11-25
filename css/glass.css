@@ -363,7 +363,7 @@
   border: 1px solid var(--badge-vault-border);
 }
 
-/* ── Pills: buttons, chips, tabs, pages, search ─────────────────────────── */
+/* ── Pills: buttons, chips, tabs, pages, search ── */
 :root .btn,
 :root .btn-danger,
 :root .btn-success {
@@ -481,7 +481,7 @@
   border: 1px solid var(--control-border);
 }
 
-/* ── Floating layers: bars, popups, dropdowns, toasts (real blur) ───────── */
+/* ── Floating layers: bars, popups, dropdowns, toasts (real blur) ── */
 :root .navbar,
 :root .site-footer {
   background: var(--bar-bg);
@@ -557,7 +557,7 @@
   backdrop-filter: blur(var(--blur-float)) saturate(170%);
 }
 
-/* ── Accessibility and fallbacks ────────────────────────────────────────── */
+/* ── Accessibility and fallbacks ── */
 /* People who ask for less transparency get solid surfaces in the same layout. */
 @media (prefers-reduced-transparency: reduce) {
   :root {
