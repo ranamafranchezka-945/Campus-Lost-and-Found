@@ -143,6 +143,19 @@
   line-height: 1.7;
 }
 
+:root .about-page .benefit-row p a {
+  color: var(--blue-main);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.15em;
+}
+
+:root .about-page .benefit-row p a:hover,
+:root .about-page .benefit-row p a:focus-visible {
+  color: var(--blue-light);
+}
+
 .account-benefits {
   display: grid;
   gap: .75rem;
