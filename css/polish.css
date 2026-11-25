@@ -4,11 +4,11 @@
 
 :root {
   /* Room the footer and its top margin take up; short pages subtract it so the
-     footer still sits at the bottom of the screen. */
+  footer still sits at the bottom of the screen. */
   --footer-space: 8rem;
 }
 
-/* ── Page frame: the footer ends the page instead of covering it ────────── */
+/* ── Page frame: the footer ends the page instead of covering it ── */
 :root body {
   padding-bottom: 0;
 }
@@ -123,7 +123,7 @@
   }
 }
 
-/* ── Home: hero ─────────────────────────────────────────────────────────── */
+/* ── Home: hero ── */
 :root .hero-name {
   margin-bottom: 0.35rem;
 }
@@ -168,7 +168,7 @@
   border: 0;
 }
 
-/* ── Home: section headers (same type scale as the About page) ──────────── */
+/* ── Home: section headers (same type scale as the About page) ── */
 :root .section-head {
   display: flex;
   flex-wrap: wrap;
@@ -216,10 +216,10 @@
   display: none;
 }
 
-/* ── Home: item cards ───────────────────────────────────────────────────── */
+/* ── Home: item cards ── */
 :root #items .projects-grid.items-grid:not(.registered-belongings-grid) {
   /* At most three cards per row: each track is at least a third of the row
-     (minus the two 1.25rem gaps), and at least 15.5rem where the row is wider. */
+    (minus the two 1.25rem gaps), and at least 15.5rem where the row is wider. */
   grid-template-columns: repeat(auto-fill, minmax(max(min(100%, 15.5rem), calc((100% - 2.5rem) / 3)), 1fr)) !important;
   grid-auto-rows: auto !important;
   align-items: stretch !important;
@@ -531,7 +531,7 @@
   opacity: 0.86;
 }
 
-/* ── Portal hero globe ──────────────────────────────────────────────────── */
+/* ── Portal hero globe ── */
 .portal-hero-avatar {
   flex: 0 0 min(40%, 380px);
   text-align: center;
@@ -637,7 +637,7 @@
   text-transform: none;
 }
 
-/* ── Admin: tab headers ─────────────────────────────────────────────────── */
+/* ── Admin: tab headers ── */
 :root .claims-tab-intro {
   gap: 0.75rem 1.5rem;
   margin-bottom: 1.25rem;
