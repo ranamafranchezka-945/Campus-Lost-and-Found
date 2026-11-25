@@ -791,9 +791,9 @@
   }
 
   /* Tighter spacing so the whole sticky form fits below the navbar on a 1080p
-     screen. Text and field sizes stay the same; only the gaps shrink.
-     !important where the spacing comes from inline styles or glass.css's
-     !important panel padding. */
+    screen. Text and field sizes stay the same; only the gaps shrink.
+    !important where the spacing comes from inline styles or glass.css's
+    !important panel padding. */
   :root .browse-report-layout > .tools-section {
     padding: 1.5rem !important;
   }
