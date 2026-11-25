@@ -858,9 +858,9 @@
   }
 }
 
-/* ── Report form: lost / found switch ───────────────────────────────────── */
+/* ── Report form: lost / found switch ── */
 /* Form labels are inline-block with a bottom margin (styles.css); these are flex
-   buttons, so the icon and text centre together. */
+  buttons, so the icon and text centre together. */
 :root .type-switcher .type-option {
   display: flex;
   align-items: center;
