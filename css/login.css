@@ -124,10 +124,10 @@ body.auth-checking > .auth-checking-state {
 }
 
 /* Account-type toggle (Student/Employee) inside the register form. Deliberately its
-       own small component, not .auth-tab/.auth-tabs (the page-level Sign In/Register
-       switch those used to be, now removed in favour of inline "Sign up"/"Login" links):
-       reusing them here would make this secondary, nested choice look identical to that
-       top-level one instead of visually subordinate to it. */
+  own small component, not .auth-tab/.auth-tabs (the page-level Sign In/Register
+  switch those used to be, now removed in favour of inline "Sign up"/"Login" links):
+  reusing them here would make this secondary, nested choice look identical to that
+  top-level one instead of visually subordinate to it. */
 .account-type-label {
   margin-bottom: 0.4rem;
   color: var(--text-muted);
@@ -193,9 +193,9 @@ body.auth-checking > .auth-checking-state {
 }
 
 /* Custom Google button: Google's own renderButton() can't add a divider line or
-       otherwise change its internal layout, so this is built from scratch and the real,
-       functional Google button (js/login.js) sits invisibly on top of it, full size, so
-       every click still lands on Google's actual element underneath. */
+  otherwise change its internal layout, so this is built from scratch and the real,
+  functional Google button (js/login.js) sits invisibly on top of it, full size, so
+  every click still lands on Google's actual element underneath. */
 .google-custom-btn {
   position: relative;
   display: flex;
