@@ -74,7 +74,7 @@ async function sendVerificationCodeEmail(user, code, purpose, minutesValid) {
     `This code will expire in ${minutesValid} ${minutesValid === 1 ? 'minute' : 'minutes'} and can be used only once, in the browser where it was requested. For your security, do not share this code with anyone, including Back2You staff.`,
     ...(isSignup
       ? [
-        'Once your email address is verified, you will be able to report lost items, report items you have found, and receive alerts when a found item may match your lost-item report. You may also register personal belongings to generate QR recovery stickers.',
+        'Once your email address is verified, you will be able to report lost items, report items you have found, and receive alerts when a found item may match your lost-item report. You may also save personal belongings in your private vault.',
         'If you did not create a Back2You account, please disregard this email. No account will be activated without this code.'
       ]
       : ['If you did not attempt to sign in, please disregard this email and change your password as soon as possible, as someone may know it.'])

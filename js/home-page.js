@@ -14,6 +14,7 @@ const FEED_FILTERS = ['all', 'lost', 'found', 'claimed', 'registered'];
 const FEED_SORTS = ['newest', 'oldest', 'title'];
 const FINDER_CONVERSATIONS_STORAGE_KEY = 'back2youFinderConversations';
 let accountUnreadNotificationCount = 0;
+let lastDisplayedUnreadNotificationCount = null;
 
 function clearStoredAuth() {
   ['adminToken', 'currentUser', 'userRole'].forEach(key => {
@@ -46,7 +47,10 @@ function renderAuthenticatedHeader(user) {
   if (slot) {
     slot.innerHTML = `
       <button type="button" id="notifBellBtn" data-action="openNotificationsModal" class="notif-bell-btn" title="View QR Recovery Alerts">
-        <span class="notif-icon" aria-hidden="true">🔔</span><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
+        <svg class="notif-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
+          <path d="M10 21h4" />
+        </svg><span id="notifCountBadge" class="notif-badge" style="display:none;">0</span>
       </button>
       <div class="user-account-wrap" data-role="${roleLabel}">
         <button type="button" class="user-account-trigger" id="userProfileBtn" data-action="toggleUserProfileMenu" aria-haspopup="menu" aria-expanded="false" aria-controls="userProfileMenu" aria-label="Account menu for ${escapeHtml(displayName)}">
@@ -740,7 +744,7 @@ function renderItemsGrid(items) {
           <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏷️</div>
           <h3 style="font-size: 1.15rem; font-weight: 800; color: #93c5fd; margin-bottom: 0.4rem;">Your Belongings Vault is Empty</h3>
           <p style="font-size: 0.875rem; color: var(--text-muted); max-width: 480px; margin: 0 auto 1.25rem; line-height: 1.5;">
-            Register your personal laptops, tumblers, water bottles, and binder folders before they get lost to generate your unique, anonymous QR recovery sticker!
+            Save your personal belongings here for private record keeping. Report an item as lost or found to make it eligible for a QR sticker.
           </p>
           <button class="btn btn-primary" data-action="handleOpenRegisterBelonging">+ Register a Belonging Now</button>
         </div>
@@ -794,7 +798,7 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="registered-belonging-protection">
-            🛡️ <strong>Preventive Protection Active:</strong> Paste QR sticker onto this item. If someone scans it, an anonymous notification goes straight to your account.
+            🛡️ <strong>Private Belongings Vault:</strong> These items stay private. Report an item as lost or found if you need to create a QR sticker for its listing.
           </div>
 
           <p class="item-card-description" style="margin-top: 0.25rem;">${escapeHtml(item.desc)}</p>
@@ -806,15 +810,15 @@ function renderItemsGrid(items) {
           </div>
 
           <div class="card-actions" style="margin-top: 1rem;">
-            <button class="btn-sm btn-qr" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}">QR Sticker</button>
             <button class="btn-sm btn-outline btn-finder-test" data-action="openAnonymousFinderModal" data-args="${actionArgs(item.refCode)}">Test Finder Screen</button>
           </div>
         </div>
       `;
     }
 
+    const isClaimed = isItemClaimed(item);
     let badgeHtml = '';
-    if (item.claimed) {
+    if (isClaimed) {
       badgeHtml = '<span class="item-badge badge-claimed">Claimed</span>';
     } else if (item.type === 'lost') {
       badgeHtml = '<span class="item-badge badge-lost">Lost</span>';
@@ -824,7 +828,7 @@ function renderItemsGrid(items) {
 
     let matchBadgeHtml = '';
     if (item.potentialMatch && currentUser) {
-      matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id, item.type)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
+      matchBadgeHtml = `<button type="button" class="btn-match-qr potential-match-badge" data-action="openMatchQrModal" data-args="${actionArgs(item.id, item.potentialMatch.id)}"><span class="potential-match-shimmer" aria-hidden="true"></span><svg aria-hidden="true" focusable="false" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fde68a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3Z"/><path d="m19 14 .9 2.1L22 17l-2.1.9L19 20l-.9-2.1L16 17l2.1-.9L19 14Z"/></svg><span class="potential-match-label">Potential Match</span></button>`;
     }
 
     // Admins and the reporter can both remove a report, lost/found/claimed alike -
@@ -860,7 +864,10 @@ function renderItemsGrid(items) {
         <div class="listing-body">
           <div class="listing-topline">
             ${badgeHtml}
-            ${item.refCode ? `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>` : ''}
+            ${item.refCode ? !canShowItemQr(item)
+              ? `<span class="ref-code listing-ref listing-ref-code" title="Reference code">${escapeHtml(item.refCode)}</span>`
+              : `<button type="button" class="ref-code listing-ref listing-ref-button" title="Open QR sticker" aria-label="Open QR sticker for ${escapeHtml(item.title)} (${escapeHtml(item.refCode)})" data-action="openQrStickerModal" data-args="${actionArgs(item.id)}"><span class="listing-ref-code">${escapeHtml(item.refCode)}</span><span class="listing-ref-action" aria-hidden="true">QR</span></button>`
+              : ''}
           </div>
           <h3 class="listing-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</h3>
           <p class="listing-category">${escapeHtml(item.category || 'Uncategorized')}</p>
@@ -880,6 +887,14 @@ function renderItemsGrid(items) {
   renderItemsPagination(totalPages);
   updateItemsSummary(items.length, (currentPage - 1) * itemsPerPage + 1, (currentPage - 1) * itemsPerPage + pageItems.length);
   updateDescriptionToggles(grid);
+}
+
+function isItemClaimed(item) {
+  return Boolean(item && (item.claimed || item.status === 'claimed'));
+}
+
+function canShowItemQr(item) {
+  return Boolean(item && ['lost', 'found'].includes(item.type) && !isItemClaimed(item));
 }
 
 // Category name → icon symbol defined in index.html (#category-icon-*).
@@ -1045,7 +1060,7 @@ function setLocationFilter(loc) {
   fetchAndRenderItems();
 }
 
-// FEATURE: Digital "Found" QR Code Stickers (Preventive Add-on Feature)
+// Digital QR stickers are available only for unclaimed lost/found reports.
 async function openQrStickerModal(id) {
   let item = loadedItems.find(i => String(i.id) === String(id));
   if (!item) {
@@ -1065,6 +1080,10 @@ async function openQrStickerModal(id) {
   }
   if (!item) {
     showToast('This item is no longer available, so its QR sticker cannot be opened.', true);
+    return;
+  }
+  if (!canShowItemQr(item)) {
+    showToast('QR stickers are available only for unclaimed lost or found reports.', true);
     return;
   }
 
@@ -1139,8 +1158,8 @@ function closeRegisterBelongingModal() {
   if (moreDetails) moreDetails.open = false;
   editingBelongingId = null;
   document.getElementById('registerModalTitle').textContent = 'Register Valuable Belonging';
-  document.getElementById('registerModalSubtitle').textContent = 'Register your laptop, tumbler, or binder before it gets lost to generate an anonymous recovery QR sticker.';
-  document.getElementById('regSubmitBtn').textContent = 'Register & Generate QR Sticker';
+  document.getElementById('registerModalSubtitle').textContent = 'Save your laptop, tumbler, or binder in your private belongings vault. Report it as lost or found if you need a QR sticker.';
+  document.getElementById('regSubmitBtn').textContent = 'Save Belonging';
 }
 
 let activeCategoryField = '';
@@ -1256,12 +1275,7 @@ async function handleRegisterBelongingSubmit(e) {
     }
 
     closeRegisterBelongingModal();
-    showToast('✅ Belonging registered! Your QR sticker is ready.');
-
-    if (isEditing) showToast('Belonging details updated.');
-
-    // Open QR sticker modal for the newly registered item
-    if (!isEditing) openQrStickerModal(data.item.id);
+    showToast(isEditing ? 'Belonging details updated.' : 'Belonging saved in your private vault.');
 
     // Refresh belonging count chip
     fetchMyBelongingsCount();
@@ -1591,23 +1605,25 @@ async function handleAnonymousFinderSubmit(e) {
 // response already enforces (it strips location/contact for anyone but an admin
 // or a party to the match). The other person only becomes visible once a claim
 // exists and the two of them are messaging directly. Either side can start the
-// conversation. The label names whichever role the card itself represents
-// (a found item's card always says "Message the finder", a lost item's card
-// always says "Message the owner"), not who the viewer actually is - someone
-// viewing their own reported item's card gets the same label anyone else would.
-function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole, cardType) {
+// conversation, and the button names the other participant based on the viewer's role.
+function updateMatchConversationButton(canRequestClaim, lostId, foundId, claimId, foundTitle, requesterRole) {
   const button = document.getElementById('matchConversationBtn');
   if (!button) return;
-  button.style.display = canRequestClaim ? '' : 'none';
+  const label = requesterRole === 'owner'
+    ? '💬 Message the finder'
+    : requesterRole === 'finder'
+      ? '💬 Message the owner'
+      : '';
+  button.style.display = canRequestClaim && label ? '' : 'none';
   button.dataset.lostId = lostId || '';
   button.dataset.foundId = foundId || '';
   button.dataset.claimId = claimId || '';
   button.dataset.foundTitle = foundTitle || '';
   button.dataset.role = requesterRole || '';
-  button.textContent = cardType === 'lost' ? '💬 Message the owner' : '💬 Message the finder';
+  if (label) button.textContent = label;
 }
 
-async function openMatchQrModal(lostId, foundId, cardType) {
+async function openMatchQrModal(lostId, foundId) {
   try {
     const response = await fetch(`/api/items/match-reference-token?lostId=${encodeURIComponent(lostId)}&foundId=${encodeURIComponent(foundId)}`);
     const data = await response.json();
@@ -1620,7 +1636,7 @@ async function openMatchQrModal(lostId, foundId, cardType) {
     document.getElementById('matchFoundRef').style.display = '';
     const printAction = document.querySelector('button[data-action="printMatchQr"]');
     if (printAction) printAction.style.display = statusOnly ? 'none' : '';
-    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole, cardType);
+    updateMatchConversationButton(data.canRequestClaim, lost.id, found.id, data.claimId, found.title, data.requesterRole);
 
     document.getElementById('matchLostTitle').textContent  = lost.title  || '—';
     document.getElementById('matchFoundTitle').textContent = found.title || '—';
@@ -1689,9 +1705,7 @@ async function openMatchReferenceFromQr(token) {
     document.getElementById('matchLostLocation').textContent = data.lost.location || 'Location unavailable';
     document.getElementById('matchFoundLocation').textContent = data.found.location || 'Location unavailable';
     document.getElementById('matchQrImage').src = qrImageUrl(window.location.href);
-    // Scanning the QR has no "card clicked" to anchor the label to - the match
-    // reference is printed from the found item's side, so default to that.
-    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole, 'found');
+    updateMatchConversationButton(data.canRequestClaim, data.lost.id, data.found.id, data.claimId, data.found.title, data.requesterRole);
     document.getElementById('matchQrModal').classList.add('open');
   } catch (error) {
     showToast(error.message || 'Could not open match verification.', 'error');
@@ -2481,6 +2495,7 @@ async function loadNotificationsIntoModal() {
       const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+      swayNotificationBellIfNew(unread);
     }
     refreshFinderNotificationsButton();
   } catch (err) {
@@ -2646,10 +2661,22 @@ async function loadMyNotifications() {
       const unread = accountUnreadNotificationCount + getSavedFinderConversations().length;
       badge.textContent = unread;
       badge.style.display = unread > 0 ? 'inline-flex' : 'none';
+      swayNotificationBellIfNew(unread);
     }
   } catch (error) {
     console.error('Could not refresh notification count:', error);
   }
+}
+
+function swayNotificationBellIfNew(unreadCount) {
+  if (lastDisplayedUnreadNotificationCount !== null && unreadCount > lastDisplayedUnreadNotificationCount) {
+    document.querySelectorAll('.notif-bell-btn:not(#finderNotificationsBtn) svg').forEach(icon => {
+      icon.classList.remove('is-swaying');
+      void icon.getBoundingClientRect();
+      icon.classList.add('is-swaying');
+    });
+  }
+  lastDisplayedUnreadNotificationCount = unreadCount;
 }
 
 function getItemPhotoUrl(item) {

@@ -143,6 +143,25 @@
   line-height: 1.7;
 }
 
+:root .about-page .benefit-row p a:link,
+:root .about-page .benefit-row p a:visited {
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.15em;
+}
+
+:root[data-theme='light'] .about-page .benefit-row p a:link,
+:root[data-theme='light'] .about-page .benefit-row p a:visited {
+  color: #551a8b;
+}
+
+:root .about-page .benefit-row p a:focus-visible {
+  outline: 2px solid var(--blue-light);
+  outline-offset: 2px;
+}
+
 .account-benefits {
   display: grid;
   gap: .75rem;
