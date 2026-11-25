@@ -144,7 +144,11 @@
 }
 
 :root .about-page .benefit-row p a {
-  color: var(--blue-main);
+  display: inline;
+  padding: 0 0.3em;
+  border-radius: 0.25em;
+  background-color: #1d4ed8;
+  color: #ffffff;
   font-weight: 700;
   text-decoration: underline;
   text-decoration-thickness: 0.08em;
@@ -153,7 +157,13 @@
 
 :root .about-page .benefit-row p a:hover,
 :root .about-page .benefit-row p a:focus-visible {
-  color: var(--blue-light);
+  background-color: #1e40af;
+  color: #ffffff;
+}
+
+:root .about-page .benefit-row p a:focus-visible {
+  outline: 2px solid var(--blue-light);
+  outline-offset: 2px;
 }
 
 .account-benefits {
