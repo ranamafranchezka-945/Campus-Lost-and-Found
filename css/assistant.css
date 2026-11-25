@@ -374,7 +374,6 @@
 }
 
 /* ── Example prompts ── */
-
 .assistant-examples {
   display: flex;
   flex-wrap: wrap;
@@ -406,8 +405,7 @@
   color: var(--blue-text);
 }
 
-/* ── The flash on a form field the assistant just filled ──────────────────── */
-
+/* ── The flash on a form field the assistant just filled ── */
 .assistant-filled {
   animation: assistant-flash 1.8s ease-out;
   border-radius: 10px;
