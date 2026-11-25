@@ -1784,19 +1784,6 @@ test('owner and finder of an approved claim can share a one-time location, only 
     assert.equal(finderSees.myLocation.status, 'shared');
     assert.equal(finderSees.theirLocation.location, null, 'the finder only sees a location the owner shared');
 
-    // Live tracking: a later 'share' call while already shared updates the position
-    // in place instead of being rejected as "no request waiting" - and an update
-    // with no note text keeps the note already on file rather than blanking it.
-    const tracked = await meetupPost(finderCookie, 'respond', {
-      action: 'share', latitude: 13.42, longitude: 123.38, accuracy: 30
-    });
-    assert.equal(tracked.status, 200);
-    assert.equal((await tracked.json()).message, 'Location updated.');
-    const ownerSeesMoved = await meetupEntry(ownerCookie);
-    assert.equal(ownerSeesMoved.theirLocation.location.latitude, 13.42, 'the shared point moved');
-    assert.equal(ownerSeesMoved.theirLocation.location.note, 'At the library entrance',
-      'a tracking update with no note keeps the note already shared');
-
     // Stopping deletes the stored location.
     assert.equal((await meetupPost(finderCookie, 'stop')).status, 200);
     assert.equal((await meetupEntry(ownerCookie)).theirLocation.status, 'stopped');

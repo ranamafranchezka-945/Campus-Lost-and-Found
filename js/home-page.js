@@ -1899,13 +1899,12 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
           <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="shareMeetupLocation" data-args="${claimArg}">Share my current location</button>
           <button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="declineMeetupLocation" data-args="${claimArg}">Decline</button>
         </div>
-        <p class="meetup-hint">Your location updates live while you're sharing, is shown only to ${other}, and stops the moment you tap Stop sharing (or after an hour of no updates).</p>
+        <p class="meetup-hint">Your location is taken once (no tracking), shown only to ${other}, and deleted after one hour.</p>
       </div>`;
   } else if (mine.status === 'shared' && mine.expiresAt) {
     mineHtml = `
       <div class="meetup-sharing">
-        <p class="meetup-status"><span class="meetup-live" aria-hidden="true"></span>You are live-sharing your location with ${other}, updating as you move.</p>
-        <p class="meetup-hint">Keeps updating until ${meetupTime(mine.expiresAt)} unless you stop sharing sooner.</p>
+        <p class="meetup-status"><span class="meetup-live" aria-hidden="true"></span>You are sharing your location with ${other} until ${meetupTime(mine.expiresAt)}.</p>
         <button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="stopMeetupLocation" data-args="${claimArg}">Stop sharing</button>
       </div>`;
   }
@@ -1974,21 +1973,13 @@ function destroyMeetupMaps() {
   activeMeetupMaps.clear();
 }
 
-// Keeps each live meetup map's last camera view across refreshes (the thread polls
-// every 5s and rebuilds this box's markup each time, which otherwise recreates the
-// map from scratch) - so as the pin moves, it doesn't keep snapping the viewer's own
-// pan/zoom back to a default view centred on the latest point.
-const meetupMapViewState = new Map();
-
 function initMeetupMaps(root = document.getElementById('notificationsList')) {
   if (typeof L === 'undefined' || !root) return;
   root.querySelectorAll('[data-meetup-map]').forEach((container) => {
     const lat = Number(container.dataset.lat);
     const lng = Number(container.dataset.lng);
     const accuracy = Number(container.dataset.accuracy);
-    const savedView = meetupMapViewState.get(container.id);
-    const map = L.map(container, { attributionControl: false })
-      .setView(savedView ? savedView.center : [lat, lng], savedView ? savedView.zoom : MEETUP_MAP_ZOOM);
+    const map = L.map(container, { attributionControl: false }).setView([lat, lng], MEETUP_MAP_ZOOM);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap',
@@ -2008,9 +1999,6 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
         iconAnchor: [9, 9],
       }),
     }).addTo(map);
-    map.on('moveend zoomend', () => {
-      meetupMapViewState.set(container.id, { center: map.getCenter(), zoom: map.getZoom() });
-    });
 
     const attribution = document.createElement('a');
     attribution.className = 'meetup-attribution';
@@ -2024,37 +2012,23 @@ function initMeetupMaps(root = document.getElementById('notificationsList')) {
   });
 }
 
-// Resolves a claim/registered-conversation meetup id (the latter prefixed
-// "registered:") to its request endpoint + any auth header it needs - shared by
-// meetupAction and the silent background tracking updates below.
-function meetupEndpoint(claimId, path) {
-  const registeredId = String(claimId).startsWith('registered:') ? String(claimId).slice('registered:'.length) : null;
-<<<<<<< HEAD
-  const registeredConversation = registeredId && activeRegisteredFinderConversation?.id === registeredId
-    ? activeRegisteredFinderConversation
-    : null;
-  const url = registeredConversation
-    ? `/api/items/registered-conversations/${encodeURIComponent(registeredId)}${registeredConversation.role === 'finder' ? '/guest' : ''}/meetup/${path}`
-    : `/api/items/claims/${encodeURIComponent(claimId)}/meetup/${path}`;
-  const headers = { 'Content-Type': 'application/json' };
-  if (registeredConversation?.role === 'finder') {
-    headers.Authorization = `Bearer ${registeredConversation.token}`;
-  }
-  return { url, headers, registeredConversation };
-}
-
 async function meetupAction(claimId, path, body, button, busyLabel) {
-  const { url, headers, registeredConversation } = meetupEndpoint(claimId, path);
-=======
+  const registeredId = String(claimId).startsWith('registered:') ? String(claimId).slice('registered:'.length) : null;
   const registeredConversation =
     registeredId && activeRegisteredFinderConversation?.id === registeredId ? activeRegisteredFinderConversation : null;
->>>>>>> 7f89a30a27c4b82c4d45d83fd2ff7cfec4d9ed92
   button.disabled = true;
   button.dataset.busy = 'true';
   const label = button.textContent;
   button.textContent = busyLabel;
   try {
-    const res = await fetch(url, {
+    const endpoint = registeredConversation
+      ? `/api/items/registered-conversations/${encodeURIComponent(registeredId)}${registeredConversation.role === 'finder' ? '/guest' : ''}/meetup/${path}`
+      : `/api/items/claims/${encodeURIComponent(claimId)}/meetup/${path}`;
+    const headers = { 'Content-Type': 'application/json' };
+    if (registeredConversation?.role === 'finder') {
+      headers.Authorization = `Bearer ${registeredConversation.token}`;
+    }
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers,
       body: JSON.stringify(body || {}),
@@ -2066,7 +2040,7 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
       await loadMyNotifications();
       if (registeredConversation) await refreshClaimThread();
       else if (activeClaimThreadId === claimId) await refreshClaimThreadMeetup();
-      return true;
+      return;
     }
   } catch (error) {
     showToast('Network error. Please try again.', true);
@@ -2074,7 +2048,6 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
   button.disabled = false;
   delete button.dataset.busy;
   button.textContent = label;
-  return false;
 }
 
 function requestMeetupLocation(claimId, button) {
@@ -2086,69 +2059,10 @@ function declineMeetupLocation(claimId, button) {
 }
 
 function stopMeetupLocation(claimId, button) {
-  stopMeetupTracking(claimId);
   return meetupAction(claimId, 'stop', {}, button, 'Stopping…');
 }
 
-// ── Live tracking while sharing is on ───────────────────────────────────────
-// Once the first reading is shared, the sharer's own device keeps watching its
-// position and quietly posts an updated reading as it moves, so the other person's
-// map follows them instead of showing one fixed pin. Keyed by claimId (or the
-// "registered:<id>" form) so at most one watch runs per conversation.
-const activeMeetupTracking = new Map();
-const MEETUP_TRACK_MIN_INTERVAL_MS = 15000;
-
-function stopMeetupTracking(claimId) {
-  const tracking = activeMeetupTracking.get(String(claimId));
-  if (!tracking) return;
-  navigator.geolocation.clearWatch(tracking.watchId);
-  activeMeetupTracking.delete(String(claimId));
-}
-
-// Safe to call repeatedly (e.g. on every notifications refresh) - a no-op once a
-// watch is already running for this claimId, and silent if the browser can't
-// geolocate or the device never granted permission.
-function ensureMeetupTracking(claimId) {
-  const key = String(claimId);
-  if (activeMeetupTracking.has(key) || !('geolocation' in navigator)) return;
-  let lastSentAt = 0;
-  const watchId = navigator.geolocation.watchPosition(position => {
-    if (Date.now() - lastSentAt < MEETUP_TRACK_MIN_INTERVAL_MS) return;
-    lastSentAt = Date.now();
-    sendMeetupLocationUpdate(claimId, position.coords);
-  }, () => {
-    // Best-effort: a transient GPS error here shouldn't interrupt the last
-    // position already shared, so it's ignored rather than shown to the user.
-  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 });
-  activeMeetupTracking.set(key, { watchId });
-}
-
-// A background position update: no button, no toast - loud feedback for every
-// 15-second GPS tick would drown out the actual conversation.
-async function sendMeetupLocationUpdate(claimId, coords) {
-  const { url, headers } = meetupEndpoint(claimId, 'respond');
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        action: 'share',
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-        accuracy: coords.accuracy
-      })
-    });
-    const data = await res.json();
-    // The other side stopped the request, declined, or the claim closed -
-    // nothing left to update into, so stop watching.
-    if (!data.success) stopMeetupTracking(claimId);
-  } catch (error) {
-    // Network hiccup while moving; the next watch tick will just try again.
-  }
-}
-
-// First reading from the device (GPS where available), sent after the student taps
-// Share; a live watch then takes over so the map keeps following them while they share.
+// One reading from the device (GPS where available), sent only after the student taps Share.
 function shareMeetupLocation(claimId, button) {
   if (!('geolocation' in navigator)) {
     showToast('This browser cannot share a location.', true);
@@ -2159,30 +2073,6 @@ function shareMeetupLocation(claimId, button) {
   button.dataset.busy = 'true';
   const label = button.textContent;
   button.textContent = 'Getting your location…';
-<<<<<<< HEAD
-  navigator.geolocation.getCurrentPosition(position => {
-    button.textContent = label;
-    meetupAction(claimId, 'respond', {
-      action: 'share',
-      latitude: position.coords.latitude,
-      longitude: position.coords.longitude,
-      accuracy: position.coords.accuracy,
-      note
-    }, button, 'Sharing…').then(success => {
-      if (success) ensureMeetupTracking(claimId);
-    });
-  }, error => {
-    button.disabled = false;
-    delete button.dataset.busy;
-    button.textContent = label;
-    const messages = {
-      1: 'Location permission is blocked. Allow location for this site in your browser settings, then try again.',
-      2: 'Your location is not available right now. Turn on GPS or location services and try again.',
-      3: 'Getting your location took too long. Please try again.'
-    };
-    showToast(messages[error.code] || 'Your location could not be read.', true);
-  }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 });
-=======
   navigator.geolocation.getCurrentPosition(
     (position) => {
       button.textContent = label;
@@ -2213,7 +2103,6 @@ function shareMeetupLocation(claimId, button) {
     },
     { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
   );
->>>>>>> 7f89a30a27c4b82c4d45d83fd2ff7cfec4d9ed92
 }
 
 // ── Claim conversation: messages + location sharing + mutual confirm ───────
@@ -2424,9 +2313,6 @@ function renderClaimThreadMeetupNotification(notification) {
     }
   });
   meetupBox.innerHTML = notification ? meetupNotificationHtml(notification, 'thread-', mapExpanded) : '';
-  // If I'm the one sharing (e.g. after a page reload wiped the in-memory watch),
-  // pick tracking back up so the other person's map keeps following me.
-  if (notification?.myLocation?.status === 'shared') ensureMeetupTracking(notification.claimId);
   const mapToggle = meetupBox.querySelector('.meetup-map-toggle');
   if (mapToggle) {
     mapToggle.addEventListener('click', () => {
@@ -2759,11 +2645,6 @@ async function loadNotificationsIntoModal() {
       .join('');
     updateNotificationSelection();
     initMeetupMaps();
-    // If I'm the one sharing on any of these (e.g. after a page reload wiped the
-    // in-memory watch), pick tracking back up for each.
-    notifications
-      .filter(n => n.notificationType === 'meetup' && n.myLocation?.status === 'shared')
-      .forEach(n => ensureMeetupTracking(n.claimId));
 
     // Update badge
     const badge = document.getElementById('notifCountBadge');
