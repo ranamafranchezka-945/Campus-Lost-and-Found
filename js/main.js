@@ -327,17 +327,11 @@ function initializeMobileDrawer(navbar) {
 
   links.querySelectorAll('a, .nav-register-mobile').forEach((link) => {
     const label = link.textContent.trim().toLowerCase();
-    link.dataset.mobileIcon = label.includes('report')
-      ? 'report'
-      : label.includes('register')
-        ? 'register'
-        : label.includes('item') || label.includes('browse')
-          ? 'items'
-          : label.includes('about')
-            ? 'about'
-            : label.includes('dashboard')
-              ? 'dashboard'
-              : '';
+    link.dataset.mobileIcon = label.includes('report') ? 'report'
+      : label.includes('register') ? 'register'
+        : label.includes('item') || label.includes('browse') ? 'items'
+          : label.includes('about') ? 'about'
+          : label.includes('dashboard') ? 'dashboard' : '';
   });
 
   let backdrop = navbar.querySelector('.nav-drawer-backdrop');
@@ -703,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNav();
   initButtonSelects();
 });
-document.addEventListener('click', (event) => {
+document.addEventListener('click', event => {
   const itemsLink = event.target.closest('.navbar .nav-links a[href="#items"]');
   const itemsSection = document.getElementById('items');
   if (itemsLink && itemsSection) {
