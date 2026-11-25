@@ -1490,6 +1490,19 @@ h2 {
   text-align: right;
 }
 
+:root .site-footer .footer-location a:link,
+:root .site-footer .footer-location a:visited {
+  color: #ffffff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+:root[data-theme='light'] .site-footer .footer-location a:link,
+:root[data-theme='light'] .site-footer .footer-location a:visited {
+  color: #551a8b;
+}
+
 /* ── DROPDOWN OPTGROUP & OPTIONS HIGH CONTRAST ── */
 select optgroup {
   background-color: #18181b !important;
