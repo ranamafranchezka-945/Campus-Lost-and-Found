@@ -72,8 +72,7 @@
   border: 1px solid var(--badge-found-border);
 }
 
-/* ── Chat log ─────────────────────────────────────────────────────────────── */
-
+/* ── Chat log ──*/
 .assistant-log {
   max-height: 320px;
   overflow-y: auto;
@@ -164,8 +163,7 @@
   }
 }
 
-/* ── Extracted-field chips ────────────────────────────────────────────────── */
-
+/* ── Extracted-field chips ── */
 .assistant-chips {
   display: flex;
   flex-wrap: wrap;
