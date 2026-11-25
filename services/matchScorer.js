@@ -39,7 +39,11 @@ function pairKey(idA, idB) {
 // Changes to any of these fields invalidate a cached score for this pair.
 function fingerprint(item) {
   return [item.title, item.category, item.desc || item.description || '', item.location]
-    .map(value => String(value || '').trim().toLowerCase())
+    .map((value) =>
+      String(value || '')
+        .trim()
+        .toLowerCase()
+    )
     .join('|');
 }
 
@@ -80,16 +84,16 @@ function drainQueue() {
     const job = queue.shift();
     activeCalls += 1;
     scoreNow(job.itemA, job.itemB)
-      .then(result => {
+      .then((result) => {
         cache.set(job.key, {
           score: result.score,
           reason: result.reason,
           fingerprints: { [job.itemA.id]: fingerprint(job.itemA), [job.itemB.id]: fingerprint(job.itemB) },
-          computedAt: Date.now()
+          computedAt: Date.now(),
         });
         failedAt.delete(job.key);
       })
-      .catch(error => {
+      .catch((error) => {
         failedAt.set(job.key, Date.now());
         console.warn('Match scoring failed for a report pair; the heuristic match stands for now:', error.message);
       })
@@ -109,7 +113,7 @@ function describeItem(item) {
     `Title: ${item.title || '(none)'}`,
     `Category: ${item.category || '(none)'}`,
     `Location: ${item.location || '(none)'}`,
-    `<description>${desc}</description>`
+    `<description>${desc}</description>`,
   ].join('\n  ');
 }
 
@@ -131,7 +135,7 @@ function buildPrompt(lostItem, foundItem) {
     '  {"score": a number from 0 to 1, "reason": "one short phrase, 10 words or fewer"}',
     '',
     'score guide: 0.0-0.3 almost certainly different items; 0.3-0.6 plausible but weak;',
-    '0.6-0.85 likely the same item; 0.85-1.0 very likely the same item.'
+    '0.6-0.85 likely the same item; 0.85-1.0 very likely the same item.',
   ].join('\n');
 }
 
@@ -149,23 +153,26 @@ async function scoreNow(firstItem, secondItem) {
       headers: {
         'content-type': 'application/json',
         'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
         model: MATCH_MODEL,
         max_tokens: 150,
         temperature: 0,
-        messages: [{ role: 'user', content: buildPrompt(lostItem, foundItem) }]
-      })
+        messages: [{ role: 'user', content: buildPrompt(lostItem, foundItem) }],
+      }),
     });
     if (!response.ok) throw new Error(`Claude API responded ${response.status}`);
     const payload = await response.json();
     const text = (payload.content || [])
-      .filter(block => block && block.type === 'text')
-      .map(block => block.text)
+      .filter((block) => block && block.type === 'text')
+      .map((block) => block.text)
       .join('')
       .trim();
-    const json = text.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    const json = text
+      .replace(/^```(?:json)?/i, '')
+      .replace(/```$/, '')
+      .trim();
     const parsed = JSON.parse(json);
     const score = Number(parsed.score);
     if (!Number.isFinite(score) || score < 0 || score > 1) throw new Error('Match score out of range.');
@@ -181,5 +188,5 @@ module.exports = {
   queueScoring,
   MATCH_THRESHOLD,
   // Exported for the tests.
-  __internals: { scoreNow, pairKey, fingerprint, cache }
+  __internals: { scoreNow, pairKey, fingerprint, cache },
 };

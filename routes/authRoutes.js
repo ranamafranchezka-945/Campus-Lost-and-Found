@@ -6,7 +6,14 @@ const path = require('path');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { OAuth2Client } = require('google-auth-library');
-const { validateUserAuth, sanitizeString, passwordStrengthErrors, STUDENT_EMAIL, STAFF_EMAIL, isAdminEmail } = require('../middleware/validate');
+const {
+  validateUserAuth,
+  sanitizeString,
+  passwordStrengthErrors,
+  STUDENT_EMAIL,
+  STAFF_EMAIL,
+  isAdminEmail,
+} = require('../middleware/validate');
 const { sendVerificationCodeEmail, sendSignInNotificationEmail, sendPasswordResetEmail } = require('../services/email');
 const { readJsonArray, writeJsonArray } = require('../services/jsonStore');
 const postgresStore = require('../services/postgresStore');
@@ -26,7 +33,7 @@ const STUDENT_DEPARTMENTS = new Set([
   'College of Health Sciences (CHS)',
   'College of Tourism, Hospitality and Business Management (CTHBM)',
   'College of Technological and Developmental Education (CTDE)',
-  'College of Arts and Sciences (CAS)'
+  'College of Arts and Sciences (CAS)',
 ]);
 
 const VERIFICATION_RESEND_MS = 2 * 60 * 1000;
@@ -60,8 +67,8 @@ function issuePasswordResetToken() {
     fields: {
       passwordResetTokenHash: hashToken(value),
       passwordResetExpiresAt: new Date(now + PASSWORD_RESET_TTL_MS).toISOString(),
-      passwordResetSentAt: new Date(now).toISOString()
-    }
+      passwordResetSentAt: new Date(now).toISOString(),
+    },
   };
 }
 
@@ -141,7 +148,7 @@ async function startOtp(req, user, purpose) {
     codeHash: hashToken(code),
     expiresAt: now + OTP_TTL_MS,
     sentAt: now,
-    attempts: 0
+    attempts: 0,
   };
   return deliverOtpEmail(user, code, purpose);
 }
@@ -156,7 +163,7 @@ function otpResponse(user, purpose, emailSent) {
     resendAfter,
     message: emailSent
       ? `We sent a 6-digit code to ${user.email}.`
-      : `We could not send the code to ${user.email}. Try "Resend code" in ${resendAfter} seconds.`
+      : `We could not send the code to ${user.email}. Try "Resend code" in ${resendAfter} seconds.`,
   };
 }
 
@@ -167,16 +174,16 @@ function sessionUserFor(user) {
     fullName: user.fullName,
     role: user.role,
     department: user.department,
-    studentId: user.studentId
+    studentId: user.studentId,
   };
 }
 
 function authenticateSession(req, user) {
   return new Promise((resolve, reject) => {
-    req.session.regenerate(error => {
+    req.session.regenerate((error) => {
       if (error) return reject(error);
       req.session.user = user;
-      req.session.save(saveError => {
+      req.session.save((saveError) => {
         if (saveError) return reject(saveError);
         resolve();
       });
@@ -201,8 +208,10 @@ function saveBlockedEmails(blockedEmails) {
 }
 
 function isEmailBlocked(email) {
-  const normalized = String(email || '').trim().toLowerCase();
-  return getBlockedEmails().some(entry => entry.email === normalized);
+  const normalized = String(email || '')
+    .trim()
+    .toLowerCase();
+  return getBlockedEmails().some((entry) => entry.email === normalized);
 }
 
 function getAllowedEmails() {
@@ -220,8 +229,10 @@ function isEmailAllowed(email, role) {
   if (role === 'admin') return true;
   const allowedEmails = getAllowedEmails();
   if (allowedEmails.length === 0) return true;
-  const normalized = String(email || '').trim().toLowerCase();
-  return allowedEmails.some(entry => entry.email === normalized);
+  const normalized = String(email || '')
+    .trim()
+    .toLowerCase();
+  return allowedEmails.some((entry) => entry.email === normalized);
 }
 
 function ensureDefaultAdminAccount() {
@@ -232,20 +243,26 @@ function ensureDefaultAdminAccount() {
       throw new Error('ADMIN_EMAIL must be a valid @cspc.edu.ph or @my.cspc.edu.ph address.');
     }
 
-    const existingAdmin = users.find(user => user.email.toLowerCase() === adminEmail);
+    const existingAdmin = users.find((user) => user.email.toLowerCase() === adminEmail);
     if (existingAdmin) {
       if (existingAdmin.role !== 'admin') {
-        throw new Error(`${adminEmail} already belongs to a student account. Run "npm run admin:set" to make it the administrator.`);
+        throw new Error(
+          `${adminEmail} already belongs to a student account. Run "npm run admin:set" to make it the administrator.`
+        );
       }
       if (process.env.NODE_ENV === 'production' && process.env.ADMIN_PASSWORD_RESET === 'true') {
         const password = process.env.ADMIN_PASSWORD;
         if (!password || password.length < 12) {
-          throw new Error('ADMIN_PASSWORD must be configured with at least 12 characters to reset the production admin password.');
+          throw new Error(
+            'ADMIN_PASSWORD must be configured with at least 12 characters to reset the production admin password.'
+          );
         }
 
         existingAdmin.passwordHash = bcrypt.hashSync(password, 10);
         saveUsers(users);
-        console.info(`Production admin password reset completed for ${adminEmail}. Set ADMIN_PASSWORD_RESET=false after verifying login.`);
+        console.info(
+          `Production admin password reset completed for ${adminEmail}. Set ADMIN_PASSWORD_RESET=false after verifying login.`
+        );
       }
       return;
     }
@@ -263,7 +280,7 @@ function ensureDefaultAdminAccount() {
       studentId: 'N/A',
       role: 'admin',
       department: 'Administration',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
     saveUsers(users);
   };
@@ -283,38 +300,39 @@ router.post('/register', validateUserAuth, async (req, res) => {
     if (!emailPattern.test(email)) {
       return res.status(400).json({
         success: false,
-        message: role === 'employee'
-          ? 'Employee registration requires an @cspc.edu.ph email address.'
-          : 'Student registration requires an @my.cspc.edu.ph email address.'
+        message:
+          role === 'employee'
+            ? 'Employee registration requires an @cspc.edu.ph email address.'
+            : 'Student registration requires an @my.cspc.edu.ph email address.',
       });
     }
     if (isEmailBlocked(email)) {
       return res.status(403).json({
         success: false,
-        message: 'This email address is not allowed to register.'
+        message: 'This email address is not allowed to register.',
       });
     }
     if (!isEmailAllowed(email, role)) {
       return res.status(403).json({
         success: false,
-        message: 'Registration is currently restricted. Contact the administrator for access.'
+        message: 'Registration is currently restricted. Contact the administrator for access.',
       });
     }
     if (isRateLimited(registrationAttempts, req.ip, REGISTRATION_LIMIT)) {
       return res.status(429).json({
         success: false,
-        message: 'Too many registrations from this network. Please try again later.'
+        message: 'Too many registrations from this network. Please try again later.',
       });
     }
     const users = getUsers();
 
     // An unconfirmed registration can be replaced: only whoever owns the inbox can
     // enter the emailed code, so squatting on someone's address achieves nothing.
-    const existingIndex = users.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    const existingIndex = users.findIndex((u) => u.email.toLowerCase() === email.toLowerCase());
     if (existingIndex !== -1 && users[existingIndex].emailVerified !== false) {
       return res.status(409).json({
         success: false,
-        message: 'An account with this email address already exists.'
+        message: 'An account with this email address already exists.',
       });
     }
 
@@ -331,7 +349,7 @@ router.post('/register', validateUserAuth, async (req, res) => {
       // inbox. Regenerated on every (re-)registration so a stale pending session from
       // an earlier registration attempt (by someone else) can never be used to set it.
       registrationNonce: crypto.randomBytes(16).toString('hex'),
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
 
     if (existingIndex === -1) users.push(newUser);
@@ -343,12 +361,12 @@ router.post('/register', validateUserAuth, async (req, res) => {
     res.status(201).json({
       success: true,
       verificationRequired: true,
-      ...otpResponse(newUser, 'signup', emailSent)
+      ...otpResponse(newUser, 'signup', emailSent),
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Internal server error during registration.'
+      message: 'Internal server error during registration.',
     });
   }
 });
@@ -383,23 +401,29 @@ router.post('/google', async (req, res) => {
     return res.status(401).json({ success: false, message: 'Could not verify your Google sign-in. Please try again.' });
   }
 
-  const email = String(payload.email || '').trim().toLowerCase();
+  const email = String(payload.email || '')
+    .trim()
+    .toLowerCase();
   if (!payload.email_verified || (!STUDENT_EMAIL.test(email) && !STAFF_EMAIL.test(email))) {
     return res.status(403).json({
       success: false,
-      message: 'Sign in with your CSPC Google account (@my.cspc.edu.ph or @cspc.edu.ph).'
+      message: 'Sign in with your CSPC Google account (@my.cspc.edu.ph or @cspc.edu.ph).',
     });
   }
   if (isEmailBlocked(email)) {
-    return res.status(403).json({ success: false, message: 'This account has been blocked. Contact the administrator.' });
+    return res
+      .status(403)
+      .json({ success: false, message: 'This account has been blocked. Contact the administrator.' });
   }
 
   const role = STUDENT_EMAIL.test(email) ? 'student' : 'employee';
   const users = getUsers();
-  let user = users.find(u => u.email.toLowerCase() === email);
+  let user = users.find((u) => u.email.toLowerCase() === email);
 
   if (!isEmailAllowed(email, user ? user.role : role)) {
-    return res.status(403).json({ success: false, message: 'Sign-in is currently restricted. Contact the administrator for access.' });
+    return res
+      .status(403)
+      .json({ success: false, message: 'Sign-in is currently restricted. Contact the administrator for access.' });
   }
 
   // An account that already has a password is already fully registered: Google proved
@@ -415,7 +439,7 @@ router.post('/google', async (req, res) => {
   if (isRateLimited(registrationAttempts, req.ip, REGISTRATION_LIMIT)) {
     return res.status(429).json({
       success: false,
-      message: 'Too many registrations from this network. Please try again later.'
+      message: 'Too many registrations from this network. Please try again later.',
     });
   }
 
@@ -429,7 +453,7 @@ router.post('/google', async (req, res) => {
     emailVerified: false,
     authProvider: 'google',
     registrationNonce: crypto.randomBytes(16).toString('hex'),
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
   if (user) users[users.indexOf(user)] = newUser;
   else users.push(newUser);
@@ -440,7 +464,7 @@ router.post('/google', async (req, res) => {
   res.status(201).json({
     success: true,
     verificationRequired: true,
-    ...otpResponse(newUser, 'signup', emailSent)
+    ...otpResponse(newUser, 'signup', emailSent),
   });
 });
 
@@ -452,7 +476,7 @@ router.get('/verify-email', (req, res) => {
 
   const users = getUsers();
   const tokenHash = hashToken(token);
-  const user = users.find(u => u.emailVerified === false && u.verificationTokenHash === tokenHash);
+  const user = users.find((u) => u.emailVerified === false && u.verificationTokenHash === tokenHash);
   if (!user) return res.redirect(302, '/login?verified=invalid');
   if (Date.parse(user.verificationExpiresAt) < Date.now()) return res.redirect(302, '/login?verified=expired');
 
@@ -473,28 +497,31 @@ router.post('/login', validateUserAuth, async (req, res) => {
     if (isRateLimited(loginFailures, attemptKey, LOGIN_LIMIT)) {
       return res.status(429).json({
         success: false,
-        message: 'Too many failed sign-in attempts. Please wait 15 minutes and try again.'
+        message: 'Too many failed sign-in attempts. Please wait 15 minutes and try again.',
       });
     }
 
     const users = getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
 
     // Students use @my.cspc.edu.ph, employees use @cspc.edu.ph; an admin account may be on either domain.
     // A pending sign-up (OTP confirmed or not) has no passwordHash yet, so there is no
     // password it could ever match - treat it the same as "no such account".
-    const domainAllowed = Boolean(user) && Boolean(user.passwordHash) && (
-      user.role === 'admin' ? isAdminEmail(email)
-        : user.role === 'employee' ? STAFF_EMAIL.test(email)
-          : STUDENT_EMAIL.test(email)
-    );
+    const domainAllowed =
+      Boolean(user) &&
+      Boolean(user.passwordHash) &&
+      (user.role === 'admin'
+        ? isAdminEmail(email)
+        : user.role === 'employee'
+          ? STAFF_EMAIL.test(email)
+          : STUDENT_EMAIL.test(email));
     // Always run bcrypt so response time does not reveal whether the account exists.
     const isMatch = await bcrypt.compare(password, domainAllowed ? user.passwordHash : DUMMY_PASSWORD_HASH);
     if (!domainAllowed || !isMatch) {
       recordAttempt(loginFailures, attemptKey, LOGIN_LIMIT);
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password.'
+        message: 'Invalid email or password.',
       });
     }
     loginFailures.delete(attemptKey);
@@ -502,13 +529,13 @@ router.post('/login', validateUserAuth, async (req, res) => {
     if (isEmailBlocked(email)) {
       return res.status(403).json({
         success: false,
-        message: 'This account has been blocked. Contact the administrator.'
+        message: 'This account has been blocked. Contact the administrator.',
       });
     }
     if (!isEmailAllowed(email, user.role)) {
       return res.status(403).json({
         success: false,
-        message: 'Sign-in is currently restricted. Contact the administrator for access.'
+        message: 'Sign-in is currently restricted. Contact the administrator for access.',
       });
     }
 
@@ -519,25 +546,34 @@ router.post('/login', validateUserAuth, async (req, res) => {
       const sessionUser = sessionUserFor(user);
       await authenticateSession(req, sessionUser);
       // Fire-and-forget: a slow mail server should never hold up the sign-in response.
-      sendSignInNotificationEmail(sessionUser).catch(error =>
-        console.error('Sign-in notification email could not be sent:', error.message));
+      sendSignInNotificationEmail(sessionUser).catch((error) =>
+        console.error('Sign-in notification email could not be sent:', error.message)
+      );
       return res.json({ success: true, message: 'Login successful.', user: sessionUser });
     }
 
     // Correct password on an unconfirmed account: resend (or reuse) the sign-up code.
     // A code sent to this browser in the last minute is reused instead of re-sent.
     const pending = req.session.otp;
-    const reusable = pending && pending.userId === user.id && pending.purpose === 'signup' &&
+    const reusable =
+      pending &&
+      pending.userId === user.id &&
+      pending.purpose === 'signup' &&
       pending.fingerprint === accountFingerprint(user) &&
-      Date.now() - pending.sentAt < OTP_RESEND_MS && pending.attempts < OTP_MAX_ATTEMPTS;
+      Date.now() - pending.sentAt < OTP_RESEND_MS &&
+      pending.attempts < OTP_MAX_ATTEMPTS;
     const emailSent = reusable ? true : await startOtp(req, user, 'signup');
     const body = otpResponse(user, 'signup', emailSent);
-    res.status(403).json({ success: false, code: 'EMAIL_NOT_VERIFIED', ...body,
-      message: `Please confirm your email first. ${body.message}` });
+    res.status(403).json({
+      success: false,
+      code: 'EMAIL_NOT_VERIFIED',
+      ...body,
+      message: `Please confirm your email first. ${body.message}`,
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Internal server error during login.'
+      message: 'Internal server error during login.',
     });
   }
 });
@@ -547,24 +583,35 @@ router.post('/verify-code', async (req, res) => {
   try {
     const pending = req.session.otp;
     if (!pending) {
-      return res.status(400).json({ success: false, code: 'OTP_MISSING',
-        message: 'This code is no longer valid. Go back and sign in again to get a new one.' });
+      return res.status(400).json({
+        success: false,
+        code: 'OTP_MISSING',
+        message: 'This code is no longer valid. Go back and sign in again to get a new one.',
+      });
     }
     if (Date.now() > pending.expiresAt || pending.attempts >= OTP_MAX_ATTEMPTS) {
-      return res.status(400).json({ success: false, code: 'OTP_EXPIRED',
-        message: 'This code has expired. Tap "Resend code" to get a new one.' });
+      return res.status(400).json({
+        success: false,
+        code: 'OTP_EXPIRED',
+        message: 'This code has expired. Tap "Resend code" to get a new one.',
+      });
     }
     const code = typeof req.body.code === 'string' ? req.body.code.trim() : '';
     if (!/^\d{6}$/.test(code)) {
-      return res.status(400).json({ success: false, code: 'OTP_FORMAT', message: 'Enter the 6-digit code from the email.' });
+      return res
+        .status(400)
+        .json({ success: false, code: 'OTP_FORMAT', message: 'Enter the 6-digit code from the email.' });
     }
 
     const users = getUsers();
-    const user = users.find(u => u.id === pending.userId);
+    const user = users.find((u) => u.id === pending.userId);
     if (!user || accountFingerprint(user) !== pending.fingerprint) {
       delete req.session.otp;
-      return res.status(400).json({ success: false, code: 'OTP_MISSING',
-        message: 'This code is no longer valid. Go back and sign in again to get a new one.' });
+      return res.status(400).json({
+        success: false,
+        code: 'OTP_MISSING',
+        message: 'This code is no longer valid. Go back and sign in again to get a new one.',
+      });
     }
 
     pending.attempts += 1;
@@ -575,9 +622,10 @@ router.post('/verify-code', async (req, res) => {
         success: false,
         code: attemptsLeft > 0 ? 'OTP_INVALID' : 'OTP_EXPIRED',
         attemptsLeft,
-        message: attemptsLeft > 0
-          ? `That code is not right. ${attemptsLeft} ${attemptsLeft === 1 ? 'try' : 'tries'} left.`
-          : 'Too many wrong codes. Tap "Resend code" to get a new one.'
+        message:
+          attemptsLeft > 0
+            ? `That code is not right. ${attemptsLeft} ${attemptsLeft === 1 ? 'try' : 'tries'} left.`
+            : 'Too many wrong codes. Tap "Resend code" to get a new one.',
       });
     }
 
@@ -591,7 +639,7 @@ router.post('/verify-code', async (req, res) => {
         success: true,
         passwordRequired: true,
         email: user.email,
-        message: 'Your CSPC email is verified. Create a password to finish setting up your account.'
+        message: 'Your CSPC email is verified. Create a password to finish setting up your account.',
       });
     }
 
@@ -612,7 +660,7 @@ router.post('/verify-code', async (req, res) => {
     res.json({
       success: true,
       message: pending.purpose === 'signup' ? 'Your email is confirmed. Welcome to Back2You!' : 'Login successful.',
-      user: sessionUser
+      user: sessionUser,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error during verification.' });
@@ -626,16 +674,22 @@ router.post('/complete-registration', async (req, res) => {
   try {
     const pending = req.session.pendingPassword;
     if (!pending) {
-      return res.status(400).json({ success: false, code: 'PENDING_MISSING',
-        message: 'Your verification has expired. Please register again.' });
+      return res.status(400).json({
+        success: false,
+        code: 'PENDING_MISSING',
+        message: 'Your verification has expired. Please register again.',
+      });
     }
 
     const users = getUsers();
-    const user = users.find(u => u.id === pending.userId);
+    const user = users.find((u) => u.id === pending.userId);
     if (!user || user.passwordHash || accountFingerprint(user) !== pending.fingerprint) {
       delete req.session.pendingPassword;
-      return res.status(400).json({ success: false, code: 'PENDING_MISSING',
-        message: 'Your verification has expired. Please register again.' });
+      return res.status(400).json({
+        success: false,
+        code: 'PENDING_MISSING',
+        message: 'Your verification has expired. Please register again.',
+      });
     }
 
     const errors = passwordStrengthErrors(req.body.password, minimumPasswordLength(user));
@@ -661,24 +715,34 @@ router.post('/resend-code', async (req, res) => {
   try {
     const pending = req.session.otp;
     if (!pending) {
-      return res.status(400).json({ success: false, code: 'OTP_MISSING',
-        message: 'Go back and sign in again to get a new code.' });
+      return res
+        .status(400)
+        .json({ success: false, code: 'OTP_MISSING', message: 'Go back and sign in again to get a new code.' });
     }
     const waitMs = OTP_RESEND_MS - (Date.now() - pending.sentAt);
     if (waitMs > 0) {
       const retryAfter = Math.ceil(waitMs / 1000);
-      return res.status(429).json({ success: false, retryAfter,
-        message: `Please wait ${retryAfter} seconds before requesting another code.` });
+      return res.status(429).json({
+        success: false,
+        retryAfter,
+        message: `Please wait ${retryAfter} seconds before requesting another code.`,
+      });
     }
-    const user = getUsers().find(u => u.id === pending.userId);
+    const user = getUsers().find((u) => u.id === pending.userId);
     if (!user || accountFingerprint(user) !== pending.fingerprint) {
       delete req.session.otp;
-      return res.status(400).json({ success: false, code: 'OTP_MISSING',
-        message: 'Go back and sign in again to get a new code.' });
+      return res
+        .status(400)
+        .json({ success: false, code: 'OTP_MISSING', message: 'Go back and sign in again to get a new code.' });
     }
     const emailSent = await startOtp(req, user, pending.purpose);
-    res.json({ success: true, ...otpResponse(user, pending.purpose, emailSent),
-      message: emailSent ? `We sent a new code to ${user.email}.` : 'We could not send a new code. Please try again in a minute.' });
+    res.json({
+      success: true,
+      ...otpResponse(user, pending.purpose, emailSent),
+      message: emailSent
+        ? `We sent a new code to ${user.email}.`
+        : 'We could not send a new code. Please try again in a minute.',
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Internal server error while sending the code.' });
   }
@@ -698,7 +762,7 @@ router.post('/forgot-password', async (req, res) => {
 
   try {
     const users = getUsers();
-    const user = users.find(u => u.email.toLowerCase() === email);
+    const user = users.find((u) => u.email.toLowerCase() === email);
     const lastSent = Date.parse(user?.passwordResetSentAt) || 0;
     if (user && Date.now() - lastSent > VERIFICATION_RESEND_MS) {
       const token = issuePasswordResetToken();
@@ -708,7 +772,7 @@ router.post('/forgot-password', async (req, res) => {
     }
     res.json({
       success: true,
-      message: `If an account exists for ${email}, a password reset link has been sent. The link expires in 1 hour.`
+      message: `If an account exists for ${email}, a password reset link has been sent. The link expires in 1 hour.`,
     });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Could not process the reset request.' });
@@ -718,17 +782,18 @@ router.post('/forgot-password', async (req, res) => {
 // POST /api/auth/reset-password - Set a new password using the emailed link.
 router.post('/reset-password', async (req, res) => {
   const token = typeof req.body.token === 'string' ? req.body.token : '';
-  const invalid = () => res.status(400).json({
-    success: false,
-    code: 'RESET_LINK_INVALID',
-    message: 'This reset link is invalid or has expired. Please request a new one.'
-  });
+  const invalid = () =>
+    res.status(400).json({
+      success: false,
+      code: 'RESET_LINK_INVALID',
+      message: 'This reset link is invalid or has expired. Please request a new one.',
+    });
   if (!/^[a-f0-9]{64}$/.test(token)) return invalid();
 
   try {
     const users = getUsers();
     const tokenHash = hashToken(token);
-    const user = users.find(u => u.passwordResetTokenHash === tokenHash);
+    const user = users.find((u) => u.passwordResetTokenHash === tokenHash);
     if (!user || Date.parse(user.passwordResetExpiresAt) < Date.now()) return invalid();
 
     const errors = passwordStrengthErrors(req.body.password, minimumPasswordLength(user));
@@ -760,16 +825,18 @@ router.post('/change-password', requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const attemptKey = `${req.ip}|${req.session.user.email}`;
   if (isRateLimited(loginFailures, attemptKey, LOGIN_LIMIT)) {
-    return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please wait 15 minutes and try again.' });
+    return res
+      .status(429)
+      .json({ success: false, message: 'Too many incorrect attempts. Please wait 15 minutes and try again.' });
   }
 
   try {
     const users = getUsers();
-    const user = users.find(u => String(u.id) === String(req.session.user.id));
+    const user = users.find((u) => String(u.id) === String(req.session.user.id));
     if (!user) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
 
-    const currentMatches = typeof currentPassword === 'string'
-      && await bcrypt.compare(currentPassword, user.passwordHash);
+    const currentMatches =
+      typeof currentPassword === 'string' && (await bcrypt.compare(currentPassword, user.passwordHash));
     if (!currentMatches) {
       recordAttempt(loginFailures, attemptKey, LOGIN_LIMIT);
       return res.status(400).json({ success: false, message: 'Your current password is incorrect.' });
@@ -810,7 +877,7 @@ function eraseStudentData(user) {
   const items = readJsonArray(ITEMS_FILE);
   const removedItemIds = new Set();
   const photos = [];
-  const keptItems = items.filter(item => {
+  const keptItems = items.filter((item) => {
     const isTheirs = String(item.reportedBy) === userId;
     if (isTheirs && (item.type === 'registered' || item.type === 'lost')) {
       removedItemIds.add(String(item.id));
@@ -819,7 +886,7 @@ function eraseStudentData(user) {
     }
     return true;
   });
-  keptItems.forEach(item => {
+  keptItems.forEach((item) => {
     if (String(item.reportedBy) !== userId) return;
     item.reportedBy = 'guest';
     item.contact = 'Reporter account deleted. Please contact the Back2You admin.';
@@ -831,15 +898,17 @@ function eraseStudentData(user) {
   });
   writeJsonArray(ITEMS_FILE, keptItems);
 
-  const anonymisedItemIds = new Set(keptItems.filter(item => item.reportedBy === 'guest').map(item => String(item.id)));
-  const claims = readJsonArray(CLAIMS_FILE).filter(claim => {
+  const anonymisedItemIds = new Set(
+    keptItems.filter((item) => item.reportedBy === 'guest').map((item) => String(item.id))
+  );
+  const claims = readJsonArray(CLAIMS_FILE).filter((claim) => {
     const isClaimant = String(claim.claimantId) === userId;
     // Undecided claims by them, and claims tied to a lost report that no longer exists.
     if (isClaimant && claim.status === 'pending') return false;
     if (claim.status === 'pending' && removedItemIds.has(String(claim.lostItemId))) return false;
     return true;
   });
-  claims.forEach(claim => {
+  claims.forEach((claim) => {
     const isClaimant = String(claim.claimantId) === userId;
     if (isClaimant) {
       claim.claimantId = 'deleted-account';
@@ -876,22 +945,29 @@ async function removeStoredPhotos(photos) {
 router.post('/delete-account', requireAuth, async (req, res) => {
   const attemptKey = `${req.ip}|${req.session.user.email}`;
   if (isRateLimited(loginFailures, attemptKey, LOGIN_LIMIT)) {
-    return res.status(429).json({ success: false, message: 'Too many incorrect attempts. Please wait 15 minutes and try again.' });
+    return res
+      .status(429)
+      .json({ success: false, message: 'Too many incorrect attempts. Please wait 15 minutes and try again.' });
   }
 
   try {
     const users = getUsers();
-    const index = users.findIndex(u => String(u.id) === String(req.session.user.id));
-    if (index === -1) return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
+    const index = users.findIndex((u) => String(u.id) === String(req.session.user.id));
+    if (index === -1)
+      return res.status(401).json({ success: false, message: 'Authentication required. Please log in.' });
     const user = users[index];
     if (user.role === 'admin') {
-      return res.status(403).json({ success: false, message: 'Admin accounts are removed by another administrator from the admin page.' });
+      return res
+        .status(403)
+        .json({ success: false, message: 'Admin accounts are removed by another administrator from the admin page.' });
     }
     if (req.body.confirm !== 'DELETE') {
-      return res.status(400).json({ success: false, message: 'Type DELETE to confirm that you want to delete your account.' });
+      return res
+        .status(400)
+        .json({ success: false, message: 'Type DELETE to confirm that you want to delete your account.' });
     }
-    const passwordMatches = typeof req.body.password === 'string'
-      && await bcrypt.compare(req.body.password, user.passwordHash);
+    const passwordMatches =
+      typeof req.body.password === 'string' && (await bcrypt.compare(req.body.password, user.passwordHash));
     if (!passwordMatches) {
       recordAttempt(loginFailures, attemptKey, LOGIN_LIMIT);
       return res.status(400).json({ success: false, message: 'Your password is incorrect.' });
@@ -916,7 +992,7 @@ router.post('/delete-account', requireAuth, async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     if (err) {
       return res.status(500).json({ success: false, message: 'Could not log out.' });
     }
@@ -930,12 +1006,12 @@ router.get('/me', (req, res) => {
   if (req.session && req.session.user) {
     return res.json({
       authenticated: true,
-      user: req.session.user
+      user: req.session.user,
     });
   }
   res.json({
     authenticated: false,
-    user: null
+    user: null,
   });
 });
 
@@ -944,11 +1020,19 @@ router.get('/users', requireRole('admin'), (req, res) => {
   const users = getUsers()
     // A pending sign-up (no password yet - the OTP was never entered) never finished
     // registering, so it shouldn't appear as an account the admin can manage.
-    .filter(user => Boolean(user.passwordHash))
-    .map(({
-      passwordHash, verificationTokenHash, verificationExpiresAt, verificationSentAt,
-      passwordResetTokenHash, passwordResetExpiresAt, passwordResetSentAt, ...user
-    }) => user);
+    .filter((user) => Boolean(user.passwordHash))
+    .map(
+      ({
+        passwordHash,
+        verificationTokenHash,
+        verificationExpiresAt,
+        verificationSentAt,
+        passwordResetTokenHash,
+        passwordResetExpiresAt,
+        passwordResetSentAt,
+        ...user
+      }) => user
+    );
   res.json({ success: true, users });
 });
 
@@ -963,18 +1047,26 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     const department = sanitizeString(req.body.department) || (role === 'admin' ? 'Administration' : '');
     const errors = [];
 
-    if (!fullName || fullName.length < 2 || fullName.length > 100) errors.push('Full name must be between 2 and 100 characters.');
-    if (role === 'student' && !STUDENT_EMAIL.test(email)) errors.push('Student accounts must use an @my.cspc.edu.ph email.');
-    if (role === 'employee' && !STAFF_EMAIL.test(email)) errors.push('Employee accounts must use an @cspc.edu.ph email.');
-    if (role === 'admin' && !isAdminEmail(email)) errors.push('Admin accounts must use an @cspc.edu.ph or @my.cspc.edu.ph email.');
+    if (!fullName || fullName.length < 2 || fullName.length > 100)
+      errors.push('Full name must be between 2 and 100 characters.');
+    if (role === 'student' && !STUDENT_EMAIL.test(email))
+      errors.push('Student accounts must use an @my.cspc.edu.ph email.');
+    if (role === 'employee' && !STAFF_EMAIL.test(email))
+      errors.push('Employee accounts must use an @cspc.edu.ph email.');
+    if (role === 'admin' && !isAdminEmail(email))
+      errors.push('Admin accounts must use an @cspc.edu.ph or @my.cspc.edu.ph email.');
     if (passwordStrengthErrors(password, role === 'admin' ? 12 : 8).length) {
-      errors.push(`Password must be at least ${role === 'admin' ? 12 : 8} characters and include uppercase, lowercase, number, and special character.`);
+      errors.push(
+        `Password must be at least ${role === 'admin' ? 12 : 8} characters and include uppercase, lowercase, number, and special character.`
+      );
     }
     if (role === 'student' && !STUDENT_DEPARTMENTS.has(department)) errors.push('Select a valid college department.');
-    if (role === 'admin' && department !== 'Administration') errors.push('Admin accounts must use the Administration department.');
+    if (role === 'admin' && department !== 'Administration')
+      errors.push('Admin accounts must use the Administration department.');
 
     const users = getUsers();
-    if (users.some(user => user.email.toLowerCase() === email)) errors.push('An account with this email address already exists.');
+    if (users.some((user) => user.email.toLowerCase() === email))
+      errors.push('An account with this email address already exists.');
     if (errors.length) return res.status(400).json({ success: false, message: 'User validation failed.', errors });
 
     const newUser = {
@@ -985,7 +1077,7 @@ router.post('/users', requireRole('admin'), async (req, res) => {
       studentId,
       role,
       department,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
     users.push(newUser);
     saveUsers(users);
@@ -994,7 +1086,7 @@ router.post('/users', requireRole('admin'), async (req, res) => {
     // an active allowlist does not then turn around and lock the new account out.
     if (role !== 'admin') {
       const allowedEmails = getAllowedEmails();
-      if (!allowedEmails.some(entry => entry.email === email)) {
+      if (!allowedEmails.some((entry) => entry.email === email)) {
         allowedEmails.push({ id: email, email, addedAt: new Date().toISOString(), addedBy: req.session.user.email });
         saveAllowedEmails(allowedEmails);
       }
@@ -1010,12 +1102,13 @@ router.post('/users', requireRole('admin'), async (req, res) => {
 // DELETE /api/auth/users/:id - Admin-only user deletion.
 router.delete('/users/:id', requireRole('admin'), (req, res) => {
   const users = getUsers();
-  const index = users.findIndex(user => String(user.id) === String(req.params.id));
+  const index = users.findIndex((user) => String(user.id) === String(req.params.id));
   if (index === -1) return res.status(404).json({ success: false, message: 'User not found.' });
 
   const target = users[index];
-  if (target.id === req.session.user.id) return res.status(400).json({ success: false, message: 'You cannot delete the account currently in use.' });
-  if (target.role === 'admin' && users.filter(user => user.role === 'admin').length <= 1) {
+  if (target.id === req.session.user.id)
+    return res.status(400).json({ success: false, message: 'You cannot delete the account currently in use.' });
+  if (target.role === 'admin' && users.filter((user) => user.role === 'admin').length <= 1) {
     return res.status(400).json({ success: false, message: 'The last administrator account cannot be deleted.' });
   }
 
@@ -1038,12 +1131,12 @@ router.post('/blocked-emails', requireRole('admin'), (req, res) => {
   }
 
   const blockedEmails = getBlockedEmails();
-  if (!blockedEmails.some(entry => entry.email === email)) {
+  if (!blockedEmails.some((entry) => entry.email === email)) {
     blockedEmails.push({
       id: email,
       email,
       blockedAt: new Date().toISOString(),
-      blockedBy: req.session.user.email
+      blockedBy: req.session.user.email,
     });
     saveBlockedEmails(blockedEmails);
   }
@@ -1053,7 +1146,7 @@ router.post('/blocked-emails', requireRole('admin'), (req, res) => {
 // DELETE /api/auth/blocked-emails/:email - Admin-only: unblock an email.
 router.delete('/blocked-emails/:email', requireRole('admin'), (req, res) => {
   const email = decodeURIComponent(req.params.email).trim().toLowerCase();
-  const blockedEmails = getBlockedEmails().filter(entry => entry.email !== email);
+  const blockedEmails = getBlockedEmails().filter((entry) => entry.email !== email);
   saveBlockedEmails(blockedEmails);
   res.json({ success: true, message: 'Email unblocked.', blockedEmails });
 });
@@ -1072,12 +1165,12 @@ router.post('/allowed-emails', requireRole('admin'), (req, res) => {
   }
 
   const allowedEmails = getAllowedEmails();
-  if (!allowedEmails.some(entry => entry.email === email)) {
+  if (!allowedEmails.some((entry) => entry.email === email)) {
     allowedEmails.push({
       id: email,
       email,
       addedAt: new Date().toISOString(),
-      addedBy: req.session.user.email
+      addedBy: req.session.user.email,
     });
     saveAllowedEmails(allowedEmails);
   }
@@ -1087,7 +1180,7 @@ router.post('/allowed-emails', requireRole('admin'), (req, res) => {
 // DELETE /api/auth/allowed-emails/:email - Admin-only: remove an email from the allowlist.
 router.delete('/allowed-emails/:email', requireRole('admin'), (req, res) => {
   const email = decodeURIComponent(req.params.email).trim().toLowerCase();
-  const allowedEmails = getAllowedEmails().filter(entry => entry.email !== email);
+  const allowedEmails = getAllowedEmails().filter((entry) => entry.email !== email);
   saveAllowedEmails(allowedEmails);
   res.json({ success: true, message: 'Email removed from the allowlist.', allowedEmails });
 });

@@ -118,7 +118,10 @@
   border-color: var(--form-outline);
   color: var(--text-main);
   padding-left: 3.25rem !important;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 :root .location-input-wrap {
@@ -164,7 +167,9 @@
   text-align: left;
   overflow-wrap: anywhere;
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
 }
 
 :root .location-suggestion:hover,
@@ -194,7 +199,10 @@
   color: var(--blue-main);
   pointer-events: none;
   transform: translateY(-50%);
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
 }
 
 :root .location-input-icon svg {
@@ -326,7 +334,9 @@
 
 :root .stat-box.active {
   background: var(--stat-active-bg);
-  box-shadow: var(--clay-inset), 0 0 0 1px var(--stat-active-ring);
+  box-shadow:
+    var(--clay-inset),
+    0 0 0 1px var(--stat-active-ring);
 }
 
 :root:not([data-theme='light']) .user-account-menu {
@@ -385,7 +395,10 @@
   box-shadow: var(--clay-inset);
 }
 
-:root input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']):not([type='reset']):not([type='hidden']),
+:root
+  input:not([type='checkbox']):not([type='radio']):not([type='submit']):not([type='button']):not([type='reset']):not(
+    [type='hidden']
+  ),
 :root select,
 :root textarea {
   border-color: var(--form-outline);
@@ -400,7 +413,9 @@
 :root .search-box input:focus,
 :root .topbar-search:focus-within {
   border-color: var(--blue-main);
-  box-shadow: var(--clay-inset), 0 0 0 2px color-mix(in srgb, var(--blue-main) 24%, transparent);
+  box-shadow:
+    var(--clay-inset),
+    0 0 0 2px color-mix(in srgb, var(--blue-main) 24%, transparent);
 }
 
 :root .item-photo-frame,

@@ -16,10 +16,16 @@ const adminPassword = 'AdminPass1!';
 const studentPassword = 'StudentPass1!';
 // Emailed sign-in and sign-up codes are fixed in tests (see test.before).
 const TEST_OTP = '246810';
-const smtpEnvironmentKeys = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'APP_BASE_URL'];
-const originalSmtpEnvironment = Object.fromEntries(
-  smtpEnvironmentKeys.map(key => [key, process.env[key]])
-);
+const smtpEnvironmentKeys = [
+  'SMTP_HOST',
+  'SMTP_PORT',
+  'SMTP_SECURE',
+  'SMTP_USER',
+  'SMTP_PASS',
+  'SMTP_FROM',
+  'APP_BASE_URL',
+];
+const originalSmtpEnvironment = Object.fromEntries(smtpEnvironmentKeys.map((key) => [key, process.env[key]]));
 
 function fixtureUser(id, email, password, role) {
   return {
@@ -30,7 +36,7 @@ function fixtureUser(id, email, password, role) {
     studentId: role === 'admin' ? 'N/A' : '2026001',
     role,
     department: 'CCS',
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 }
 
@@ -39,7 +45,7 @@ function verifyCode(cookie, code = TEST_OTP, headers = {}) {
   return fetch(`${baseUrl}/api/auth/verify-code`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: cookie, ...headers },
-    body: JSON.stringify({ code })
+    body: JSON.stringify({ code }),
   });
 }
 
@@ -49,7 +55,7 @@ async function login(email, password) {
   const response = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
+    body: JSON.stringify({ email, password }),
   });
   assert.equal(response.status, 200);
   const body = await response.json();
@@ -70,7 +76,7 @@ function reportFormData(photo, overrides = {}) {
     contact: 'test@example.edu',
     desc: 'Black umbrella with a wooden handle.',
     verification: 'Private mark on the handle',
-    ...overrides
+    ...overrides,
   };
   Object.entries(fields).forEach(([key, value]) => form.set(key, value));
   if (photo) form.set('photo', photo, 'test-image.png');
@@ -80,13 +86,13 @@ function reportFormData(photo, overrides = {}) {
 async function startSmtpCaptureServer() {
   const messages = [];
   let recipient;
-  const server = net.createServer(socket => {
+  const server = net.createServer((socket) => {
     let input = '';
     let dataLines = [];
     let inData = false;
     socket.write('220 localhost ESMTP\r\n');
 
-    socket.on('data', chunk => {
+    socket.on('data', (chunk) => {
       input += chunk.toString();
       let lineEnd = input.indexOf('\r\n');
       while (lineEnd !== -1) {
@@ -135,133 +141,137 @@ test.before(async () => {
   process.env.DATA_DIR = dataDir;
   process.env.NODE_ENV = 'test';
   process.env.SESSION_SECRET = 'test-only-session-secret';
-  smtpEnvironmentKeys.forEach(key => delete process.env[key]);
+  smtpEnvironmentKeys.forEach((key) => delete process.env[key]);
 
   const users = [
     fixtureUser('admin-test', 'admin@cspc.edu.ph', adminPassword, 'admin'),
     fixtureUser('student-test', 'student@my.cspc.edu.ph', studentPassword, 'student'),
-    fixtureUser('match-student-test', 'match.student@my.cspc.edu.ph', studentPassword, 'student')
+    fixtureUser('match-student-test', 'match.student@my.cspc.edu.ph', studentPassword, 'student'),
   ];
   fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify(users));
-  fs.writeFileSync(path.join(dataDir, 'items.json'), JSON.stringify([
-    {
-      id: 11,
-      refCode: 'CSPC-LF-2026-011',
-      title: 'Found umbrella',
-      category: 'Others',
-      type: 'found',
-      location: 'Main Building',
-      desc: 'Black umbrella with a wooden handle.',
-      contact: 'private-contact@example.edu',
-      verification: 'Private serial clue',
-      claimantProof: 'Private claim proof',
-      reportedBy: 'reporter-test',
-      status: 'active',
-      claimed: false,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 12,
-      refCode: 'CSPC-REG-QR-0012',
-      title: 'Registered laptop',
-      category: 'Electronics',
-      type: 'registered',
-      location: 'Library',
-      contact: 'Owner Name (owner@example.edu)',
-      ownerEmail: 'owner@example.edu',
-      reportedBy: 'student-test',
-      notifications: [],
-      status: 'registered',
-      claimed: false
-    },
-    {
-      id: 13,
-      refCode: 'CSPC-LF-2026-013',
-      title: 'Found notebook',
-      category: 'Books & Documents',
-      type: 'found',
-      location: 'Library',
-      desc: 'Green notebook with a fabric cover.',
-      contact: 'notebook-reporter@example.edu',
-      verification: 'Private page detail',
-      reportedBy: 'reporter-test',
-      status: 'active',
-      claimed: false
-    },
-    {
-      id: 14,
-      refCode: 'CSPC-LF-2026-014',
-      title: 'Found water bottle',
-      category: 'Others',
-      type: 'found',
-      location: 'Gymnasium',
-      desc: 'Blue bottle with a silver cap.',
-      verification: 'Small star scratched under the base',
-      reportedBy: 'reporter-test',
-      status: 'active',
-      claimed: false
-    },
-    {
-      id: 16,
-      refCode: 'CSPC-LF-2026-016',
-      title: 'Claimed found jacket',
-      category: 'Clothing',
-      type: 'found',
-      location: 'Cafeteria',
-      desc: 'A jacket already returned to its owner.',
-      status: 'active',
-      claimed: true
-    },
-    {
-      id: 15,
-      refCode: 'CSPC-LF-2026-015',
-      title: 'Claimed lost wallet',
-      category: 'Others',
-      type: 'lost',
-      location: 'Cafeteria',
-      desc: 'A wallet that has been returned to its owner.',
-      status: 'claimed',
-      claimed: false
-    },
-    {
-      id: 17,
-      refCode: 'CSPC-LF-2026-017',
-      title: 'Lost green notebook',
-      category: 'Books & Documents',
-      type: 'lost',
-      location: 'Library',
-      desc: 'Green notebook with a fabric cover.',
-      reportedBy: 'student-test',
-      status: 'archived',
-      claimed: false
-    },
-    {
-      id: 18,
-      refCode: 'CSPC-LF-2026-018',
-      title: 'Lost water bottle',
-      category: 'Others',
-      type: 'lost',
-      location: 'Gymnasium',
-      desc: 'Blue bottle with a silver cap.',
-      reportedBy: 'student-test',
-      status: 'archived',
-      claimed: false
-    }
-  ]));
+  fs.writeFileSync(
+    path.join(dataDir, 'items.json'),
+    JSON.stringify([
+      {
+        id: 11,
+        refCode: 'CSPC-LF-2026-011',
+        title: 'Found umbrella',
+        category: 'Others',
+        type: 'found',
+        location: 'Main Building',
+        desc: 'Black umbrella with a wooden handle.',
+        contact: 'private-contact@example.edu',
+        verification: 'Private serial clue',
+        claimantProof: 'Private claim proof',
+        reportedBy: 'reporter-test',
+        status: 'active',
+        claimed: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 12,
+        refCode: 'CSPC-REG-QR-0012',
+        title: 'Registered laptop',
+        category: 'Electronics',
+        type: 'registered',
+        location: 'Library',
+        contact: 'Owner Name (owner@example.edu)',
+        ownerEmail: 'owner@example.edu',
+        reportedBy: 'student-test',
+        notifications: [],
+        status: 'registered',
+        claimed: false,
+      },
+      {
+        id: 13,
+        refCode: 'CSPC-LF-2026-013',
+        title: 'Found notebook',
+        category: 'Books & Documents',
+        type: 'found',
+        location: 'Library',
+        desc: 'Green notebook with a fabric cover.',
+        contact: 'notebook-reporter@example.edu',
+        verification: 'Private page detail',
+        reportedBy: 'reporter-test',
+        status: 'active',
+        claimed: false,
+      },
+      {
+        id: 14,
+        refCode: 'CSPC-LF-2026-014',
+        title: 'Found water bottle',
+        category: 'Others',
+        type: 'found',
+        location: 'Gymnasium',
+        desc: 'Blue bottle with a silver cap.',
+        verification: 'Small star scratched under the base',
+        reportedBy: 'reporter-test',
+        status: 'active',
+        claimed: false,
+      },
+      {
+        id: 16,
+        refCode: 'CSPC-LF-2026-016',
+        title: 'Claimed found jacket',
+        category: 'Clothing',
+        type: 'found',
+        location: 'Cafeteria',
+        desc: 'A jacket already returned to its owner.',
+        status: 'active',
+        claimed: true,
+      },
+      {
+        id: 15,
+        refCode: 'CSPC-LF-2026-015',
+        title: 'Claimed lost wallet',
+        category: 'Others',
+        type: 'lost',
+        location: 'Cafeteria',
+        desc: 'A wallet that has been returned to its owner.',
+        status: 'claimed',
+        claimed: false,
+      },
+      {
+        id: 17,
+        refCode: 'CSPC-LF-2026-017',
+        title: 'Lost green notebook',
+        category: 'Books & Documents',
+        type: 'lost',
+        location: 'Library',
+        desc: 'Green notebook with a fabric cover.',
+        reportedBy: 'student-test',
+        status: 'archived',
+        claimed: false,
+      },
+      {
+        id: 18,
+        refCode: 'CSPC-LF-2026-018',
+        title: 'Lost water bottle',
+        category: 'Others',
+        type: 'lost',
+        location: 'Gymnasium',
+        desc: 'Blue bottle with a silver cap.',
+        reportedBy: 'student-test',
+        status: 'archived',
+        claimed: false,
+      },
+    ])
+  );
 
   ({ createApp } = require('../server'));
   require('../routes/authRoutes').setOtpCodeGeneratorForTests(() => TEST_OTP);
   appServer = createApp().listen(0);
-  await new Promise(resolve => appServer.once('listening', resolve));
+  await new Promise((resolve) => appServer.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${appServer.address().port}`;
 });
 
 test.after(async () => {
-  if (appServer) await new Promise((resolve, reject) => appServer.close(error => error ? reject(error) : resolve()));
+  if (appServer)
+    await new Promise((resolve, reject) => appServer.close((error) => (error ? reject(error) : resolve())));
   fs.rmSync(dataDir, { recursive: true, force: true });
   delete process.env.DATA_DIR;
   delete process.env.SESSION_SECRET;
-  smtpEnvironmentKeys.forEach(key => {
+  smtpEnvironmentKeys.forEach((key) => {
     if (originalSmtpEnvironment[key] === undefined) delete process.env[key];
     else process.env[key] = originalSmtpEnvironment[key];
   });
@@ -272,7 +282,7 @@ function registrationBody(overrides = {}) {
   return JSON.stringify({
     fullName: 'New Student',
     email: 'new.student@my.cspc.edu.ph',
-    ...overrides
+    ...overrides,
   });
 }
 
@@ -282,7 +292,7 @@ function completeRegistration(cookie, password = studentPassword) {
   return fetch(`${baseUrl}/api/auth/complete-registration`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: cookie },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ password }),
   });
 }
 
@@ -297,20 +307,23 @@ test('registration accepts only @my.cspc.edu.ph student addresses', async () => 
     'student@my.cspc.edu.ph.evil.com',
     'student@fake.my.cspc.edu.ph',
     'stu dent@my.cspc.edu.ph',
-    'a@b@my.cspc.edu.ph'
+    'a@b@my.cspc.edu.ph',
   ]) {
     const response = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ email }));
     assert.equal(response.status, 400, email);
   }
-  const loginResponse = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'someone@gmail.com', password: 'StudentPass1!' }));
+  const loginResponse = await postJson(
+    `${baseUrl}/api/auth/login`,
+    JSON.stringify({ email: 'someone@gmail.com', password: 'StudentPass1!' })
+  );
   assert.equal(loginResponse.status, 400);
 });
 
-test('new accounts are confirmed with the emailed code, then create a password, before they can sign in', async t => {
+test('new accounts are confirmed with the emailed code, then create a password, before they can sign in', async (t) => {
   const smtp = await startSmtpCaptureServer();
-  const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map(key => [key, process.env[key]]));
+  const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map((key) => [key, process.env[key]]));
   t.after(async () => {
-    await new Promise(resolve => smtp.server.close(resolve));
+    await new Promise((resolve) => smtp.server.close(resolve));
     Object.entries(mailEnvironment).forEach(([key, value]) => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -343,7 +356,7 @@ test('new accounts are confirmed with the emailed code, then create a password, 
   assert.equal((await pendingSession.json()).authenticated, false);
 
   const users = JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'));
-  const pending = users.filter(user => user.email === 'new.student@my.cspc.edu.ph');
+  const pending = users.filter((user) => user.email === 'new.student@my.cspc.edu.ph');
   assert.equal(pending.length, 1);
   assert.equal(pending[0].emailVerified, false);
   assert.equal(pending[0].passwordHash, undefined, 'no password is collected until the code is verified');
@@ -377,8 +390,13 @@ test('new accounts are confirmed with the emailed code, then create a password, 
   assert.equal(verifiedBody.user, undefined, 'the code alone does not sign anyone in any more');
   const notYetSignedIn = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: pendingCookie } });
   assert.equal((await notYetSignedIn.json()).authenticated, false);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'))
-    .find(user => user.email === 'new.student@my.cspc.edu.ph').emailVerified, false, 'still unverified until a password is created');
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8')).find(
+      (user) => user.email === 'new.student@my.cspc.edu.ph'
+    ).emailVerified,
+    false,
+    'still unverified until a password is created'
+  );
 
   // The code is spent: the old pending session cannot use it again.
   const reused = await verifyCode(pendingCookie);
@@ -386,7 +404,9 @@ test('new accounts are confirmed with the emailed code, then create a password, 
 
   // No one can set a password on this account without first verifying the code in their session.
   const completeNoSession = await fetch(`${baseUrl}/api/auth/complete-registration`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: studentPassword })
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: studentPassword }),
   });
   assert.equal(completeNoSession.status, 400);
   assert.equal((await completeNoSession.json()).code, 'PENDING_MISSING');
@@ -402,8 +422,12 @@ test('new accounts are confirmed with the emailed code, then create a password, 
   const signedInCookie = completed.headers.get('set-cookie').split(';')[0];
   const session = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: signedInCookie } });
   assert.equal((await session.json()).authenticated, true);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'))
-    .find(user => user.email === 'new.student@my.cspc.edu.ph').emailVerified, true);
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8')).find(
+      (user) => user.email === 'new.student@my.cspc.edu.ph'
+    ).emailVerified,
+    true
+  );
 
   // The verified session is spent: it cannot be used to set a second password.
   const completedAgain = await completeRegistration(pendingCookie);
@@ -416,19 +440,29 @@ test('new accounts are confirmed with the emailed code, then create a password, 
 
   const duplicateResponse = await postJson(`${baseUrl}/api/auth/register`, registrationBody());
   assert.equal(duplicateResponse.status, 409);
-  assert.equal(JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'))
-    .filter(user => user.email === 'new.student@my.cspc.edu.ph').length, 1);
+  assert.equal(
+    JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8')).filter(
+      (user) => user.email === 'new.student@my.cspc.edu.ph'
+    ).length,
+    1
+  );
 });
 
 test('a pending sign-up cannot sign in with any password until the code is verified and a password is created', async () => {
-  const register = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ email: 'late.confirmer@my.cspc.edu.ph' }));
+  const register = await postJson(
+    `${baseUrl}/api/auth/register`,
+    registrationBody({ email: 'late.confirmer@my.cspc.edu.ph' })
+  );
   assert.equal(register.status, 201);
   // Read the whole response: the session is saved before the response finishes.
   assert.equal((await register.json()).otpRequired, true);
   const cookie = register.headers.get('set-cookie').split(';')[0];
 
   // No password has ever been set on this account, so any guess is just a wrong password.
-  const blockedLogin = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'late.confirmer@my.cspc.edu.ph', password: studentPassword }));
+  const blockedLogin = await postJson(
+    `${baseUrl}/api/auth/login`,
+    JSON.stringify({ email: 'late.confirmer@my.cspc.edu.ph', password: studentPassword })
+  );
   assert.equal(blockedLogin.status, 401);
 
   const verified = await verifyCode(cookie);
@@ -441,7 +475,10 @@ test('a pending sign-up cannot sign in with any password until the code is verif
 });
 
 test('sign-up codes allow five tries, expire with the session and resend at most once a minute', async () => {
-  const start = await postJson(`${baseUrl}/api/auth/register`, registrationBody({ email: 'five.tries@my.cspc.edu.ph' }));
+  const start = await postJson(
+    `${baseUrl}/api/auth/register`,
+    registrationBody({ email: 'five.tries@my.cspc.edu.ph' })
+  );
   assert.equal(start.status, 201);
   // Read the whole response: the session is saved before the response finishes.
   assert.equal((await start.json()).otpRequired, true);
@@ -468,7 +505,10 @@ test('sign-up codes allow five tries, expire with the session and resend at most
 });
 
 test('student accounts cannot sign in with the staff domain and repeated failures are throttled', async () => {
-  const staffDomain = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'student@cspc.edu.ph', password: studentPassword }));
+  const staffDomain = await postJson(
+    `${baseUrl}/api/auth/login`,
+    JSON.stringify({ email: 'student@cspc.edu.ph', password: studentPassword })
+  );
   assert.equal(staffDomain.status, 401);
 
   const email = 'password.guesser@my.cspc.edu.ph';
@@ -481,7 +521,16 @@ test('student accounts cannot sign in with the staff domain and repeated failure
 });
 
 test('server source, scripts and data files are not publicly served', async () => {
-  for (const url of ['/services/email.js', '/scripts/manage-admin.js', '/routes/authRoutes.js', '/data/items.json', '/server.js', '/package.json', '/README.md', '/.env']) {
+  for (const url of [
+    '/services/email.js',
+    '/scripts/manage-admin.js',
+    '/routes/authRoutes.js',
+    '/data/items.json',
+    '/server.js',
+    '/package.json',
+    '/README.md',
+    '/.env',
+  ]) {
     const response = await fetch(`${baseUrl}${url}`);
     assert.equal(response.status, 404, url);
   }
@@ -490,11 +539,11 @@ test('server source, scripts and data files are not publicly served', async () =
   assert.equal(asset.headers.get('x-content-type-options'), 'nosniff');
 });
 
-test('forgotten passwords can be reset once through the emailed link', async t => {
+test('forgotten passwords can be reset once through the emailed link', async (t) => {
   const smtp = await startSmtpCaptureServer();
-  const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map(key => [key, process.env[key]]));
+  const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map((key) => [key, process.env[key]]));
   t.after(async () => {
-    await new Promise(resolve => smtp.server.close(resolve));
+    await new Promise((resolve) => smtp.server.close(resolve));
     Object.entries(mailEnvironment).forEach(([key, value]) => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -508,11 +557,20 @@ test('forgotten passwords can be reset once through the emailed link', async t =
   delete process.env.SMTP_USER;
   delete process.env.SMTP_PASS;
 
-  const outsider = await postJson(`${baseUrl}/api/auth/forgot-password`, JSON.stringify({ email: 'someone@gmail.com' }));
+  const outsider = await postJson(
+    `${baseUrl}/api/auth/forgot-password`,
+    JSON.stringify({ email: 'someone@gmail.com' })
+  );
   assert.equal(outsider.status, 400);
 
-  const unknown = await postJson(`${baseUrl}/api/auth/forgot-password`, JSON.stringify({ email: 'nobody.here@my.cspc.edu.ph' }));
-  const known = await postJson(`${baseUrl}/api/auth/forgot-password`, JSON.stringify({ email: 'new.student@my.cspc.edu.ph' }));
+  const unknown = await postJson(
+    `${baseUrl}/api/auth/forgot-password`,
+    JSON.stringify({ email: 'nobody.here@my.cspc.edu.ph' })
+  );
+  const known = await postJson(
+    `${baseUrl}/api/auth/forgot-password`,
+    JSON.stringify({ email: 'new.student@my.cspc.edu.ph' })
+  );
   assert.equal(unknown.status, 200);
   assert.equal(known.status, 200);
   // Same wording either way, so the form cannot be used to discover accounts.
@@ -530,35 +588,51 @@ test('forgotten passwords can be reset once through the emailed link', async t =
   const weak = await postJson(`${baseUrl}/api/auth/reset-password`, JSON.stringify({ token, password: 'short' }));
   assert.equal(weak.status, 400);
 
-  const forged = await postJson(`${baseUrl}/api/auth/reset-password`, JSON.stringify({ token: 'f'.repeat(64), password: 'BrandNew1!pass' }));
+  const forged = await postJson(
+    `${baseUrl}/api/auth/reset-password`,
+    JSON.stringify({ token: 'f'.repeat(64), password: 'BrandNew1!pass' })
+  );
   assert.equal(forged.status, 400);
   assert.equal((await forged.json()).code, 'RESET_LINK_INVALID');
 
-  const reset = await postJson(`${baseUrl}/api/auth/reset-password`, JSON.stringify({ token, password: 'BrandNew1!pass' }));
+  const reset = await postJson(
+    `${baseUrl}/api/auth/reset-password`,
+    JSON.stringify({ token, password: 'BrandNew1!pass' })
+  );
   assert.equal(reset.status, 200);
 
-  const reused = await postJson(`${baseUrl}/api/auth/reset-password`, JSON.stringify({ token, password: 'Another1!pass' }));
+  const reused = await postJson(
+    `${baseUrl}/api/auth/reset-password`,
+    JSON.stringify({ token, password: 'Another1!pass' })
+  );
   assert.equal(reused.status, 400);
 
-  const oldPassword = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'new.student@my.cspc.edu.ph', password: 'StudentPass1!' }));
+  const oldPassword = await postJson(
+    `${baseUrl}/api/auth/login`,
+    JSON.stringify({ email: 'new.student@my.cspc.edu.ph', password: 'StudentPass1!' })
+  );
   assert.equal(oldPassword.status, 401);
   await login('new.student@my.cspc.edu.ph', 'BrandNew1!pass');
 
   const users = JSON.parse(fs.readFileSync(path.join(dataDir, 'users.json'), 'utf8'));
-  const user = users.find(entry => entry.email === 'new.student@my.cspc.edu.ph');
+  const user = users.find((entry) => entry.email === 'new.student@my.cspc.edu.ph');
   assert.equal(user.passwordResetTokenHash, undefined);
 });
 
 test('signed-in users can change their password only with the current one', async () => {
-  const unauthenticated = await postJson(`${baseUrl}/api/auth/change-password`, JSON.stringify({ currentPassword: 'x', newPassword: 'y' }));
+  const unauthenticated = await postJson(
+    `${baseUrl}/api/auth/change-password`,
+    JSON.stringify({ currentPassword: 'x', newPassword: 'y' })
+  );
   assert.equal(unauthenticated.status, 401);
 
   const cookie = await login('new.student@my.cspc.edu.ph', 'BrandNew1!pass');
-  const change = body => fetch(`${baseUrl}/api/auth/change-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: cookie },
-    body: JSON.stringify(body)
-  });
+  const change = (body) =>
+    fetch(`${baseUrl}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify(body),
+    });
 
   const wrongCurrent = await change({ currentPassword: 'NotMyPass1!', newPassword: 'Changed1!pass' });
   assert.equal(wrongCurrent.status, 400);
@@ -571,13 +645,22 @@ test('signed-in users can change their password only with the current one', asyn
   assert.equal(changed.status, 200);
   assert.ok(changed.headers.get('set-cookie'), 'session is re-issued after a password change');
 
-  const oldPassword = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'new.student@my.cspc.edu.ph', password: 'BrandNew1!pass' }));
+  const oldPassword = await postJson(
+    `${baseUrl}/api/auth/login`,
+    JSON.stringify({ email: 'new.student@my.cspc.edu.ph', password: 'BrandNew1!pass' })
+  );
   assert.equal(oldPassword.status, 401);
   await login('new.student@my.cspc.edu.ph', 'Changed1!pass');
 
-  const users = await fetch(`${baseUrl}/api/auth/users`, { headers: { Cookie: await login('admin@cspc.edu.ph', adminPassword) } });
+  const users = await fetch(`${baseUrl}/api/auth/users`, {
+    headers: { Cookie: await login('admin@cspc.edu.ph', adminPassword) },
+  });
   const listed = (await users.json()).users;
-  assert.ok(listed.every(user => !('passwordHash' in user) && !('passwordResetTokenHash' in user) && !('verificationTokenHash' in user)));
+  assert.ok(
+    listed.every(
+      (user) => !('passwordHash' in user) && !('passwordResetTokenHash' in user) && !('verificationTokenHash' in user)
+    )
+  );
 });
 
 test('public item responses exclude private fields', async () => {
@@ -595,7 +678,7 @@ test('public item responses exclude private fields', async () => {
   }
 });
 
-test('retries with the same report key return the original item instead of duplicating it', async t => {
+test('retries with the same report key return the original item instead of duplicating it', async (t) => {
   const submissionKey = 'report-submit-duplicate-test-01';
   const report = {
     title: 'Blue insulated water bottle',
@@ -603,19 +686,18 @@ test('retries with the same report key return the original item instead of dupli
     type: 'lost',
     location: 'Library',
     contact: 'student@example.edu',
-    desc: 'Blue bottle with a silver cap and a small sticker.'
+    desc: 'Blue bottle with a silver cap and a small sticker.',
   };
   t.after(() => {
     const itemsPath = path.join(dataDir, 'items.json');
-    const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'))
-      .filter(item => item.submissionKey !== submissionKey);
+    const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8')).filter((item) => item.submissionKey !== submissionKey);
     fs.writeFileSync(itemsPath, JSON.stringify(items));
   });
 
   const originalResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     headers: { 'Idempotency-Key': submissionKey },
-    body: reportFormData(null, report)
+    body: reportFormData(null, report),
   });
   assert.equal(originalResponse.status, 201);
   const original = await originalResponse.json();
@@ -624,7 +706,7 @@ test('retries with the same report key return the original item instead of dupli
   const retryResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     headers: { 'Idempotency-Key': submissionKey },
-    body: reportFormData(null, report)
+    body: reportFormData(null, report),
   });
   assert.equal(retryResponse.status, 200);
   const retry = await retryResponse.json();
@@ -635,12 +717,12 @@ test('retries with the same report key return the original item instead of dupli
   const changedPayloadResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     headers: { 'Idempotency-Key': submissionKey },
-    body: reportFormData(null, { ...report, desc: 'A different item description for this report.' })
+    body: reportFormData(null, { ...report, desc: 'A different item description for this report.' }),
   });
   assert.equal(changedPayloadResponse.status, 409);
 
   const savedItems = JSON.parse(fs.readFileSync(path.join(dataDir, 'items.json'), 'utf8'));
-  assert.equal(savedItems.filter(item => item.submissionKey === submissionKey).length, 1);
+  assert.equal(savedItems.filter((item) => item.submissionKey === submissionKey).length, 1);
 });
 
 test('claimed items are excluded from lost and found results and included in claimed results', async () => {
@@ -650,16 +732,22 @@ test('claimed items are excluded from lost and found results and included in cla
 
   const foundResponse = await fetch(`${baseUrl}/api/items?type=found`);
   assert.equal(foundResponse.status, 200);
-  assert.deepEqual((await foundResponse.json()).items.map(item => item.id), [11, 13, 14]);
+  assert.deepEqual(
+    (await foundResponse.json()).items.map((item) => item.id),
+    [11, 13, 14]
+  );
 
   const claimedResponse = await fetch(`${baseUrl}/api/items?status=claimed`);
   assert.equal(claimedResponse.status, 200);
   const claimedItems = (await claimedResponse.json()).items;
-  assert.deepEqual(claimedItems.map(item => item.id).sort((a, b) => a - b), [15, 16]);
+  assert.deepEqual(
+    claimedItems.map((item) => item.id).sort((a, b) => a - b),
+    [15, 16]
+  );
 });
 
 test('home page stats match the public lists and leave out private belongings', async () => {
-  const listed = async query => (await (await fetch(`${baseUrl}/api/items${query}`)).json()).items.length;
+  const listed = async (query) => (await (await fetch(`${baseUrl}/api/items${query}`)).json()).items.length;
   const response = await fetch(`${baseUrl}/api/items/stats`);
   assert.equal(response.status, 200);
   const { stats } = await response.json();
@@ -667,7 +755,7 @@ test('home page stats match the public lists and leave out private belongings', 
     total: await listed(''),
     lost: await listed('?type=lost'),
     found: await listed('?type=found'),
-    claimed: await listed('?status=claimed')
+    claimed: await listed('?status=claimed'),
   });
 });
 
@@ -686,7 +774,7 @@ test('registered belongings are private except through QR reference lookup', asy
   assert.equal(Object.hasOwn(item, 'ownerEmail'), false);
 });
 
-test('registered QR alerts create a secure owner-finder conversation with messaging, meetup, and mutual return confirmation', async t => {
+test('registered QR alerts create a secure owner-finder conversation with messaging, meetup, and mutual return confirmation', async (t) => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const otherStudentCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
   const token = 'a'.repeat(64);
@@ -696,8 +784,8 @@ test('registered QR alerts create a secure owner-finder conversation with messag
     if (!conversationId) return;
     const itemsPath = path.join(dataDir, 'items.json');
     const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
-    const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
-    if (item) item.notifications = item.notifications.filter(notification => notification.id !== conversationId);
+    const item = items.find((entry) => entry.refCode === 'CSPC-REG-QR-0012');
+    if (item) item.notifications = item.notifications.filter((notification) => notification.id !== conversationId);
     fs.writeFileSync(itemsPath, JSON.stringify(items));
   });
 
@@ -708,8 +796,8 @@ test('registered QR alerts create a secure owner-finder conversation with messag
       refCode: 'CSPC-REG-QR-0012',
       message: 'I found the laptop by the library entrance.',
       locationFound: 'Library entrance',
-      conversationToken: token
-    })
+      conversationToken: token,
+    }),
   });
   assert.equal(alertResponse.status, 200);
   const alert = await alertResponse.json();
@@ -722,16 +810,16 @@ test('registered QR alerts create a secure owner-finder conversation with messag
   const noTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`);
   assert.equal(noTokenResponse.status, 401);
   const invalidTokenResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
-    headers: { Authorization: `Bearer ${'b'.repeat(64)}` }
+    headers: { Authorization: `Bearer ${'b'.repeat(64)}` },
   });
   assert.equal(invalidTokenResponse.status, 404);
   const otherOwnerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
-    headers: { Cookie: otherStudentCookie }
+    headers: { Cookie: otherStudentCookie },
   });
   assert.equal(otherOwnerResponse.status, 404);
 
   const ownerResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   assert.equal(ownerResponse.status, 200);
   const ownerThread = await ownerResponse.json();
@@ -739,10 +827,10 @@ test('registered QR alerts create a secure owner-finder conversation with messag
   assert.equal(ownerThread.role, 'owner');
 
   const inboxResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   const inbox = await inboxResponse.json();
-  const ownerEntry = inbox.notifications.find(notification => notification.conversationId === conversationId);
+  const ownerEntry = inbox.notifications.find((notification) => notification.conversationId === conversationId);
   assert.equal(ownerEntry.notificationType, 'finder-conversation');
   assert.equal(Object.hasOwn(ownerEntry, 'tokenHash'), false);
   assert.equal(Object.hasOwn(ownerEntry, 'conversationToken'), false);
@@ -750,64 +838,79 @@ test('registered QR alerts create a secure owner-finder conversation with messag
   const ownerMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/messages`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-    body: JSON.stringify({ text: 'I can meet at the student center.' })
+    body: JSON.stringify({ text: 'I can meet at the student center.' }),
   });
   assert.equal(ownerMessageResponse.status, 201);
   const ownerMessage = await ownerMessageResponse.json();
   assert.equal(ownerMessage.messages.at(-1).mine, true);
 
-  const guestMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...guestHeaders },
-    body: JSON.stringify({ text: 'That works. I will be there at noon.' })
-  });
+  const guestMessageResponse = await fetch(
+    `${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...guestHeaders },
+      body: JSON.stringify({ text: 'That works. I will be there at noon.' }),
+    }
+  );
   assert.equal(guestMessageResponse.status, 201);
   const guestMessage = await guestMessageResponse.json();
   assert.equal(guestMessage.messages.at(-1).mine, true);
 
-  const requestLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/meetup/request`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-    body: JSON.stringify({})
-  });
+  const requestLocationResponse = await fetch(
+    `${baseUrl}/api/items/registered-conversations/${conversationId}/meetup/request`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
+      body: JSON.stringify({}),
+    }
+  );
   assert.equal(requestLocationResponse.status, 200);
   const guestPendingResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
-    headers: guestHeaders
+    headers: guestHeaders,
   });
   const guestPending = await guestPendingResponse.json();
   assert.equal(guestPending.meetupNotification.myLocation.status, 'pending');
 
-  const shareLocationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/meetup/respond`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...guestHeaders },
-    body: JSON.stringify({
-      action: 'share',
-      latitude: 13.416,
-      longitude: 123.412,
-      accuracy: 18,
-      note: 'By the library entrance'
-    })
-  });
+  const shareLocationResponse = await fetch(
+    `${baseUrl}/api/items/registered-conversations/${conversationId}/guest/meetup/respond`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...guestHeaders },
+      body: JSON.stringify({
+        action: 'share',
+        latitude: 13.416,
+        longitude: 123.412,
+        accuracy: 18,
+        note: 'By the library entrance',
+      }),
+    }
+  );
   assert.equal(shareLocationResponse.status, 200);
   const sharedLocation = await shareLocationResponse.json();
   assert.equal(sharedLocation.conversation.meetupNotification.myLocation.location.latitude, 13.416);
 
   const ownerConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/confirm`, {
     method: 'POST',
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   assert.equal((await ownerConfirmResponse.json()).conversation.status, 'open');
-  const guestConfirmResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/confirm`, {
-    method: 'POST',
-    headers: guestHeaders
-  });
+  const guestConfirmResponse = await fetch(
+    `${baseUrl}/api/items/registered-conversations/${conversationId}/guest/confirm`,
+    {
+      method: 'POST',
+      headers: guestHeaders,
+    }
+  );
   assert.equal((await guestConfirmResponse.json()).conversation.status, 'returned');
 
-  const resolvedMessageResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...guestHeaders },
-    body: JSON.stringify({ text: 'One more message after resolution.' })
-  });
+  const resolvedMessageResponse = await fetch(
+    `${baseUrl}/api/items/registered-conversations/${conversationId}/guest/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...guestHeaders },
+      body: JSON.stringify({ text: 'One more message after resolution.' }),
+    }
+  );
   assert.equal(resolvedMessageResponse.status, 409);
 
   const retryResponse = await fetch(`${baseUrl}/api/items/anonymous-notify`, {
@@ -817,8 +920,8 @@ test('registered QR alerts create a secure owner-finder conversation with messag
       refCode: 'CSPC-REG-QR-0012',
       message: 'I found the laptop by the library entrance.',
       locationFound: 'Library entrance',
-      conversationToken: token
-    })
+      conversationToken: token,
+    }),
   });
   const retry = await retryResponse.json();
   assert.equal(retry.duplicate, true);
@@ -827,12 +930,13 @@ test('registered QR alerts create a secure owner-finder conversation with messag
 
   const itemsPath = path.join(dataDir, 'items.json');
   const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
-  const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
-  item.notifications.find(notification => notification.id === conversationId).conversation.expiresAt =
-    new Date(Date.now() - 1000).toISOString();
+  const item = items.find((entry) => entry.refCode === 'CSPC-REG-QR-0012');
+  item.notifications.find((notification) => notification.id === conversationId).conversation.expiresAt = new Date(
+    Date.now() - 1000
+  ).toISOString();
   fs.writeFileSync(itemsPath, JSON.stringify(items));
   const expiredResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}/guest`, {
-    headers: guestHeaders
+    headers: guestHeaders,
   });
   assert.equal(expiredResponse.status, 410);
 
@@ -840,24 +944,24 @@ test('registered QR alerts create a secure owner-finder conversation with messag
   const otherOwnerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', Cookie: otherStudentCookie },
-    body: JSON.stringify({ notificationIds: notificationReference })
+    body: JSON.stringify({ notificationIds: notificationReference }),
   });
   assert.equal((await otherOwnerDeleteResponse.json()).deletedCount, 0);
 
   const ownerDeleteResponse = await fetch(`${baseUrl}/api/items/notifications`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-    body: JSON.stringify({ notificationIds: notificationReference })
+    body: JSON.stringify({ notificationIds: notificationReference }),
   });
   assert.equal(ownerDeleteResponse.status, 200);
   assert.equal((await ownerDeleteResponse.json()).deletedCount, 1);
   const deletedConversationResponse = await fetch(`${baseUrl}/api/items/registered-conversations/${conversationId}`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   assert.equal(deletedConversationResponse.status, 404);
 });
 
-test('finder QR alerts appear in the owner inbox and are emailed to the owner', async t => {
+test('finder QR alerts appear in the owner inbox and are emailed to the owner', async (t) => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const smtp = await startSmtpCaptureServer();
   const submissionKey = 'finder-alert-duplicate-test-01';
@@ -868,16 +972,14 @@ test('finder QR alerts appear in the owner inbox and are emailed to the owner', 
     if (notificationId) {
       const itemsPath = path.join(dataDir, 'items.json');
       const items = JSON.parse(fs.readFileSync(itemsPath, 'utf8'));
-      const item = items.find(entry => entry.refCode === 'CSPC-REG-QR-0012');
-      if (item) item.notifications = item.notifications.filter(notification => notification.id !== notificationId);
+      const item = items.find((entry) => entry.refCode === 'CSPC-REG-QR-0012');
+      if (item) item.notifications = item.notifications.filter((notification) => notification.id !== notificationId);
       fs.writeFileSync(itemsPath, JSON.stringify(items));
     }
     if (originalClaims === null) fs.rmSync(claimsPath, { force: true });
     else fs.writeFileSync(claimsPath, originalClaims);
   });
-  const mailEnvironment = Object.fromEntries(
-    smtpEnvironmentKeys.map(key => [key, process.env[key]])
-  );
+  const mailEnvironment = Object.fromEntries(smtpEnvironmentKeys.map((key) => [key, process.env[key]]));
   process.env.SMTP_HOST = '127.0.0.1';
   process.env.SMTP_PORT = String(smtp.port);
   process.env.SMTP_SECURE = 'false';
@@ -895,11 +997,11 @@ test('finder QR alerts appear in the owner inbox and are emailed to the owner', 
         refCode: 'CSPC-REG-QR-0012',
         message: 'I found it by the library entrance.',
         locationFound: 'Library entrance',
-        finderContact: 'finder@example.edu'
-      })
+        finderContact: 'finder@example.edu',
+      }),
     });
   } finally {
-    await new Promise((resolve, reject) => smtp.server.close(error => error ? reject(error) : resolve()));
+    await new Promise((resolve, reject) => smtp.server.close((error) => (error ? reject(error) : resolve())));
     Object.entries(mailEnvironment).forEach(([key, value]) => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -926,8 +1028,8 @@ test('finder QR alerts appear in the owner inbox and are emailed to the owner', 
       refCode: 'CSPC-REG-QR-0012',
       message: 'I found it by the library entrance.',
       locationFound: 'Library entrance',
-      finderContact: 'finder@example.edu'
-    })
+      finderContact: 'finder@example.edu',
+    }),
   });
   assert.equal(duplicateResponse.status, 200);
   const duplicate = await duplicateResponse.json();
@@ -942,49 +1044,57 @@ test('finder QR alerts appear in the owner inbox and are emailed to the owner', 
       refCode: 'CSPC-REG-QR-0012',
       message: 'A different alert using the same key.',
       locationFound: 'Library entrance',
-      finderContact: 'finder@example.edu'
-    })
+      finderContact: 'finder@example.edu',
+    }),
   });
   assert.equal(changedPayloadResponse.status, 409);
 
   const claimNotificationId = 'claim-notif-test';
-  fs.writeFileSync(path.join(dataDir, 'claims.json'), JSON.stringify([{
-    id: 'claim-test',
-    itemId: 11,
-    claimantId: 'student-test',
-    itemTitle: 'Found umbrella',
-    itemRefCode: 'CSPC-LF-2026-011',
-    notification: {
-      id: claimNotificationId,
-      timestamp: new Date().toISOString(),
-      read: false,
-      message: 'Your claim was rejected.'
-    }
-  }]));
+  fs.writeFileSync(
+    path.join(dataDir, 'claims.json'),
+    JSON.stringify([
+      {
+        id: 'claim-test',
+        itemId: 11,
+        claimantId: 'student-test',
+        itemTitle: 'Found umbrella',
+        itemRefCode: 'CSPC-LF-2026-011',
+        notification: {
+          id: claimNotificationId,
+          timestamp: new Date().toISOString(),
+          read: false,
+          message: 'Your claim was rejected.',
+        },
+      },
+    ])
+  );
 
   const inboxResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   assert.equal(inboxResponse.status, 200);
   const { notifications, unreadCount } = await inboxResponse.json();
-  const finderAlert = notifications.find(notification => notification.refCode === 'CSPC-REG-QR-0012');
+  const finderAlert = notifications.find((notification) => notification.refCode === 'CSPC-REG-QR-0012');
   assert.ok(finderAlert);
   assert.equal(finderAlert.message, 'I found it by the library entrance.');
   assert.equal(finderAlert.locationFound, 'Library entrance');
   assert.equal(Object.hasOwn(finderAlert, 'submissionKey'), false);
-  assert.equal(notifications.filter(notification => notification.id === result.notification.id).length, 1);
-  assert.equal(notifications.some(notification => notification.id === claimNotificationId), true);
+  assert.equal(notifications.filter((notification) => notification.id === result.notification.id).length, 1);
+  assert.equal(
+    notifications.some((notification) => notification.id === claimNotificationId),
+    true
+  );
   assert.equal(unreadCount, 2);
 
   const notificationReferences = [
     { kind: 'item', recordId: '12', id: result.notification.id },
-    { kind: 'claim', recordId: 'claim-test', id: claimNotificationId }
+    { kind: 'claim', recordId: 'claim-test', id: claimNotificationId },
   ];
   const otherStudentCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
   const otherStudentDelete = await fetch(`${baseUrl}/api/items/notifications`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', Cookie: otherStudentCookie },
-    body: JSON.stringify({ notificationIds: notificationReferences })
+    body: JSON.stringify({ notificationIds: notificationReferences }),
   });
   assert.equal(otherStudentDelete.status, 200);
   assert.equal((await otherStudentDelete.json()).deletedCount, 0);
@@ -992,17 +1102,23 @@ test('finder QR alerts appear in the owner inbox and are emailed to the owner', 
   const ownerDelete = await fetch(`${baseUrl}/api/items/notifications`, {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-    body: JSON.stringify({ notificationIds: notificationReferences })
+    body: JSON.stringify({ notificationIds: notificationReferences }),
   });
   assert.equal(ownerDelete.status, 200);
   assert.equal((await ownerDelete.json()).deletedCount, 2);
 
   const updatedInbox = await fetch(`${baseUrl}/api/items/my-notifications`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   const updatedNotifications = await updatedInbox.json();
-  assert.equal(updatedNotifications.notifications.some(notification => notification.id === result.notification.id), false);
-  assert.equal(updatedNotifications.notifications.some(notification => notification.id === claimNotificationId), false);
+  assert.equal(
+    updatedNotifications.notifications.some((notification) => notification.id === result.notification.id),
+    false
+  );
+  assert.equal(
+    updatedNotifications.notifications.some((notification) => notification.id === claimNotificationId),
+    false
+  );
   assert.equal(updatedNotifications.unreadCount, 0);
   const savedClaims = JSON.parse(fs.readFileSync(path.join(dataDir, 'claims.json'), 'utf8'));
   assert.equal(savedClaims.length, 1);
@@ -1047,7 +1163,7 @@ test('signed-in students using home aliases reach the portal report form', async
   for (const route of ['/home', '/home.html']) {
     const response = await fetch(`${baseUrl}${route}`, {
       headers: { Cookie: studentCookie },
-      redirect: 'manual'
+      redirect: 'manual',
     });
     assert.equal(response.status, 302, route);
     assert.equal(response.headers.get('location'), '/', route);
@@ -1057,8 +1173,8 @@ test('signed-in students using home aliases reach the portal report form', async
   assert.equal(portal.status, 200);
   const html = await portal.text();
   assert.match(html, /class="location-input-wrap"/);
-  assert.match(html, /id="itemLocation" role="combobox"/);
-  assert.match(html, /id="itemLocationSuggestions" role="listbox"/);
+  assert.match(html, /id="itemLocation"\s+role="combobox"/);
+  assert.match(html, /id="itemLocationSuggestions"\s+role="listbox"/);
   assert.match(html, /<datalist id="itemLocationOptions">/);
 });
 
@@ -1079,7 +1195,7 @@ test('page assets are stamped with content versions and cached accordingly', asy
   for (const [asset, label] of [
     [landingHtml.match(/src="(\/js\/main\.js\?v=[a-f0-9]{10})"/), 'main.js'],
     [landingHtml.match(/src="(\/js\/cspc-3d-logo\.js\?v=[a-f0-9]{10})"/), 'CSPC logo script'],
-    [landingHtml.match(/src="(\/vendor\/three\.min\.js\?v=[a-f0-9]{10})"/), 'Three.js']
+    [landingHtml.match(/src="(\/vendor\/three\.min\.js\?v=[a-f0-9]{10})"/), 'Three.js'],
   ]) {
     assert.ok(asset, `${label} is versioned`);
     const response = await fetch(`${baseUrl}${asset[1]}`);
@@ -1112,7 +1228,7 @@ test('only admins can change claim status', async () => {
   const studentResponse = await fetch(`${baseUrl}/api/items/11/claim`, {
     method: 'PATCH',
     headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ proof: 'checked' })
+    body: JSON.stringify({ proof: 'checked' }),
   });
   assert.equal(studentResponse.status, 403);
 
@@ -1120,7 +1236,7 @@ test('only admins can change claim status', async () => {
   const adminResponse = await fetch(`${baseUrl}/api/items/11/claim`, {
     method: 'PATCH',
     headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ proof: 'checked' })
+    body: JSON.stringify({ proof: 'checked' }),
   });
   assert.equal(adminResponse.status, 200);
   assert.equal((await adminResponse.json()).item.claimed, true);
@@ -1131,12 +1247,12 @@ test('claim requests are private and require moderator review', async () => {
   const requestResponse = await fetch(`${baseUrl}/api/items/13/claim-requests`, {
     method: 'POST',
     headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    body: JSON.stringify({
       proof: 'A small university logo is on the inside cover.',
-        lostId: 17,
+      lostId: 17,
       courseYear: 'BS Information Technology, 3rd Year',
-      contactNumber: '09171234567'
-    })
+      contactNumber: '09171234567',
+    }),
   });
   assert.equal(requestResponse.status, 201);
   const requestData = await requestResponse.json();
@@ -1145,7 +1261,7 @@ test('claim requests are private and require moderator review', async () => {
   const duplicateResponse = await fetch(`${baseUrl}/api/items/13/claim-requests`, {
     method: 'POST',
     headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ proof: 'Another private detail about this notebook.', lostId: 17 })
+    body: JSON.stringify({ proof: 'Another private detail about this notebook.', lostId: 17 }),
   });
   assert.equal(duplicateResponse.status, 409);
 
@@ -1165,26 +1281,81 @@ test('claim requests are private and require moderator review', async () => {
   const reviewResponse = await fetch(`${baseUrl}/api/items/claims/${encodeURIComponent(claims[0].id)}`, {
     method: 'PATCH',
     headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: 'approved', pickupInstructions: 'Present your CSPC Student ID at SAS Office, Room 101.' })
+    body: JSON.stringify({
+      status: 'approved',
+      pickupInstructions: 'Present your CSPC Student ID at SAS Office, Room 101.',
+    }),
   });
   assert.equal(reviewResponse.status, 200);
-  assert.equal((await reviewResponse.json()).claim.pickupInstructions, 'Present your CSPC Student ID at SAS Office, Room 101.');
+  assert.equal(
+    (await reviewResponse.json()).claim.pickupInstructions,
+    'Present your CSPC Student ID at SAS Office, Room 101.'
+  );
 
   const itemResponse = await fetch(`${baseUrl}/api/items/13`);
   assert.equal((await itemResponse.json()).item.claimed, true);
 
-  const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: studentCookie } });
+  const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
+    headers: { Cookie: studentCookie },
+  });
   const { notifications } = await notificationsResponse.json();
   assert.equal(notifications[0].notificationType, 'claim');
   assert.match(notifications[0].message, /Room 101/);
 
-  const readResponse = await fetch(`${baseUrl}/api/items/notifications/${encodeURIComponent(notifications[0].id)}/read`, {
-    method: 'PATCH',
-    headers: { Cookie: studentCookie }
-  });
+  const readResponse = await fetch(
+    `${baseUrl}/api/items/notifications/${encodeURIComponent(notifications[0].id)}/read`,
+    {
+      method: 'PATCH',
+      headers: { Cookie: studentCookie },
+    }
+  );
   assert.equal(readResponse.status, 200);
-  const readNotificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: studentCookie } });
+  const readNotificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
+    headers: { Cookie: studentCookie },
+  });
   assert.equal((await readNotificationsResponse.json()).unreadCount, 0);
+});
+
+test('a student cannot start a claim conversation with themself as owner and finder', async () => {
+  const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  const pair = {
+    title: 'Self-reported blue insulated bottle',
+    category: 'Others',
+    location: 'Library',
+    contact: 'student@my.cspc.edu.ph',
+    desc: 'Blue insulated bottle with a silver cap and a small star sticker.',
+  };
+  const lostResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie },
+    body: reportFormData(null, { ...pair, type: 'lost' }),
+  });
+  assert.equal(lostResponse.status, 201);
+  const lost = (await lostResponse.json()).item;
+
+  const foundResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie },
+    body: reportFormData(null, { ...pair, type: 'found' }),
+  });
+  assert.equal(foundResponse.status, 201);
+  const found = (await foundResponse.json()).item;
+
+  const referenceResponse = await fetch(
+    `${baseUrl}/api/items/match-reference-token?lostId=${lost.id}&foundId=${found.id}`,
+    { headers: { Cookie: studentCookie } }
+  );
+  assert.equal(referenceResponse.status, 200);
+  const reference = await referenceResponse.json();
+  assert.equal(reference.requesterRole, null);
+  assert.equal(reference.canRequestClaim, false);
+
+  const conversationResponse = await fetch(`${baseUrl}/api/items/${found.id}/claim-requests`, {
+    method: 'POST',
+    headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proof: 'I reported both matching items myself.', lostId: lost.id }),
+  });
+  assert.equal(conversationResponse.status, 403);
 });
 
 test('rejected claims restore availability and notify the claimant', async () => {
@@ -1192,20 +1363,20 @@ test('rejected claims restore availability and notify the claimant', async () =>
   const claimResponse = await fetch(`${baseUrl}/api/items/14/claim-requests`, {
     method: 'POST',
     headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ proof: 'A small star is scratched under the base.', lostId: 18 })
+    body: JSON.stringify({ proof: 'A small star is scratched under the base.', lostId: 18 }),
   });
   assert.equal(claimResponse.status, 201);
 
   const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
   const claimsResponse = await fetch(`${baseUrl}/api/items/claims`, { headers: { Cookie: adminCookie } });
   const { claims } = await claimsResponse.json();
-  const claim = claims.find(entry => String(entry.itemId) === '14');
+  const claim = claims.find((entry) => String(entry.itemId) === '14');
   assert.ok(claim);
 
   const reviewResponse = await fetch(`${baseUrl}/api/items/claims/${encodeURIComponent(claim.id)}`, {
     method: 'PATCH',
     headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ status: 'rejected', rejectionReason: 'The proof does not match the item.' })
+    body: JSON.stringify({ status: 'rejected', rejectionReason: 'The proof does not match the item.' }),
   });
   assert.equal(reviewResponse.status, 200);
   assert.equal((await reviewResponse.json()).claim.rejectionReason, 'The proof does not match the item.');
@@ -1215,7 +1386,9 @@ test('rejected claims restore availability and notify the claimant', async () =>
   assert.equal(item.status, 'active');
   assert.equal(item.claimed, false);
 
-  const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: studentCookie } });
+  const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
+    headers: { Cookie: studentCookie },
+  });
   const { notifications } = await notificationsResponse.json();
   assert.equal(notifications[0].notificationType, 'claim');
   assert.match(notifications[0].message, /does not match/);
@@ -1229,21 +1402,23 @@ test('possible-match alerts notify the lost-report student whether the found rep
     location: 'College of Computer Studies (CCS)',
     contact: 'match.student@my.cspc.edu.ph',
     desc: 'Engraved constellation map on the battery cover.',
-    verification: 'Gold comet sticker under the hinge'
+    verification: 'Gold comet sticker under the hinge',
   };
 
   const firstLostResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     headers: { Cookie: studentCookie },
-    body: reportFormData(null, { ...firstPair, type: 'lost' })
+    body: reportFormData(null, { ...firstPair, type: 'lost' }),
   });
   assert.equal(firstLostResponse.status, 201);
   const firstLost = (await firstLostResponse.json()).item;
 
   const smtp = await startSmtpCaptureServer();
   const mailEnvironment = Object.fromEntries(
-    ['SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'APP_BASE_URL']
-      .map(key => [key, process.env[key]])
+    ['SMTP_HOST', 'SMTP_PORT', 'SMTP_SECURE', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM', 'APP_BASE_URL'].map((key) => [
+      key,
+      process.env[key],
+    ])
   );
   process.env.SMTP_HOST = '127.0.0.1';
   process.env.SMTP_PORT = String(smtp.port);
@@ -1257,10 +1432,10 @@ test('possible-match alerts notify the lost-report student whether the found rep
   try {
     firstFoundResponse = await fetch(`${baseUrl}/api/items`, {
       method: 'POST',
-      body: reportFormData(null, { ...firstPair, type: 'found' })
+      body: reportFormData(null, { ...firstPair, type: 'found' }),
     });
   } finally {
-    await new Promise((resolve, reject) => smtp.server.close(error => error ? reject(error) : resolve()));
+    await new Promise((resolve, reject) => smtp.server.close((error) => (error ? reject(error) : resolve())));
     Object.entries(mailEnvironment).forEach(([key, value]) => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
@@ -1288,11 +1463,11 @@ test('possible-match alerts notify the lost-report student whether the found rep
     location: 'College of Engineering and Architecture (CEA)',
     contact: 'match.student@my.cspc.edu.ph',
     desc: 'Embroidered blue gear on the left sleeve.',
-    verification: 'Initials R K inside the collar'
+    verification: 'Initials R K inside the collar',
   };
   const secondFoundResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
-    body: reportFormData(null, { ...secondPair, type: 'found' })
+    body: reportFormData(null, { ...secondPair, type: 'found' }),
   });
   assert.equal(secondFoundResponse.status, 201);
   const secondFound = (await secondFoundResponse.json()).item;
@@ -1300,7 +1475,7 @@ test('possible-match alerts notify the lost-report student whether the found rep
   const secondLostResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     headers: { Cookie: studentCookie },
-    body: reportFormData(null, { ...secondPair, type: 'lost' })
+    body: reportFormData(null, { ...secondPair, type: 'lost' }),
   });
   assert.equal(secondLostResponse.status, 201);
   const secondLost = (await secondLostResponse.json()).item;
@@ -1309,15 +1484,15 @@ test('possible-match alerts notify the lost-report student whether the found rep
     title: 'Graphing scientific calculator',
     location: 'Library',
     contact: 'guest@example.edu',
-    desc: 'Casio fx calculator with a cracked lower-right corner.'
+    desc: 'Casio fx calculator with a cracked lower-right corner.',
   };
   const mismatchedCategoryLostResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
     body: reportFormData(null, {
       ...mismatchedCategoryPair,
       type: 'lost',
-      category: 'Electronics'
-    })
+      category: 'Electronics',
+    }),
   });
   assert.equal(mismatchedCategoryLostResponse.status, 201);
   const mismatchedCategoryLost = (await mismatchedCategoryLostResponse.json()).item;
@@ -1326,55 +1501,56 @@ test('possible-match alerts notify the lost-report student whether the found rep
     body: reportFormData(null, {
       ...mismatchedCategoryPair,
       type: 'found',
-      category: 'Others'
-    })
+      category: 'Others',
+    }),
   });
   assert.equal(mismatchedCategoryFoundResponse.status, 201);
   const mismatchedCategoryFound = (await mismatchedCategoryFoundResponse.json()).item;
 
   const notificationsResponse = await fetch(`${baseUrl}/api/items/my-notifications`, {
-    headers: { Cookie: studentCookie }
+    headers: { Cookie: studentCookie },
   });
   assert.equal(notificationsResponse.status, 200);
   const { notifications, unreadCount } = await notificationsResponse.json();
-  const matchNotifications = notifications.filter(notification => notification.notificationType === 'match');
+  const matchNotifications = notifications.filter((notification) => notification.notificationType === 'match');
   assert.equal(matchNotifications.length, 2);
   assert.equal(unreadCount, 2);
   assert.deepEqual(
-    new Set(matchNotifications.map(notification => notification.matchItemId)),
+    new Set(matchNotifications.map((notification) => notification.matchItemId)),
     new Set([firstFound.id, secondFound.id])
   );
   assert.deepEqual(
-    new Set(matchNotifications.map(notification => notification.itemTitle)),
+    new Set(matchNotifications.map((notification) => notification.itemTitle)),
     new Set([firstLost.title, secondLost.title])
   );
-  assert.ok(matchNotifications.every(notification => /may match/i.test(notification.message)));
-  assert.ok(matchNotifications.every(notification => !Object.hasOwn(notification, 'verification')));
+  assert.ok(matchNotifications.every((notification) => /may match/i.test(notification.message)));
+  assert.ok(matchNotifications.every((notification) => !Object.hasOwn(notification, 'verification')));
 
   const savedItems = JSON.parse(fs.readFileSync(path.join(dataDir, 'items.json'), 'utf8'));
-  const savedLost = savedItems.find(item => String(item.id) === String(firstLost.id));
-  const savedFound = savedItems.find(item => String(item.id) === String(firstFound.id));
-  assert.ok(savedLost.matches.some(match => String(match.itemId) === String(firstFound.id)));
-  assert.ok(savedFound.matches.some(match => String(match.itemId) === String(firstLost.id)));
-  const savedMismatchedCategoryLost = savedItems.find(item =>
-    String(item.id) === String(mismatchedCategoryLost.id)
+  const savedLost = savedItems.find((item) => String(item.id) === String(firstLost.id));
+  const savedFound = savedItems.find((item) => String(item.id) === String(firstFound.id));
+  assert.ok(savedLost.matches.some((match) => String(match.itemId) === String(firstFound.id)));
+  assert.ok(savedFound.matches.some((match) => String(match.itemId) === String(firstLost.id)));
+  const savedMismatchedCategoryLost = savedItems.find((item) => String(item.id) === String(mismatchedCategoryLost.id));
+  const savedMismatchedCategoryFound = savedItems.find(
+    (item) => String(item.id) === String(mismatchedCategoryFound.id)
   );
-  const savedMismatchedCategoryFound = savedItems.find(item =>
-    String(item.id) === String(mismatchedCategoryFound.id)
+  assert.ok(
+    savedMismatchedCategoryLost.matches.some((match) => String(match.itemId) === String(mismatchedCategoryFound.id))
   );
-  assert.ok(savedMismatchedCategoryLost.matches.some(match =>
-    String(match.itemId) === String(mismatchedCategoryFound.id)
-  ));
-  assert.ok(savedMismatchedCategoryFound.matches.some(match =>
-    String(match.itemId) === String(mismatchedCategoryLost.id)
-  ));
+  assert.ok(
+    savedMismatchedCategoryFound.matches.some((match) => String(match.itemId) === String(mismatchedCategoryLost.id))
+  );
 });
 
 test('image upload stores a bounded image file and rejects invalid uploads', async () => {
-  const pngBytes = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l2sAAAAASUVORK5CYII=', 'base64');
+  const pngBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l2sAAAAASUVORK5CYII=',
+    'base64'
+  );
   const validResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
-    body: reportFormData(new Blob([pngBytes], { type: 'image/png' }))
+    body: reportFormData(new Blob([pngBytes], { type: 'image/png' })),
   });
   assert.equal(validResponse.status, 201);
   const { item } = await validResponse.json();
@@ -1388,13 +1564,13 @@ test('image upload stores a bounded image file and rejects invalid uploads', asy
 
   const invalidResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
-    body: reportFormData(new Blob([Buffer.from('not an image')], { type: 'image/png' }))
+    body: reportFormData(new Blob([Buffer.from('not an image')], { type: 'image/png' })),
   });
   assert.equal(invalidResponse.status, 400);
 
   const oversizedResponse = await fetch(`${baseUrl}/api/items`, {
     method: 'POST',
-    body: reportFormData(new Blob([Buffer.alloc(5 * 1024 * 1024 + 1)], { type: 'image/png' }))
+    body: reportFormData(new Blob([Buffer.alloc(5 * 1024 * 1024 + 1)], { type: 'image/png' })),
   });
   assert.equal(oversizedResponse.status, 413);
 });
@@ -1404,28 +1580,55 @@ test('owner and finder of an approved claim can share a one-time location, only 
   const claimsPath = path.join(dataDir, 'claims.json');
   const originalItems = fs.readFileSync(itemsPath, 'utf8');
   const originalClaims = fs.existsSync(claimsPath) ? fs.readFileSync(claimsPath, 'utf8') : '[]';
-  const readClaim = () => JSON.parse(fs.readFileSync(claimsPath, 'utf8')).find(claim => claim.id === 'claim-meetup-test');
+  const readClaim = () =>
+    JSON.parse(fs.readFileSync(claimsPath, 'utf8')).find((claim) => claim.id === 'claim-meetup-test');
   try {
     // Found by match.student, claimed by student, approved by an admin just now.
     const items = JSON.parse(originalItems);
-    items.push({ id: 90, refCode: 'CSPC-LF-2026-090', title: 'Blue umbrella', category: 'Others', type: 'found',
-      location: 'Library', desc: 'Blue umbrella.', reportedBy: 'match-student-test', status: 'claimed', claimed: true,
-      createdAt: new Date().toISOString() });
+    items.push({
+      id: 90,
+      refCode: 'CSPC-LF-2026-090',
+      title: 'Blue umbrella',
+      category: 'Others',
+      type: 'found',
+      location: 'Library',
+      desc: 'Blue umbrella.',
+      reportedBy: 'match-student-test',
+      status: 'claimed',
+      claimed: true,
+      createdAt: new Date().toISOString(),
+    });
     fs.writeFileSync(itemsPath, JSON.stringify(items));
     const claims = JSON.parse(originalClaims);
-    claims.unshift({ id: 'claim-meetup-test', itemId: 90, itemTitle: 'Blue umbrella', itemRefCode: 'CSPC-LF-2026-090',
-      claimantId: 'student-test', claimantName: 'Test Student', status: 'approved', proof: 'Initials on the handle.',
-      messages: [{ id: 'claim-meetup-message', senderId: 'student-test', text: 'Initials on the handle.', createdAt: new Date().toISOString() }],
-      createdAt: new Date().toISOString(), reviewedAt: new Date().toISOString() });
+    claims.unshift({
+      id: 'claim-meetup-test',
+      itemId: 90,
+      itemTitle: 'Blue umbrella',
+      itemRefCode: 'CSPC-LF-2026-090',
+      claimantId: 'student-test',
+      claimantName: 'Test Student',
+      status: 'approved',
+      proof: 'Initials on the handle.',
+      messages: [
+        {
+          id: 'claim-meetup-message',
+          senderId: 'student-test',
+          text: 'Initials on the handle.',
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      createdAt: new Date().toISOString(),
+      reviewedAt: new Date().toISOString(),
+    });
     fs.writeFileSync(claimsPath, JSON.stringify(claims));
 
     const ownerCookie = await login('student@my.cspc.edu.ph', studentPassword);
     const finderCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
     const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
-    const claimConversationEntry = async cookie => {
+    const claimConversationEntry = async (cookie) => {
       const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
-      return (await response.json()).notifications.find(n =>
-        n.notificationType === 'claim-conversation' && n.claimId === 'claim-meetup-test'
+      return (await response.json()).notifications.find(
+        (n) => n.notificationType === 'claim-conversation' && n.claimId === 'claim-meetup-test'
       );
     };
     const ownerConversation = await claimConversationEntry(ownerCookie);
@@ -1435,59 +1638,97 @@ test('owner and finder of an approved claim can share a one-time location, only 
     assert.equal(ownerConversation.message, 'Initials on the handle.');
     assert.equal(ownerConversation.read, true, 'the starter message is not unread for its sender');
     assert.equal(finderConversation.unreadCount, 1, 'the starter message remains unread for the other participant');
-    assert.equal(await claimConversationEntry(adminCookie), undefined, 'unrelated accounts cannot see claim conversations');
+    assert.equal(
+      await claimConversationEntry(adminCookie),
+      undefined,
+      'unrelated accounts cannot see claim conversations'
+    );
     for (const cookie of [ownerCookie, finderCookie]) {
-      const thread = await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, { headers: { Cookie: cookie } });
+      const thread = await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, {
+        headers: { Cookie: cookie },
+      });
       assert.equal(thread.status, 200);
     }
-    assert.equal((await claimConversationEntry(ownerCookie)).read, true,
-      'opening the thread marks it read without removing its Account Notifications entry');
-    assert.equal((await claimConversationEntry(finderCookie)).read, true,
-      'both participants retain access after opening the thread');
+    assert.equal(
+      (await claimConversationEntry(ownerCookie)).read,
+      true,
+      'opening the thread marks it read without removing its Account Notifications entry'
+    );
+    assert.equal(
+      (await claimConversationEntry(finderCookie)).read,
+      true,
+      'both participants retain access after opening the thread'
+    );
 
     const deleteOwnerConversation = await fetch(`${baseUrl}/api/items/notifications`, {
       method: 'DELETE',
       headers: { Cookie: ownerCookie, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        notificationIds: [{
-          kind: 'claim-conversation',
-          recordId: 'claim-meetup-test',
-          id: 'claim-conversation-claim-meetup-test'
-        }]
-      })
+        notificationIds: [
+          {
+            kind: 'claim-conversation',
+            recordId: 'claim-meetup-test',
+            id: 'claim-conversation-claim-meetup-test',
+          },
+        ],
+      }),
     });
     assert.equal(deleteOwnerConversation.status, 200);
     assert.equal((await deleteOwnerConversation.json()).deletedCount, 1);
-    assert.equal(await claimConversationEntry(ownerCookie), undefined,
-      'deleting the entry removes it from only the requesting participant’s Account Notifications');
-    assert.ok(await claimConversationEntry(finderCookie),
-      'the other participant keeps their Account Notifications entry');
-    assert.equal((await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, {
-      headers: { Cookie: ownerCookie }
-    })).status, 200, 'deleting the notification does not delete the shared conversation');
-    assert.equal((await fetch(`${baseUrl}/api/items/notifications`, {
-      method: 'DELETE',
-      headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        notificationIds: [{
-          kind: 'claim-conversation',
-          recordId: 'claim-meetup-test',
-          id: 'claim-conversation-claim-meetup-test'
-        }]
-      })
-    })).status, 200);
-    assert.equal((await claimConversationEntry(finderCookie)).claimId, 'claim-meetup-test',
-      'an unrelated account cannot remove a participant’s entry');
+    assert.equal(
+      await claimConversationEntry(ownerCookie),
+      undefined,
+      'deleting the entry removes it from only the requesting participant’s Account Notifications'
+    );
+    assert.ok(
+      await claimConversationEntry(finderCookie),
+      'the other participant keeps their Account Notifications entry'
+    );
+    assert.equal(
+      (
+        await fetch(`${baseUrl}/api/items/claims/claim-meetup-test/thread`, {
+          headers: { Cookie: ownerCookie },
+        })
+      ).status,
+      200,
+      'deleting the notification does not delete the shared conversation'
+    );
+    assert.equal(
+      (
+        await fetch(`${baseUrl}/api/items/notifications`, {
+          method: 'DELETE',
+          headers: { Cookie: adminCookie, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            notificationIds: [
+              {
+                kind: 'claim-conversation',
+                recordId: 'claim-meetup-test',
+                id: 'claim-conversation-claim-meetup-test',
+              },
+            ],
+          }),
+        })
+      ).status,
+      200
+    );
+    assert.equal(
+      (await claimConversationEntry(finderCookie)).claimId,
+      'claim-meetup-test',
+      'an unrelated account cannot remove a participant’s entry'
+    );
 
-    const meetupEntry = async cookie => {
+    const meetupEntry = async (cookie) => {
       const response = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: cookie } });
-      return (await response.json()).notifications.find(n => n.notificationType === 'meetup' && n.claimId === 'claim-meetup-test');
+      return (await response.json()).notifications.find(
+        (n) => n.notificationType === 'meetup' && n.claimId === 'claim-meetup-test'
+      );
     };
-    const meetupPost = (cookie, action, body = {}) => fetch(`${baseUrl}/api/items/claims/claim-meetup-test/meetup/${action}`, {
-      method: 'POST',
-      headers: { Cookie: cookie, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
+    const meetupPost = (cookie, action, body = {}) =>
+      fetch(`${baseUrl}/api/items/claims/claim-meetup-test/meetup/${action}`, {
+        method: 'POST',
+        headers: { Cookie: cookie, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
 
     const ownerStart = await meetupEntry(ownerCookie);
     assert.equal(ownerStart.role, 'owner');
@@ -1496,8 +1737,11 @@ test('owner and finder of an approved claim can share a one-time location, only 
 
     // Only the two people on the claim can use it; not even an admin.
     assert.equal((await meetupPost(adminCookie, 'request')).status, 404);
-    assert.equal((await meetupPost(ownerCookie, 'respond', { action: 'share', latitude: 1, longitude: 1, accuracy: 5 })).status, 404,
-      'nobody can share before being asked');
+    assert.equal(
+      (await meetupPost(ownerCookie, 'respond', { action: 'share', latitude: 1, longitude: 1, accuracy: 5 })).status,
+      404,
+      'nobody can share before being asked'
+    );
 
     assert.equal((await meetupPost(ownerCookie, 'request')).status, 201);
     assert.equal((await meetupPost(ownerCookie, 'request')).status, 409);
@@ -1505,10 +1749,28 @@ test('owner and finder of an approved claim can share a one-time location, only 
     assert.equal(finderAsked.myLocation.status, 'pending');
     assert.equal(finderAsked.read, false, 'an incoming request counts as unread');
 
-    assert.equal((await meetupPost(finderCookie, 'respond', { action: 'share', latitude: 200, longitude: 123, accuracy: 10 })).status, 400);
-    assert.equal((await meetupPost(finderCookie, 'respond', { action: 'share', latitude: 13.4, longitude: 123.37, accuracy: 9000 })).status, 400);
+    assert.equal(
+      (await meetupPost(finderCookie, 'respond', { action: 'share', latitude: 200, longitude: 123, accuracy: 10 }))
+        .status,
+      400
+    );
+    assert.equal(
+      (
+        await meetupPost(finderCookie, 'respond', {
+          action: 'share',
+          latitude: 13.4,
+          longitude: 123.37,
+          accuracy: 9000,
+        })
+      ).status,
+      400
+    );
     const shared = await meetupPost(finderCookie, 'respond', {
-      action: 'share', latitude: 13.4123456789, longitude: 123.3712345678, accuracy: 24.6, note: 'At the library entrance'
+      action: 'share',
+      latitude: 13.4123456789,
+      longitude: 123.3712345678,
+      accuracy: 24.6,
+      note: 'At the library entrance',
     });
     assert.equal(shared.status, 200);
 
@@ -1542,9 +1804,15 @@ test('owner and finder of an approved claim can share a one-time location, only 
 
     // A shared location is deleted once its hour is up.
     assert.equal((await meetupPost(ownerCookie, 'request')).status, 201);
-    assert.equal((await meetupPost(finderCookie, 'respond', { action: 'share', latitude: 13.4, longitude: 123.37, accuracy: 15 })).status, 200);
+    assert.equal(
+      (await meetupPost(finderCookie, 'respond', { action: 'share', latitude: 13.4, longitude: 123.37, accuracy: 15 }))
+        .status,
+      200
+    );
     const stored = JSON.parse(fs.readFileSync(claimsPath, 'utf8'));
-    stored.find(claim => claim.id === 'claim-meetup-test').meetup['student-test'].location.expiresAt = new Date(Date.now() - 1000).toISOString();
+    stored.find((claim) => claim.id === 'claim-meetup-test').meetup['student-test'].location.expiresAt = new Date(
+      Date.now() - 1000
+    ).toISOString();
     fs.writeFileSync(claimsPath, JSON.stringify(stored));
     const afterExpiry = await meetupEntry(ownerCookie);
     assert.equal(afterExpiry.theirLocation.status, 'expired');
@@ -1559,7 +1827,7 @@ test('owner and finder of an approved claim can share a one-time location, only 
 
     // Once the claim is no longer approved, everything about the meetup is deleted.
     const rejected = JSON.parse(fs.readFileSync(claimsPath, 'utf8'));
-    rejected.find(claim => claim.id === 'claim-meetup-test').status = 'rejected';
+    rejected.find((claim) => claim.id === 'claim-meetup-test').status = 'rejected';
     fs.writeFileSync(claimsPath, JSON.stringify(rejected));
     assert.equal(await meetupEntry(ownerCookie), undefined);
     assert.equal(readClaim().meetup, undefined);
@@ -1570,9 +1838,13 @@ test('owner and finder of an approved claim can share a one-time location, only 
 });
 
 test('a student can delete their own account; personal data goes, shared records are anonymised', async () => {
-  const paths = Object.fromEntries(['users', 'items', 'claims'].map(name => [name, path.join(dataDir, `${name}.json`)]));
-  const originals = Object.fromEntries(Object.entries(paths).map(([name, file]) => [name, fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '[]']));
-  const read = name => JSON.parse(fs.readFileSync(paths[name], 'utf8'));
+  const paths = Object.fromEntries(
+    ['users', 'items', 'claims'].map((name) => [name, path.join(dataDir, `${name}.json`)])
+  );
+  const originals = Object.fromEntries(
+    Object.entries(paths).map(([name, file]) => [name, fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '[]'])
+  );
+  const read = (name) => JSON.parse(fs.readFileSync(paths[name], 'utf8'));
   try {
     const users = JSON.parse(originals.users);
     users.push(fixtureUser('leaver-test', 'leaver@my.cspc.edu.ph', studentPassword, 'student'));
@@ -1580,24 +1852,92 @@ test('a student can delete their own account; personal data goes, shared records
     const now = new Date().toISOString();
     const items = JSON.parse(originals.items);
     items.push(
-      { id: 201, refCode: 'CSPC-REG-QR-0201', title: 'My laptop', category: 'Electronics', type: 'registered', location: 'Library', reportedBy: 'leaver-test', ownerEmail: 'leaver@my.cspc.edu.ph', status: 'registered', claimed: false },
-      { id: 202, refCode: 'CSPC-LF-2026-202', title: 'My lost ID', category: 'ID / Cards', type: 'lost', location: 'Library', contact: 'Leaver (leaver@my.cspc.edu.ph)', desc: 'School ID.', reportedBy: 'leaver-test', status: 'active', claimed: false, createdAt: now },
-      { id: 203, refCode: 'CSPC-LF-2026-203', title: 'Found calculator', category: 'Electronics', type: 'found', location: 'Library', contact: 'Leaver (leaver@my.cspc.edu.ph)', desc: 'Casio calculator.', reportedBy: 'leaver-test', status: 'active', claimed: false, createdAt: now }
+      {
+        id: 201,
+        refCode: 'CSPC-REG-QR-0201',
+        title: 'My laptop',
+        category: 'Electronics',
+        type: 'registered',
+        location: 'Library',
+        reportedBy: 'leaver-test',
+        ownerEmail: 'leaver@my.cspc.edu.ph',
+        status: 'registered',
+        claimed: false,
+      },
+      {
+        id: 202,
+        refCode: 'CSPC-LF-2026-202',
+        title: 'My lost ID',
+        category: 'ID / Cards',
+        type: 'lost',
+        location: 'Library',
+        contact: 'Leaver (leaver@my.cspc.edu.ph)',
+        desc: 'School ID.',
+        reportedBy: 'leaver-test',
+        status: 'active',
+        claimed: false,
+        createdAt: now,
+      },
+      {
+        id: 203,
+        refCode: 'CSPC-LF-2026-203',
+        title: 'Found calculator',
+        category: 'Electronics',
+        type: 'found',
+        location: 'Library',
+        contact: 'Leaver (leaver@my.cspc.edu.ph)',
+        desc: 'Casio calculator.',
+        reportedBy: 'leaver-test',
+        status: 'active',
+        claimed: false,
+        createdAt: now,
+      }
     );
     fs.writeFileSync(paths.items, JSON.stringify(items));
     const claims = JSON.parse(originals.claims);
     claims.push(
-      { id: 'claim-leaver-pending', itemId: 11, claimantId: 'leaver-test', claimantName: 'Leaver', claimantEmail: 'leaver@my.cspc.edu.ph', status: 'pending', proof: 'Private proof', createdAt: now },
-      { id: 'claim-leaver-decided', itemId: 11, claimantId: 'leaver-test', claimantName: 'Leaver', claimantEmail: 'leaver@my.cspc.edu.ph', claimantContact: '0917', status: 'rejected', proof: 'Private proof', createdAt: now, notification: { id: 'n1', message: 'x', read: false, timestamp: now } },
-      { id: 'claim-on-their-found-item', itemId: 203, claimantId: 'student-test', claimantName: 'Test Student', status: 'approved', proof: 'Mine', createdAt: now, reviewedAt: now, meetup: { 'student-test': { status: 'pending', createdAt: now } } }
+      {
+        id: 'claim-leaver-pending',
+        itemId: 11,
+        claimantId: 'leaver-test',
+        claimantName: 'Leaver',
+        claimantEmail: 'leaver@my.cspc.edu.ph',
+        status: 'pending',
+        proof: 'Private proof',
+        createdAt: now,
+      },
+      {
+        id: 'claim-leaver-decided',
+        itemId: 11,
+        claimantId: 'leaver-test',
+        claimantName: 'Leaver',
+        claimantEmail: 'leaver@my.cspc.edu.ph',
+        claimantContact: '0917',
+        status: 'rejected',
+        proof: 'Private proof',
+        createdAt: now,
+        notification: { id: 'n1', message: 'x', read: false, timestamp: now },
+      },
+      {
+        id: 'claim-on-their-found-item',
+        itemId: 203,
+        claimantId: 'student-test',
+        claimantName: 'Test Student',
+        status: 'approved',
+        proof: 'Mine',
+        createdAt: now,
+        reviewedAt: now,
+        meetup: { 'student-test': { status: 'pending', createdAt: now } },
+      }
     );
     fs.writeFileSync(paths.claims, JSON.stringify(claims));
 
-    const deleteAccount = (cookie, body) => fetch(`${baseUrl}/api/auth/delete-account`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
-      body: JSON.stringify(body)
-    });
+    const deleteAccount = (cookie, body) =>
+      fetch(`${baseUrl}/api/auth/delete-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
+        body: JSON.stringify(body),
+      });
     assert.equal((await deleteAccount(null, { password: studentPassword, confirm: 'DELETE' })).status, 401);
     const adminCookie = await login('admin@cspc.edu.ph', adminPassword);
     assert.equal((await deleteAccount(adminCookie, { password: adminPassword, confirm: 'DELETE' })).status, 403);
@@ -1605,32 +1945,45 @@ test('a student can delete their own account; personal data goes, shared records
     const cookie = await login('leaver@my.cspc.edu.ph', studentPassword);
     assert.equal((await deleteAccount(cookie, { password: studentPassword })).status, 400, 'DELETE must be typed');
     assert.equal((await deleteAccount(cookie, { password: 'WrongPass1!', confirm: 'DELETE' })).status, 400);
-    assert.ok(read('users').some(user => user.id === 'leaver-test'));
+    assert.ok(read('users').some((user) => user.id === 'leaver-test'));
 
     const deleted = await deleteAccount(cookie, { password: studentPassword, confirm: 'DELETE' });
     assert.equal(deleted.status, 200);
     assert.equal((await deleted.json()).success, true);
 
-    assert.equal(read('users').some(user => user.id === 'leaver-test'), false);
+    assert.equal(
+      read('users').some((user) => user.id === 'leaver-test'),
+      false
+    );
     assert.equal(read('users').length, JSON.parse(originals.users).length, 'no other account is touched');
     const session = await fetch(`${baseUrl}/api/auth/me`, { headers: { Cookie: cookie } });
     assert.equal((await session.json()).authenticated, false);
-    const signInAgain = await postJson(`${baseUrl}/api/auth/login`, JSON.stringify({ email: 'leaver@my.cspc.edu.ph', password: studentPassword }));
+    const signInAgain = await postJson(
+      `${baseUrl}/api/auth/login`,
+      JSON.stringify({ email: 'leaver@my.cspc.edu.ph', password: studentPassword })
+    );
     assert.equal(signInAgain.status, 401);
 
     const itemsAfter = read('items');
-    assert.equal(itemsAfter.some(item => item.id === 201 || item.id === 202), false, 'belongings and lost reports are deleted');
-    const found = itemsAfter.find(item => item.id === 203);
+    assert.equal(
+      itemsAfter.some((item) => item.id === 201 || item.id === 202),
+      false,
+      'belongings and lost reports are deleted'
+    );
+    const found = itemsAfter.find((item) => item.id === 203);
     assert.equal(found.reportedBy, 'guest');
     assert.doesNotMatch(JSON.stringify(found), /leaver/i, 'no personal detail stays on the kept found report');
     assert.equal(itemsAfter.length, JSON.parse(originals.items).length + 1);
 
     const claimsAfter = read('claims');
-    assert.equal(claimsAfter.some(claim => claim.id === 'claim-leaver-pending'), false);
-    const decided = claimsAfter.find(claim => claim.id === 'claim-leaver-decided');
+    assert.equal(
+      claimsAfter.some((claim) => claim.id === 'claim-leaver-pending'),
+      false
+    );
+    const decided = claimsAfter.find((claim) => claim.id === 'claim-leaver-decided');
     assert.equal(decided.claimantName, 'Deleted account');
     assert.doesNotMatch(JSON.stringify({ ...decided, id: '' }), /leaver|0917|Private proof/i);
-    assert.equal(claimsAfter.find(claim => claim.id === 'claim-on-their-found-item').meetup, undefined);
+    assert.equal(claimsAfter.find((claim) => claim.id === 'claim-on-their-found-item').meetup, undefined);
   } finally {
     Object.entries(paths).forEach(([name, file]) => fs.writeFileSync(file, originals[name]));
   }
@@ -1643,13 +1996,13 @@ test('production requires a secret and persists secure sessions', async () => {
 
   process.env.SESSION_SECRET = 'production-test-session-secret';
   const productionServer = createApp().listen(0);
-  await new Promise(resolve => productionServer.once('listening', resolve));
+  await new Promise((resolve) => productionServer.once('listening', resolve));
   try {
     const productionUrl = `http://127.0.0.1:${productionServer.address().port}`;
     const loginResponse = await fetch(`${productionUrl}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Forwarded-Proto': 'https' },
-      body: JSON.stringify({ email: 'admin@cspc.edu.ph', password: adminPassword })
+      body: JSON.stringify({ email: 'admin@cspc.edu.ph', password: adminPassword }),
     });
     assert.equal(loginResponse.status, 200, await loginResponse.clone().text());
     // An administrator is signed in by the password alone, so this response sets the session cookie.
@@ -1661,7 +2014,7 @@ test('production requires a secret and persists secure sessions', async () => {
     assert.equal((await sessionResponse.json()).authenticated, true);
     assert.ok(fs.readdirSync(path.join(dataDir, 'sessions')).length > 0);
   } finally {
-    await new Promise((resolve, reject) => productionServer.close(error => error ? reject(error) : resolve()));
+    await new Promise((resolve, reject) => productionServer.close((error) => (error ? reject(error) : resolve())));
     process.env.NODE_ENV = 'test';
     process.env.SESSION_SECRET = 'test-only-session-secret';
   }
@@ -1669,13 +2022,13 @@ test('production requires a secret and persists secure sessions', async () => {
 
 test('missing Supabase configuration does not silently fall back to JSON files', () => {
   const keys = ['DATABASE_URL', 'SUPABASE_DB_URL'];
-  const originalEnvironment = Object.fromEntries(keys.map(key => [key, process.env[key]]));
+  const originalEnvironment = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
   try {
-    keys.forEach(key => delete process.env[key]);
+    keys.forEach((key) => delete process.env[key]);
     const postgresStore = require('../services/postgresStore');
     assert.equal(postgresStore.isConfigured(), false);
   } finally {
-    keys.forEach(key => {
+    keys.forEach((key) => {
       if (originalEnvironment[key] === undefined) delete process.env[key];
       else process.env[key] = originalEnvironment[key];
     });
@@ -1685,10 +2038,11 @@ test('missing Supabase configuration does not silently fall back to JSON files',
 test('production admin password reset is explicit and only affects the configured admin', async () => {
   const usersPath = path.join(dataDir, 'users.json');
   const originalUsers = fs.readFileSync(usersPath, 'utf8');
-  const originalStudentPasswordHash = JSON.parse(originalUsers)
-    .find(user => user.email === 'student@my.cspc.edu.ph').passwordHash;
+  const originalStudentPasswordHash = JSON.parse(originalUsers).find(
+    (user) => user.email === 'student@my.cspc.edu.ph'
+  ).passwordHash;
   const environmentKeys = ['NODE_ENV', 'ADMIN_EMAIL', 'ADMIN_PASSWORD', 'ADMIN_PASSWORD_RESET'];
-  const originalEnvironment = Object.fromEntries(environmentKeys.map(key => [key, process.env[key]]));
+  const originalEnvironment = Object.fromEntries(environmentKeys.map((key) => [key, process.env[key]]));
 
   try {
     process.env.NODE_ENV = 'production';
@@ -1700,21 +2054,22 @@ test('production admin password reset is explicit and only affects the configure
     authRoutes.ensureDefaultAdminAccount();
 
     const users = JSON.parse(fs.readFileSync(usersPath, 'utf8'));
-    const admin = users.find(user => user.email === 'admin@cspc.edu.ph');
-    const student = users.find(user => user.email === 'student@my.cspc.edu.ph');
+    const admin = users.find((user) => user.email === 'admin@cspc.edu.ph');
+    const student = users.find((user) => user.email === 'student@my.cspc.edu.ph');
     assert.equal(await bcrypt.compare('NewAdminPassword123!', admin.passwordHash), true);
     assert.equal(student.passwordHash, originalStudentPasswordHash);
 
     process.env.ADMIN_PASSWORD_RESET = 'false';
     process.env.ADMIN_PASSWORD = 'DifferentAdminPassword456!';
     authRoutes.ensureDefaultAdminAccount();
-    const unchangedAdmin = JSON.parse(fs.readFileSync(usersPath, 'utf8'))
-      .find(user => user.email === 'admin@cspc.edu.ph');
+    const unchangedAdmin = JSON.parse(fs.readFileSync(usersPath, 'utf8')).find(
+      (user) => user.email === 'admin@cspc.edu.ph'
+    );
     assert.equal(await bcrypt.compare('NewAdminPassword123!', unchangedAdmin.passwordHash), true);
     assert.equal(await bcrypt.compare('DifferentAdminPassword456!', unchangedAdmin.passwordHash), false);
   } finally {
     fs.writeFileSync(usersPath, originalUsers);
-    environmentKeys.forEach(key => {
+    environmentKeys.forEach((key) => {
       if (originalEnvironment[key] === undefined) delete process.env[key];
       else process.env[key] = originalEnvironment[key];
     });
@@ -1727,20 +2082,24 @@ test('production startup requires Supabase configuration', async () => {
     NODE_ENV: 'production',
     SESSION_SECRET: 'test-module-start-secret',
     ADMIN_EMAIL: 'admin@cspc.edu.ph',
-    ADMIN_PASSWORD: 'ProductionStrongTestPass1!'
+    ADMIN_PASSWORD: 'ProductionStrongTestPass1!',
   };
-  ['DATABASE_URL', 'SUPABASE_DB_URL'].forEach(key => delete childEnvironment[key]);
+  ['DATABASE_URL', 'SUPABASE_DB_URL'].forEach((key) => delete childEnvironment[key]);
   const child = spawn(process.execPath, ['-e', "require('./server')"], {
     cwd: path.join(__dirname, '..'),
     env: childEnvironment,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
   });
   let logs = '';
   const processExit = new Promise((resolve, reject) => {
     const timeout = setTimeout(() => reject(new Error(`Server did not exit. Logs: ${logs}`)), 3500);
-    child.stdout.on('data', chunk => { logs += chunk.toString(); });
-    child.stderr.on('data', chunk => { logs += chunk.toString(); });
-    child.once('error', error => {
+    child.stdout.on('data', (chunk) => {
+      logs += chunk.toString();
+    });
+    child.stderr.on('data', (chunk) => {
+      logs += chunk.toString();
+    });
+    child.once('error', (error) => {
       clearTimeout(timeout);
       reject(error);
     });
@@ -1763,14 +2122,15 @@ test('reference codes are never reused, even after a report is deleted', async (
     const response = await fetch(`${baseUrl}/api/items`, {
       method: 'POST',
       headers: { Cookie: studentCookie },
-      body: reportFormData(null, { title: 'Steel thermos flask', desc: 'Dented steel thermos flask.' })
+      body: reportFormData(null, { title: 'Steel thermos flask', desc: 'Dented steel thermos flask.' }),
     });
     assert.equal(response.status, 201);
     const { item } = await response.json();
     created.push(item);
     return item;
   };
-  const remove = item => fetch(`${baseUrl}/api/items/${item.id}`, { method: 'DELETE', headers: { Cookie: adminCookie } });
+  const remove = (item) =>
+    fetch(`${baseUrl}/api/items/${item.id}`, { method: 'DELETE', headers: { Cookie: adminCookie } });
 
   try {
     const first = await report();
@@ -1787,7 +2147,7 @@ test('reference codes are never reused, even after a report is deleted', async (
     const belonging = await fetch(`${baseUrl}/api/items/register-belonging`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-      body: JSON.stringify({ title: 'Scientific calculator', category: 'Electronics' })
+      body: JSON.stringify({ title: 'Scientific calculator', category: 'Electronics' }),
     });
     assert.equal(belonging.status, 201);
     const registered = (await belonging.json()).item;
@@ -1803,12 +2163,15 @@ test('finder alerts about one belonging are limited so its owner cannot be flood
   const belonging = await fetch(`${baseUrl}/api/items/register-belonging`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Cookie: studentCookie },
-    body: JSON.stringify({ title: 'Flood test earphones', category: 'Electronics' })
+    body: JSON.stringify({ title: 'Flood test earphones', category: 'Electronics' }),
   });
   assert.equal(belonging.status, 201);
   const { item } = await belonging.json();
-  const alert = () => postJson(`${baseUrl}/api/items/anonymous-notify`,
-    JSON.stringify({ refCode: item.refCode, message: 'I found this near the gate.' }));
+  const alert = () =>
+    postJson(
+      `${baseUrl}/api/items/anonymous-notify`,
+      JSON.stringify({ refCode: item.refCode, message: 'I found this near the gate.' })
+    );
 
   try {
     for (let count = 0; count < 6; count += 1) assert.equal((await alert()).status, 200);
@@ -1818,13 +2181,13 @@ test('finder alerts about one belonging are limited so its owner cannot be flood
 
     const inbox = await fetch(`${baseUrl}/api/items/my-notifications`, { headers: { Cookie: studentCookie } });
     const { notifications } = await inbox.json();
-    assert.equal(notifications.filter(entry => entry.refCode === item.refCode).length, 6);
+    assert.equal(notifications.filter((entry) => entry.refCode === item.refCode).length, 6);
   } finally {
     await fetch(`${baseUrl}/api/items/${item.id}`, { method: 'DELETE', headers: { Cookie: studentCookie } });
   }
 });
 
-test('the admin script turns a student-domain account into an administrator who can sign in', async t => {
+test('the admin script turns a student-domain account into an administrator who can sign in', async (t) => {
   const usersPath = path.join(dataDir, 'users.json');
   const originalUsers = fs.readFileSync(usersPath);
   t.after(() => fs.writeFileSync(usersPath, originalUsers));
@@ -1833,19 +2196,26 @@ test('the admin script turns a student-domain account into an administrator who 
   fs.writeFileSync(usersPath, JSON.stringify(users));
 
   const environment = { ...process.env, NODE_ENV: 'test', DATA_DIR: dataDir };
-  ['DATABASE_URL', 'SUPABASE_DB_URL'].forEach(key => delete environment[key]);
-  const runScript = (...args) => new Promise(resolve => {
-    const child = spawn(process.execPath, [path.join(__dirname, '..', 'scripts', 'manage-admin.js'), ...args], { env: environment });
-    let output = '';
-    child.stdout.on('data', chunk => { output += chunk; });
-    child.stderr.on('data', chunk => { output += chunk; });
-    child.on('close', code => resolve({ code, output }));
-  });
+  ['DATABASE_URL', 'SUPABASE_DB_URL'].forEach((key) => delete environment[key]);
+  const runScript = (...args) =>
+    new Promise((resolve) => {
+      const child = spawn(process.execPath, [path.join(__dirname, '..', 'scripts', 'manage-admin.js'), ...args], {
+        env: environment,
+      });
+      let output = '';
+      child.stdout.on('data', (chunk) => {
+        output += chunk;
+      });
+      child.stderr.on('data', (chunk) => {
+        output += chunk;
+      });
+      child.on('close', (code) => resolve({ code, output }));
+    });
 
   const refused = await runScript('officer@my.cspc.edu.ph', 'short@2025');
   assert.equal(refused.code, 1);
   assert.match(refused.output, /does not meet the administrator password rules/);
-  assert.equal(JSON.parse(fs.readFileSync(usersPath)).find(user => user.id === 'officer-test').role, 'student');
+  assert.equal(JSON.parse(fs.readFileSync(usersPath)).find((user) => user.id === 'officer-test').role, 'student');
 
   const outsider = await runScript('someone@gmail.com', 'LongEnoughPass1!');
   assert.equal(outsider.code, 1);

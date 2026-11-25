@@ -11,7 +11,7 @@ const ALLOWED_CATEGORIES = [
   'Jewelry',
   'Sports Equipment',
   'School Supplies',
-  'Others'
+  'Others',
 ];
 
 // Exact CSPC addresses: no subdomains, spaces, or extra @ signs.
@@ -19,13 +19,11 @@ const STUDENT_EMAIL = /^[a-z0-9._%+-]+@my\.cspc\.edu\.ph$/;
 const STAFF_EMAIL = /^[a-z0-9._%+-]+@cspc\.edu\.ph$/;
 // Students always use the student domain. An administrator may be on either one:
 // the school's admin can be a student officer with only an @my.cspc.edu.ph inbox.
-const isAdminEmail = email => STAFF_EMAIL.test(email) || STUDENT_EMAIL.test(email);
+const isAdminEmail = (email) => STAFF_EMAIL.test(email) || STUDENT_EMAIL.test(email);
 
 function sanitizeString(str) {
   if (typeof str !== 'string') return '';
-  return str
-    .trim()
-    .replace(/[<>]/g, ''); // strip script injection tags
+  return str.trim().replace(/[<>]/g, ''); // strip script injection tags
 }
 
 function validateItemReport(req, res, next) {
@@ -72,7 +70,7 @@ function validateItemReport(req, res, next) {
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors
+      errors,
     });
   }
 
@@ -126,9 +124,11 @@ function validateUserAuth(req, res, next) {
     // The password itself is collected later, once the OTP confirms this inbox.
     const isEmployee = req.body.accountType === 'employee';
     if (isEmployee ? !STAFF_EMAIL.test(normalizedEmail) : !STUDENT_EMAIL.test(normalizedEmail)) {
-      errors.push(isEmployee
-        ? 'Use your CSPC employee email address ending in @cspc.edu.ph.'
-        : 'Use your CSPC student email address ending in @my.cspc.edu.ph.');
+      errors.push(
+        isEmployee
+          ? 'Use your CSPC employee email address ending in @cspc.edu.ph.'
+          : 'Use your CSPC student email address ending in @my.cspc.edu.ph.'
+      );
     }
   } else {
     if (!STUDENT_EMAIL.test(normalizedEmail) && !STAFF_EMAIL.test(normalizedEmail)) {
@@ -148,7 +148,7 @@ function validateUserAuth(req, res, next) {
     return res.status(400).json({
       success: false,
       message: 'Authentication input validation failed',
-      errors
+      errors,
     });
   }
 
@@ -163,5 +163,5 @@ module.exports = {
   passwordStrengthErrors,
   STUDENT_EMAIL,
   STAFF_EMAIL,
-  isAdminEmail
+  isAdminEmail,
 };

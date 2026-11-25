@@ -28,7 +28,7 @@ function ask(message) {
   return fetch(`${baseUrl}/api/items/assistant/parse`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message })
+    body: JSON.stringify({ message }),
   });
 }
 
@@ -43,58 +43,61 @@ test.before(async () => {
   delete process.env.SUPABASE_DB_URL;
 
   fs.writeFileSync(path.join(dataDir, 'users.json'), JSON.stringify([]));
-  fs.writeFileSync(path.join(dataDir, 'items.json'), JSON.stringify([
-    {
-      id: 'found-tumbler',
-      refCode: 'CSPC-LF-2026-AAAAA',
-      title: 'Black AquaFlask Tumbler',
-      category: 'Water Bottles/Tumblers',
-      type: 'found',
-      location: 'Learning Resources and Development (Library)',
-      desc: 'Found a black AquaFlask tumbler left on a reading table.',
-      contact: 'private-finder@example.edu',
-      verification: 'Private sticker clue',
-      reportedBy: 'finder-test',
-      status: 'active',
-      claimed: false,
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'registered-private',
-      refCode: 'CSPC-REG-QR-0001',
-      title: 'Black AquaFlask Tumbler',
-      category: 'Water Bottles/Tumblers',
-      type: 'registered',
-      location: 'Learning Resources and Development (Library)',
-      desc: 'A privately registered belonging that must never surface publicly.',
-      reportedBy: 'owner-test',
-      status: 'active',
-      claimed: false
-    },
-    {
-      id: 'found-archived',
-      refCode: 'CSPC-LF-2026-BBBBB',
-      title: 'Black AquaFlask Tumbler',
-      category: 'Water Bottles/Tumblers',
-      type: 'found',
-      location: 'Learning Resources and Development (Library)',
-      desc: 'An archived report that should not be offered as a match.',
-      reportedBy: 'finder-test',
-      status: 'archived',
-      claimed: false
-    }
-  ]));
+  fs.writeFileSync(
+    path.join(dataDir, 'items.json'),
+    JSON.stringify([
+      {
+        id: 'found-tumbler',
+        refCode: 'CSPC-LF-2026-AAAAA',
+        title: 'Black AquaFlask Tumbler',
+        category: 'Water Bottles/Tumblers',
+        type: 'found',
+        location: 'Learning Resources and Development (Library)',
+        desc: 'Found a black AquaFlask tumbler left on a reading table.',
+        contact: 'private-finder@example.edu',
+        verification: 'Private sticker clue',
+        reportedBy: 'finder-test',
+        status: 'active',
+        claimed: false,
+        createdAt: new Date().toISOString(),
+      },
+      {
+        id: 'registered-private',
+        refCode: 'CSPC-REG-QR-0001',
+        title: 'Black AquaFlask Tumbler',
+        category: 'Water Bottles/Tumblers',
+        type: 'registered',
+        location: 'Learning Resources and Development (Library)',
+        desc: 'A privately registered belonging that must never surface publicly.',
+        reportedBy: 'owner-test',
+        status: 'active',
+        claimed: false,
+      },
+      {
+        id: 'found-archived',
+        refCode: 'CSPC-LF-2026-BBBBB',
+        title: 'Black AquaFlask Tumbler',
+        category: 'Water Bottles/Tumblers',
+        type: 'found',
+        location: 'Learning Resources and Development (Library)',
+        desc: 'An archived report that should not be offered as a match.',
+        reportedBy: 'finder-test',
+        status: 'archived',
+        claimed: false,
+      },
+    ])
+  );
   fs.writeFileSync(path.join(dataDir, 'claims.json'), JSON.stringify([]));
 
   const { createApp } = require('../server');
   appServer = createApp().listen(0);
-  await new Promise(resolve => appServer.once('listening', resolve));
+  await new Promise((resolve) => appServer.once('listening', resolve));
   baseUrl = `http://127.0.0.1:${appServer.address().port}`;
 });
 
 test.after(async () => {
   if (appServer) {
-    await new Promise((resolve, reject) => appServer.close(error => (error ? reject(error) : resolve())));
+    await new Promise((resolve, reject) => appServer.close((error) => (error ? reject(error) : resolve())));
   }
   if (dataDir) fs.rmSync(dataDir, { recursive: true, force: true });
 });
@@ -128,7 +131,9 @@ test('extracts a found report without dumping the narration into the description
 });
 
 test('only takes the description from an explicit "description is ..." cue', () => {
-  const withCue = parse('I found a blue JanSport backpack at the canteen. Description is it has a torn zipper and a keychain.');
+  const withCue = parse(
+    'I found a blue JanSport backpack at the canteen. Description is it has a torn zipper and a keychain.'
+  );
   assert.equal(withCue.draft.desc, 'it has a torn zipper and a keychain.');
 
   const withColonCue = parse('I lost my wallet at the library. description: brown leather with a CSPC ID inside');
@@ -227,13 +232,17 @@ test('truncates an overlong message rather than storing all of it', () => {
 
 test('an AI reply cannot introduce a category or office the form would reject', () => {
   const base = parse('I lost something at the library');
-  const merged = assistant.__internals.mergeModelResult(base, {
-    type: 'lost',
-    title: 'Black Tumbler',
-    category: 'Invented Category',
-    location: 'Hogwarts Castle',
-    when: ''
-  }, NOW);
+  const merged = assistant.__internals.mergeModelResult(
+    base,
+    {
+      type: 'lost',
+      title: 'Black Tumbler',
+      category: 'Invented Category',
+      location: 'Hogwarts Castle',
+      when: '',
+    },
+    NOW
+  );
 
   assert.equal(merged.draft.title, 'Black Tumbler', 'a plain title is accepted');
   assert.equal(merged.draft.category, base.draft.category, 'the invented category is dropped');
@@ -253,9 +262,16 @@ test('an AI reply cannot backdate a report into the future', () => {
 
 test('an AI reply with a junk title or type leaves the rules result standing', () => {
   const base = parse('I lost my black AquaFlask near the library this morning');
-  const merged = assistant.__internals.mergeModelResult(base, {
-    type: 'maybe', title: 'x', category: '', location: ''
-  }, NOW);
+  const merged = assistant.__internals.mergeModelResult(
+    base,
+    {
+      type: 'maybe',
+      title: 'x',
+      category: '',
+      location: '',
+    },
+    NOW
+  );
   assert.equal(merged.draft.type, 'lost');
   assert.equal(merged.draft.title, 'Black AquaFlask');
 });
@@ -289,7 +305,7 @@ test('the match preview leaks no private field', async () => {
 
 test('the match preview excludes registered belongings and archived reports', async () => {
   const body = await (await ask('I lost my black AquaFlask near the library this morning')).json();
-  const ids = body.matches.map(match => match.id);
+  const ids = body.matches.map((match) => match.id);
   assert.equal(ids.includes('registered-private'), false, 'a private belonging must stay private');
   assert.equal(ids.includes('found-archived'), false, 'an archived report is not a live match');
 });
@@ -307,8 +323,11 @@ test('the endpoint saves nothing', async () => {
   const before = fs.readFileSync(path.join(dataDir, 'items.json'), 'utf8');
   await ask('I lost my black AquaFlask near the library this morning');
   await ask('I found a wallet at the canteen');
-  assert.equal(fs.readFileSync(path.join(dataDir, 'items.json'), 'utf8'), before,
-    'the assistant is read-only; the student still submits the form');
+  assert.equal(
+    fs.readFileSync(path.join(dataDir, 'items.json'), 'utf8'),
+    before,
+    'the assistant is read-only; the student still submits the form'
+  );
 });
 
 test('the endpoint strips angle brackets from the message it echoes back', async () => {
