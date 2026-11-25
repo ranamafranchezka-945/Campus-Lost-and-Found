@@ -891,7 +891,7 @@
   color: var(--badge-found-fg) !important;
 }
 
-/* ── Report form: optional fields folded under "Add more details" ───────── */
+/* ── Report form: optional fields folded under "Add more details" ── */
 .report-more {
   margin: 0 0 1.25rem;
   border: 1px solid var(--control-border);
@@ -966,7 +966,7 @@
   }
 }
 
-/* ── Report form: actions ───────────────────────────────────────────────── */
+/* ── Report form: actions ── */
 /* Submit is the main action, so it gets twice Cancel's width; labels never wrap. */
 .report-actions {
   display: flex;
