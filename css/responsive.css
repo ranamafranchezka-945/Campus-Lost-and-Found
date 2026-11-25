@@ -1726,12 +1726,23 @@ input[type='submit'] {
   }
 
   .nav-links a[data-mobile-icon='items']::before { content: '\25a3'; }
-  .nav-links a[data-mobile-icon='belongings']::before { content: '\25c7'; }
   .nav-links a[data-mobile-icon='report']::before { content: '\270e'; }
   .nav-links a[data-mobile-icon='about']::before { content: '\24d8'; }
   .nav-links a[data-mobile-icon='dashboard']::before { content: '\2302'; }
   .nav-links .mobile-drawer-belongings:not([hidden]) { display: flex !important; }
   .nav-links .mobile-drawer-belongings[hidden] { display: none !important; }
+  .nav-links .mobile-drawer-icon {
+    display: inline-flex;
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--blue-light);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
   .nav-links a[href$='about.html']::before {
     content: '?';
     width: 1.1rem;
