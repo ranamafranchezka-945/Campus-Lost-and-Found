@@ -713,7 +713,7 @@
   border: 1px solid rgba(45, 212, 191, 0.35);
 }
 
-/* ── Admin: broadcast form ──────────────────────────────────────────────── */
+/* ── Admin: broadcast form ── */
 :root .broadcast-card {
   display: grid;
   gap: 0.45rem;
