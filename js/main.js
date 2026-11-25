@@ -670,6 +670,20 @@ document.addEventListener('DOMContentLoaded', () => {
   initButtonSelects();
 });
 document.addEventListener('click', event => {
+  const target = event.target;
+  if (!(target instanceof Element) ||
+      !document.body.classList.contains('about-page') ||
+      !window.matchMedia('(max-width: 768px)').matches) return;
+
+  const navbar = document.querySelector('.about-page .navbar');
+  const links = navbar && navbar.querySelector('.nav-links.open');
+  if (!navbar || !links || links.contains(target)) return;
+
+  closeMobileNav(navbar, true);
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, true);
+document.addEventListener('click', event => {
   const itemsLink = event.target.closest('.navbar .nav-links a[href="#items"]');
   const itemsSection = document.getElementById('items');
   if (itemsLink && itemsSection) {
