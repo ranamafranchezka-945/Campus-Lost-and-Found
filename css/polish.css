@@ -4,11 +4,11 @@
 
 :root {
   /* Room the footer and its top margin take up; short pages subtract it so the
-     footer still sits at the bottom of the screen. */
+  footer still sits at the bottom of the screen. */
   --footer-space: 8rem;
 }
 
-/* ── Page frame: the footer ends the page instead of covering it ────────── */
+/* ── Page frame: the footer ends the page instead of covering it ── */
 :root body {
   padding-bottom: 0;
 }
@@ -123,7 +123,7 @@
   }
 }
 
-/* ── Home: hero ─────────────────────────────────────────────────────────── */
+/* ── Home: hero ── */
 :root .hero-name {
   margin-bottom: 0.35rem;
 }
@@ -168,7 +168,7 @@
   border: 0;
 }
 
-/* ── Home: section headers (same type scale as the About page) ──────────── */
+/* ── Home: section headers (same type scale as the About page) ── */
 :root .section-head {
   display: flex;
   flex-wrap: wrap;
@@ -216,10 +216,10 @@
   display: none;
 }
 
-/* ── Home: item cards ───────────────────────────────────────────────────── */
+/* ── Home: item cards ── */
 :root #items .projects-grid.items-grid:not(.registered-belongings-grid) {
   /* At most three cards per row: each track is at least a third of the row
-     (minus the two 1.25rem gaps), and at least 15.5rem where the row is wider. */
+    (minus the two 1.25rem gaps), and at least 15.5rem where the row is wider. */
   grid-template-columns: repeat(auto-fill, minmax(max(min(100%, 15.5rem), calc((100% - 2.5rem) / 3)), 1fr)) !important;
   grid-auto-rows: auto !important;
   align-items: stretch !important;
@@ -531,7 +531,7 @@
   opacity: 0.86;
 }
 
-/* ── Portal hero globe ──────────────────────────────────────────────────── */
+/* ── Portal hero globe ── */
 .portal-hero-avatar {
   flex: 0 0 min(40%, 380px);
   text-align: center;
@@ -637,7 +637,7 @@
   text-transform: none;
 }
 
-/* ── Admin: tab headers ─────────────────────────────────────────────────── */
+/* ── Admin: tab headers ── */
 :root .claims-tab-intro {
   gap: 0.75rem 1.5rem;
   margin-bottom: 1.25rem;
@@ -662,7 +662,7 @@
   line-height: 1.5;
 }
 
-/* ── Admin: items table ─────────────────────────────────────────────────── */
+/* ── Admin: items table ── */
 /* Text columns read left to right; only the row number and actions are centred. */
 :root #adminItemsTable th,
 :root #adminItemsTable td {
@@ -713,7 +713,7 @@
   border: 1px solid rgba(45, 212, 191, 0.35);
 }
 
-/* ── Admin: broadcast form ──────────────────────────────────────────────── */
+/* ── Admin: broadcast form ── */
 :root .broadcast-card {
   display: grid;
   gap: 0.45rem;
@@ -791,9 +791,9 @@
   }
 
   /* Tighter spacing so the whole sticky form fits below the navbar on a 1080p
-     screen. Text and field sizes stay the same; only the gaps shrink.
-     !important where the spacing comes from inline styles or glass.css's
-     !important panel padding. */
+    screen. Text and field sizes stay the same; only the gaps shrink.
+    !important where the spacing comes from inline styles or glass.css's
+    !important panel padding. */
   :root .browse-report-layout > .tools-section {
     padding: 1.5rem !important;
   }
@@ -858,9 +858,9 @@
   }
 }
 
-/* ── Report form: lost / found switch ───────────────────────────────────── */
+/* ── Report form: lost / found switch ── */
 /* Form labels are inline-block with a bottom margin (styles.css); these are flex
-   buttons, so the icon and text centre together. */
+  buttons, so the icon and text centre together. */
 :root .type-switcher .type-option {
   display: flex;
   align-items: center;
@@ -891,7 +891,7 @@
   color: var(--badge-found-fg) !important;
 }
 
-/* ── Report form: optional fields folded under "Add more details" ───────── */
+/* ── Report form: optional fields folded under "Add more details" ── */
 .report-more {
   margin: 0 0 1.25rem;
   border: 1px solid var(--control-border);
@@ -966,7 +966,7 @@
   }
 }
 
-/* ── Report form: actions ───────────────────────────────────────────────── */
+/* ── Report form: actions ── */
 /* Submit is the main action, so it gets twice Cancel's width; labels never wrap. */
 .report-actions {
   display: flex;

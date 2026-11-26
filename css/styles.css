@@ -118,7 +118,7 @@ html {
 }
 
 /* opacity + transform only: both are compositor-only (no layout, no repaint), so this
-   stays smooth on low-end devices no matter how heavy the page underneath it is. */
+  stays smooth on low-end devices no matter how heavy the page underneath it is. */
 @keyframes app-page-exit {
   to {
     opacity: 0;
@@ -1513,8 +1513,8 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: transparent;
   color: var(--text-muted);
@@ -1530,12 +1530,19 @@ h2 {
 .notifications-modal-close:focus-visible {
   color: #ffffff;
   background: rgba(30, 41, 59, 0.6);
+  border-color: var(--blue-main);
+}
+
+.notifications-modal-close:focus-visible {
+  outline: 2px solid var(--blue-main);
+  outline-offset: 2px;
 }
 
 [data-theme='light'] .notifications-modal-close:hover,
 [data-theme='light'] .notifications-modal-close:focus-visible {
   color: #0f172a;
   background: rgba(148, 163, 184, 0.2);
+  border-color: var(--blue-main);
 }
 
 [data-theme='light'] .site-footer {

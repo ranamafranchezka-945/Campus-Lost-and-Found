@@ -2240,7 +2240,90 @@ router.get('/:id/photo', async (req, res) => {
   );
 });
 
-// PATCH /api/items/notifications/:notifId/read - Mark notification as read
+// PATCH /api/items/notifications/read - Mark selected notifications as read
+router.patch('/notifications/read', requireAuth, (req, res) => {
+  const notificationIds = req.body?.notificationIds;
+  if (
+    !Array.isArray(notificationIds) ||
+    notificationIds.length < 1 ||
+    notificationIds.length > 1000 ||
+    notificationIds.some(
+      (reference) =>
+        !reference ||
+        typeof reference !== 'object' ||
+        !['item', 'claim', 'claim-conversation'].includes(reference.kind) ||
+        typeof reference.recordId !== 'string' ||
+        !reference.recordId.trim() ||
+        reference.recordId.length > 200 ||
+        typeof reference.id !== 'string' ||
+        !reference.id.trim() ||
+        reference.id.length > 200
+    )
+  ) {
+    return res.status(400).json({ success: false, message: 'Select between 1 and 1000 valid notifications.' });
+  }
+
+  const identities = new Set(
+    notificationIds.map((reference) => `${reference.kind}:${reference.recordId}:${reference.id}`)
+  );
+  const userId = String(req.session.user.id);
+  const items = getItems();
+  const claims = getClaims();
+  const users = readJsonArray(USERS_FILE);
+  let itemsChanged = false;
+  let claimsChanged = false;
+  let updatedCount = 0;
+
+  items.forEach((item) => {
+    if (String(item.reportedBy) !== userId || !Array.isArray(item.notifications)) return;
+    item.notifications.forEach((notification) => {
+      if (
+        identities.has(`item:${item.id}:${notification.id}`) &&
+        !notification.read
+      ) {
+        notification.read = true;
+        itemsChanged = true;
+        updatedCount++;
+      }
+    });
+  });
+
+  claims.forEach((claim) => {
+    if (
+      String(claim.claimantId) === userId &&
+      claim.notification &&
+      identities.has(`claim:${claim.id}:${claim.notification.id}`) &&
+      !claim.notification.read
+    ) {
+      claim.notification.read = true;
+      claimsChanged = true;
+      updatedCount++;
+    }
+
+    if (!identities.has(`claim-conversation:${claim.id}:claim-conversation-${claim.id}`)) return;
+    const parties = claimConversationParties(claim, items, users);
+    if (!parties) return;
+    const isOwner = String(parties.owner.id) === userId;
+    const isFinder = String(parties.finder.id) === userId;
+    if (!isOwner && !isFinder) return;
+    const me = isOwner ? parties.owner : parties.finder;
+    const other = isOwner ? parties.finder : parties.owner;
+    if (claimConversationNotification(claim, parties.item, me, other).read) return;
+
+    claim.lastReadAt =
+      claim.lastReadAt && typeof claim.lastReadAt === 'object' && !Array.isArray(claim.lastReadAt)
+        ? claim.lastReadAt
+        : {};
+    claim.lastReadAt[userId] = new Date().toISOString();
+    claimsChanged = true;
+    updatedCount++;
+  });
+
+  if (itemsChanged) saveItems(items);
+  if (claimsChanged) saveClaims(claims);
+  res.json({ success: true, updatedCount });
+});
+
 router.delete('/notifications', requireAuth, (req, res) => {
   const notificationIds = req.body?.notificationIds;
   if (
@@ -2312,6 +2395,7 @@ router.delete('/notifications', requireAuth, (req, res) => {
   res.json({ success: true, deletedCount });
 });
 
+// PATCH /api/items/notifications/:notifId/read - Mark one notification as read
 router.patch('/notifications/:notifId/read', requireAuth, (req, res) => {
   const items = getItems();
   const userId = req.session.user.id;
