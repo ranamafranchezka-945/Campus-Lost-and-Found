@@ -1559,8 +1559,10 @@ router.post('/anonymous-notify', async (req, res) => {
     }
 
     const item = items[itemIndex];
-    if (item.type !== 'registered') {
-      return res.status(404).json({ success: false, message: 'Registered belonging not found.' });
+    const isClaimed = Boolean(item.claimed || item.status === 'claimed');
+    const canReceiveFinderAlert = item.type === 'registered' || (['lost', 'found'].includes(item.type) && !isClaimed);
+    if (!canReceiveFinderAlert) {
+      return res.status(404).json({ success: false, message: 'This item can no longer receive finder alerts.' });
     }
     if (isRateLimited(finderAlertItems, String(item.id), FINDER_ALERT_ITEM_LIMIT)) {
       return res.status(429).json({
