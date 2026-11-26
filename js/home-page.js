@@ -231,13 +231,8 @@ async function checkAuthSession() {
       if (!matchesCache) renderAuthenticatedHeader(currentUser);
       fetchMyBelongingsCount();
       loadMyNotifications();
-      // Keep the bell's count current, e.g. when someone asks for your location.
-      clearInterval(window.notificationBadgeTimer);
-      window.notificationBadgeTimer = setInterval(() => {
-        if (document.visibilityState === 'visible') loadMyNotifications();
-      }, 60000);
-      // Refresh with the signed-in view (owner actions) without losing the current page.
-      fetchAndRenderItems({ keepPage: true });
+      // The initial feed request already used the confirmed cached session when available.
+      if (!matchesCache) fetchAndRenderItems({ keepPage: true });
 
       if (currentUser.role !== 'admin' && !document.getElementById('itemContact').value) {
         document.getElementById('itemContact').value = `${currentUser.fullName} (${currentUser.email})`;
@@ -641,7 +636,7 @@ function startReport(type) {
 function showItemsLoading(grid) {
   grid.setAttribute('aria-busy', 'true');
   if (grid.querySelector('.project-card')) {
-    grid.classList.add('is-loading');
+    grid.classList.remove('is-loading');
     return;
   }
   grid.innerHTML =
@@ -1803,6 +1798,8 @@ async function openMatchReferenceFromQr(token) {
 
 // ── Notifications Modal ───────────────────────────────────────────────────
 let notificationsRefreshTimer = null;
+let notificationsLoadRequestId = 0;
+let notificationsRefreshInProgress = false;
 
 async function openNotificationsModal() {
   const heading = document.getElementById('notificationsHeading');
@@ -1812,15 +1809,19 @@ async function openNotificationsModal() {
     subtitle.textContent = currentUser
       ? 'Account alerts and QR finder conversations saved on this browser'
       : 'Your QR finder conversations are saved on this browser';
-  document.getElementById('notificationsModal').classList.add('open');
-  await loadNotificationsIntoModal();
-  // While the inbox is open, pick up the other person's reply to a location request.
+  const modal = document.getElementById('notificationsModal');
+  const list = document.getElementById('notificationsList');
+  modal.classList.add('open');
   clearInterval(notificationsRefreshTimer);
+  await loadNotificationsIntoModal({ silent: list.dataset.loaded === 'true' });
+  if (!modal.classList.contains('open')) return;
+  // While the inbox is open, pick up the other person's reply to a location request.
   notificationsRefreshTimer = setInterval(refreshOpenNotifications, 20000);
 }
 
 function closeNotificationsModal() {
   clearInterval(notificationsRefreshTimer);
+  notificationsLoadRequestId++;
   document.getElementById('notificationsModal').classList.remove('open');
 }
 
@@ -1841,7 +1842,11 @@ function refreshOpenNotifications() {
       '.notif-item--meetup, .notif-item--claim-conversation, .notif-item--finder-conversation, .notif-item--guest-finder-conversation'
     )
   ) {
-    loadNotificationsIntoModal();
+    if (notificationsRefreshInProgress) return;
+    notificationsRefreshInProgress = true;
+    loadNotificationsIntoModal({ silent: true }).finally(() => {
+      notificationsRefreshInProgress = false;
+    });
   }
 }
 
@@ -2082,7 +2087,7 @@ async function meetupAction(claimId, path, body, button, busyLabel) {
     const data = await res.json();
     showToast(data.message || (data.success ? 'Done.' : 'Something went wrong.'), !data.success);
     if (data.success) {
-      await loadNotificationsIntoModal();
+      await loadNotificationsIntoModal({ silent: true });
       await loadMyNotifications();
       if (registeredConversation) await refreshClaimThread();
       else if (activeClaimThreadId === claimId) await refreshClaimThreadMeetup();
@@ -2655,33 +2660,47 @@ async function deleteClaimThread() {
   }
 }
 
-async function loadNotificationsIntoModal() {
+async function loadNotificationsIntoModal({ silent = false } = {}) {
   const list = document.getElementById('notificationsList');
-  destroyMeetupMaps();
-  list.innerHTML = '<p class="notif-empty">Loading…</p>';
+  const requestId = ++notificationsLoadRequestId;
+  if (!silent) {
+    destroyMeetupMaps();
+    list.innerHTML = '<p class="notif-empty">Loading…</p>';
+  }
   try {
     let data = { success: true, notifications: [], unreadCount: 0 };
     if (currentUser) {
       const res = await fetch('/api/items/my-notifications');
       data = await res.json();
+      if (requestId !== notificationsLoadRequestId) return;
       if (!res.ok || !data.success) {
-        document.getElementById('notificationSelectionToolbar').hidden = true;
-        list.innerHTML = '<p class="notif-empty">Could not load notifications.</p>';
+        if (!silent) {
+          document.getElementById('notificationSelectionToolbar').hidden = true;
+          list.innerHTML = '<p class="notif-empty">Could not load notifications.</p>';
+        } else {
+          console.error('Could not refresh notifications:', data.message || 'Notification refresh failed.');
+        }
         return;
       }
     }
 
     const guestConversations = await loadSavedFinderConversationNotifications();
+    if (requestId !== notificationsLoadRequestId) return;
     const notifications = [...data.notifications, ...guestConversations];
+    const renderKey = JSON.stringify({ notifications, unreadCount: data.unreadCount || 0 });
     if (!notifications.length) {
       document.getElementById('notificationSelectionToolbar').hidden = true;
-      list.innerHTML = `<p class="notif-empty">${currentUser ? 'No account notifications or saved finder conversations yet.' : 'No saved finder conversations on this browser yet.'}</p>`;
+      if (!silent || list.dataset.renderKey !== renderKey) {
+        destroyMeetupMaps();
+        list.innerHTML = `<p class="notif-empty">${currentUser ? 'No account notifications or saved finder conversations yet.' : 'No saved finder conversations on this browser yet.'}</p>`;
+        list.dataset.renderKey = renderKey;
+      }
+      list.dataset.loaded = 'true';
       return;
     }
 
     document.getElementById('notificationSelectionToolbar').hidden = !currentUser || !data.notifications.length;
-    document.getElementById('selectAllNotifications').checked = false;
-    list.innerHTML = notifications
+    const notificationMarkup = notifications
       .map((n) =>
         n.notificationType === 'guest-finder-conversation'
           ? `
@@ -2819,8 +2838,17 @@ async function loadNotificationsIntoModal() {
     `
       )
       .join('');
-    updateNotificationSelection();
-    initMeetupMaps();
+    if (!silent || list.dataset.renderKey !== renderKey) {
+      const scrollTop = list.scrollTop;
+      destroyMeetupMaps();
+      list.innerHTML = notificationMarkup;
+      list.scrollTop = scrollTop;
+      list.dataset.renderKey = renderKey;
+      document.getElementById('selectAllNotifications').checked = false;
+      updateNotificationSelection();
+      initMeetupMaps();
+    }
+    list.dataset.loaded = 'true';
     // If I'm the one sharing on any of these (e.g. after a page reload wiped the
     // in-memory watch), pick tracking back up for each.
     notifications
@@ -2838,6 +2866,11 @@ async function loadNotificationsIntoModal() {
     }
     refreshFinderNotificationsButton();
   } catch (err) {
+    if (requestId !== notificationsLoadRequestId) return;
+    if (silent) {
+      console.error('Could not refresh notifications:', err);
+      return;
+    }
     document.getElementById('notificationSelectionToolbar').hidden = true;
     list.innerHTML = '<p class="notif-empty">Failed to load notifications.</p>';
   }
@@ -2882,7 +2915,7 @@ async function deleteSelectedNotifications() {
     const data = await res.json();
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete notifications.');
     showToast(`${data.deletedCount} notification${data.deletedCount === 1 ? '' : 's'} deleted.`);
-    await loadNotificationsIntoModal();
+    await loadNotificationsIntoModal({ silent: true });
     await loadMyNotifications();
   } catch (err) {
     button.disabled = false;
@@ -2911,7 +2944,7 @@ async function deleteRegisteredConversationNotification(notificationId, itemId, 
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
     if (!data.deletedCount) throw new Error('The conversation was not found or is no longer available.');
     showToast('Conversation deleted.');
-    await loadNotificationsIntoModal();
+    await loadNotificationsIntoModal({ silent: true });
     await loadMyNotifications();
   } catch (error) {
     button.disabled = false;
@@ -2946,7 +2979,7 @@ async function deleteClaimConversationNotification(claimId, button) {
     if (!res.ok || !data.success) throw new Error(data.message || 'Could not delete the conversation.');
     if (!data.deletedCount) throw new Error('The conversation was not found or is no longer available.');
     showToast('Conversation deleted from your notifications.');
-    await loadNotificationsIntoModal();
+    await loadNotificationsIntoModal({ silent: true });
     await loadMyNotifications();
   } catch (error) {
     button.disabled = false;
@@ -2968,7 +3001,7 @@ async function removeSavedFinderConversationFromInbox(conversationId, button) {
     return;
   }
   showToast('Saved conversation removed from this browser.');
-  await loadNotificationsIntoModal();
+  await loadNotificationsIntoModal({ silent: true });
   await loadMyNotifications();
 }
 
@@ -3890,7 +3923,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   fetchStats();
-  window.setInterval(loadMyNotifications, 30000);
+  window.notificationBadgeTimer = window.setInterval(() => {
+    const notificationsModal = document.getElementById('notificationsModal');
+    if (
+      document.visibilityState === 'visible' &&
+      !notificationsModal?.classList.contains('open')
+    ) {
+      loadMyNotifications();
+    }
+  }, 30000);
   openMatchReferenceFromQr(matchParams.get('token'));
   const finderRef = window.location.pathname === '/found' ? matchParams.get('ref') : null;
   const finderConversation = getFinderConversationLink();
