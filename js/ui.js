@@ -10,7 +10,7 @@
 //                          the event, element.checked and element.value.
 //   data-activate          also fire the click action on Enter / Space (role="button" elements)
 //
-// Dialogs: every .slip-overlay / .del-modal-backdrop is treated as a modal dialog.
+// Dialogs: shared overlays use the same focus and page-scroll management.
 //   data-close="fnName"    function that closes it (backdrop click and Escape call it)
 (function () {
   function resolveArgs(el, event) {
@@ -75,15 +75,93 @@
   });
 
   // ── Dialogs ────────────────────────────────────────────────────────────────
-  const OVERLAY = '.slip-overlay, .del-modal-backdrop';
+  const OVERLAY = '.slip-overlay, .del-modal-backdrop, .activity-modal-backdrop, .modal-backdrop';
   const FOCUSABLE =
     'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
   const openStack = [];
   const returnFocus = new WeakMap();
+  const overlayObservers = new WeakMap();
   let labelCounter = 0;
+  let pageScrollSnapshot = null;
   // Last control used outside any dialog: openers often move focus themselves before
   // the dialog is observed as open, so document.activeElement is not reliable then.
   let lastOutsideControl = null;
+
+  function getInlineProperty(element, property) {
+    return {
+      value: element.style.getPropertyValue(property),
+      priority: element.style.getPropertyPriority(property),
+    };
+  }
+
+  function restoreInlineProperty(element, property, snapshot) {
+    if (snapshot.value) element.style.setProperty(property, snapshot.value, snapshot.priority);
+    else element.style.removeProperty(property);
+  }
+
+  function setPageScrollLocked(locked) {
+    const root = document.documentElement;
+    const body = document.body;
+    if (locked === Boolean(pageScrollSnapshot)) return;
+
+    if (locked) {
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+      const bodyPadding = parseFloat(getComputedStyle(body).paddingRight) || 0;
+      const adminContent = document.querySelector('.admin-content');
+      const adminPadding = adminContent ? parseFloat(getComputedStyle(adminContent).paddingRight) || 0 : 0;
+      const adminScrollbarWidth = adminContent ? Math.max(0, adminContent.offsetWidth - adminContent.clientWidth) : 0;
+
+      pageScrollSnapshot = {
+        scrollX,
+        scrollY,
+        hadRootLock: root.classList.contains('page-scroll-locked'),
+        hadBodyLock: body.classList.contains('page-scroll-locked'),
+        bodyLeft: getInlineProperty(body, '--page-scroll-lock-left'),
+        bodyTop: getInlineProperty(body, '--page-scroll-lock-top'),
+        bodyPadding: getInlineProperty(body, '--page-scroll-lock-padding'),
+        adminPadding: getInlineProperty(body, '--page-scroll-lock-admin-padding'),
+        scrollBehavior: getInlineProperty(root, 'scroll-behavior'),
+      };
+
+      body.style.setProperty('--page-scroll-lock-left', `${-scrollX}px`);
+      body.style.setProperty('--page-scroll-lock-top', `${-scrollY}px`);
+      body.style.setProperty('--page-scroll-lock-padding', `${bodyPadding + scrollbarWidth}px`);
+      if (adminContent) {
+        body.style.setProperty('--page-scroll-lock-admin-padding', `${adminPadding + adminScrollbarWidth}px`);
+      }
+      root.classList.add('page-scroll-locked');
+      body.classList.add('page-scroll-locked');
+      return;
+    }
+
+    const snapshot = pageScrollSnapshot;
+    pageScrollSnapshot = null;
+    root.style.setProperty('scroll-behavior', 'auto', 'important');
+    if (!snapshot.hadRootLock) root.classList.remove('page-scroll-locked');
+    if (!snapshot.hadBodyLock) body.classList.remove('page-scroll-locked');
+    restoreInlineProperty(body, '--page-scroll-lock-left', snapshot.bodyLeft);
+    restoreInlineProperty(body, '--page-scroll-lock-top', snapshot.bodyTop);
+    restoreInlineProperty(body, '--page-scroll-lock-padding', snapshot.bodyPadding);
+    restoreInlineProperty(body, '--page-scroll-lock-admin-padding', snapshot.adminPadding);
+    window.scrollTo(snapshot.scrollX, snapshot.scrollY);
+    restoreInlineProperty(root, 'scroll-behavior', snapshot.scrollBehavior);
+  }
+
+  function syncPageScrollLock() {
+    const drawerOpen =
+      document.body.classList.contains('mobile-drawer-open') ||
+      Boolean(
+        document.querySelector(
+          '.side-backdrop.open, .admin-sidebar.open, #sideBackdrop.open, #adminSidebar.open, .navbar.mobile-drawer-active .nav-links.open'
+        )
+      );
+    const modalOpen =
+      openStack.length > 0 ||
+      Boolean(document.querySelector('dialog[open], .activity-modal-backdrop.open, .modal-backdrop.open'));
+    setPageScrollLocked(drawerOpen || modalOpen);
+  }
 
   function rememberOutside(event) {
     const control = event.target.closest?.(FOCUSABLE);
@@ -130,6 +208,7 @@
     const activeIsOutside = active && active !== document.body && !active.closest(OVERLAY);
     returnFocus.set(overlay, activeIsOutside ? active : lastOutsideControl);
     openStack.push(overlay);
+    syncPageScrollLock();
     // Wait a frame so content filled in by the opener is in place before focusing.
     requestAnimationFrame(() => {
       if (!overlay.classList.contains('open')) return;
@@ -145,6 +224,7 @@
     const index = openStack.indexOf(overlay);
     if (index === -1) return;
     openStack.splice(index, 1);
+    syncPageScrollLock();
     const previous = returnFocus.get(overlay);
     returnFocus.delete(overlay);
     if (previous && previous.isConnected && isVisible(previous) && !openStack.length) {
@@ -153,17 +233,27 @@
   }
 
   function watch(overlay) {
-    if (overlay.dataset.dialogWatched) return;
+    if (overlayObservers.has(overlay)) return;
     overlay.dataset.dialogWatched = 'true';
     prepare(overlay);
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closeOverlay(overlay);
     });
-    new MutationObserver(() => {
+    const observer = new MutationObserver(() => {
       if (overlay.classList.contains('open')) handleOpened(overlay);
       else handleClosed(overlay);
-    }).observe(overlay, { attributes: true, attributeFilter: ['class'] });
+    });
+    overlayObservers.set(overlay, observer);
+    observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
     if (overlay.classList.contains('open')) handleOpened(overlay);
+  }
+
+  function unwatch(overlay) {
+    const observer = overlayObservers.get(overlay);
+    if (observer) observer.disconnect();
+    overlayObservers.delete(overlay);
+    delete overlay.dataset.dialogWatched;
+    handleClosed(overlay);
   }
 
   document.addEventListener('keydown', (event) => {
@@ -199,6 +289,32 @@
 
   function init() {
     document.querySelectorAll(OVERLAY).forEach(watch);
+    new MutationObserver((records) => {
+      records.forEach((record) => {
+        record.addedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          if (node.matches(OVERLAY)) watch(node);
+          node.querySelectorAll(OVERLAY).forEach(watch);
+        });
+        record.removedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          if (node.matches(OVERLAY)) unwatch(node);
+          node.querySelectorAll(OVERLAY).forEach(unwatch);
+        });
+      });
+      syncPageScrollLock();
+    }).observe(document.documentElement, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class', 'open'],
+    });
+    window.addEventListener('pagehide', () => setPageScrollLocked(false));
+    window.addEventListener('pageshow', () => {
+      document.querySelectorAll(OVERLAY).forEach(watch);
+      syncPageScrollLock();
+    });
+    syncPageScrollLock();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

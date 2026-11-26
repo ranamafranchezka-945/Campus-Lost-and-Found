@@ -105,6 +105,26 @@ html {
   scroll-padding-top: var(--navbar-height);
 }
 
+html.page-scroll-locked {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.page-scroll-locked {
+  position: fixed;
+  left: var(--page-scroll-lock-left, 0);
+  top: var(--page-scroll-lock-top, 0);
+  width: 100%;
+  overflow: hidden;
+  padding-right: var(--page-scroll-lock-padding, 0);
+  overscroll-behavior: none;
+}
+
+body.page-scroll-locked .admin-content {
+  overflow-y: hidden;
+  padding-right: var(--page-scroll-lock-admin-padding, 0);
+}
+
 @view-transition {
   navigation: auto;
 }
