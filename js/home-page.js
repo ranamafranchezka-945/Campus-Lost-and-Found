@@ -2706,7 +2706,10 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
           ? `
       <div class="notif-item notif-item--message notif-item--guest-finder-conversation${n.conversationStatus === 'returned' ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
-          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
@@ -2743,7 +2746,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
               )}" data-change="updateNotificationSelection">
               <span class="visually-hidden">Select conversation</span>
             </label>
-            <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
@@ -2772,7 +2776,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
               )}" data-change="updateNotificationSelection">
               <span class="visually-hidden">Select conversation</span>
             </label>
-            <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
@@ -2796,7 +2801,10 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
                 ? `
       <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
-          <strong>🏷️ ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">🏷️</span>
+            <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         ${meetupNotificationHtml(n)}
@@ -2806,7 +2814,10 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
                   ? `
       <div class="notif-item notif-item--message unread" data-id="${escapeHtml(String(n.id))}">
         <div class="notif-header">
-          <strong>💬 ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount > 1 ? ` sent ${n.unreadCount} messages` : ' replied'}</p>
@@ -2828,7 +2839,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
               )}" data-change="updateNotificationSelection">
               <span class="visually-hidden">Select notification</span>
             </label>
-            <strong>🏷️ ${n.itemTitle || n.refCode}</strong>
+            <span class="notif-title-icon" aria-hidden="true">🏷️</span>
+            <strong>${n.itemTitle || n.refCode}</strong>
           </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>

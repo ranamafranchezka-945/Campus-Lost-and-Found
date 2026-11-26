@@ -482,34 +482,47 @@ label {
   border-color: rgba(59, 130, 246, 0.35);
 }
 .notif-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   gap: 0.25rem 0.75rem;
   margin-bottom: 0.4rem;
   font-size: 0.9375rem;
+  line-height: 1.25;
   color: #ffffff;
 }
 .notif-title-group {
   display: flex;
-  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
   gap: 0.625rem;
-  min-width: 0;
+  line-height: 1.25;
+}
+.notif-title-icon {
+  flex: 0 0 auto;
+  font-size: 1rem;
+  line-height: 1;
 }
 .notif-title-group strong {
+  display: block;
+  flex: 1 1 auto;
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
 }
 .notif-title-group .notification-select-control {
   flex: 0 0 auto;
   margin: 0;
+  line-height: 1;
 }
 .notif-time {
   flex: 0 0 auto;
-  margin-left: auto;
+  justify-self: end;
+  white-space: nowrap;
   font-size: 0.8125rem;
+  line-height: 1.25;
   color: var(--text-muted);
 }
 .notification-selection-toolbar {
