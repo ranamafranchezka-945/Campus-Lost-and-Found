@@ -533,6 +533,7 @@ label {
 .notification-select-all,
 .notification-select-control {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 0.4rem;
   min-height: 2.75rem;
@@ -555,6 +556,7 @@ label {
   -webkit-appearance: none;
   display: grid;
   flex: 0 0 1.15rem;
+  flex-shrink: 0;
   place-content: center;
   width: 1.15rem;
   height: 1.15rem;

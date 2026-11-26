@@ -501,24 +501,34 @@
 }
 .keyboard-shortcuts-close {
   display: grid;
-  flex: none;
+  flex: 0 0 2.5rem;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.5rem;
+  height: 2.5rem;
   padding: 0;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  border-radius: 8px;
-  background: #1f2937;
-  color: #cbd5e1;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
   cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
 }
 .keyboard-shortcuts-close .ico {
   width: 1rem;
   height: 1rem;
 }
-.keyboard-shortcuts-close:hover {
-  border-color: #60a5fa;
-  color: #f8fafc;
+.keyboard-shortcuts-close:hover,
+.keyboard-shortcuts-close:focus-visible {
+  border-color: var(--blue-main);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--text-main);
+}
+.keyboard-shortcuts-close:focus-visible {
+  outline: 2px solid var(--blue-main);
+  outline-offset: 2px;
 }
 .keyboard-shortcuts-list {
   border-top: 1px solid rgba(148, 163, 184, 0.16);
