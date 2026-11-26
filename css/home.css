@@ -512,7 +512,15 @@ label {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.55rem;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.notification-select-all:hover,
+.notification-select-control:hover {
+  background: rgba(59, 130, 246, 0.08);
 }
 .notification-select-control {
   margin-bottom: 0.55rem;
@@ -521,7 +529,70 @@ label {
 }
 .notification-select-all input,
 .notification-select-control input {
-  accent-color: var(--blue-main);
+  appearance: none;
+  -webkit-appearance: none;
+  display: grid;
+  flex: 0 0 1.15rem;
+  place-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  border: 1px solid rgba(148, 163, 184, 0.55);
+  border-radius: 0.32rem;
+  background: rgba(15, 23, 42, 0.55);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.notification-select-all input::after,
+.notification-select-control input::after {
+  content: '';
+  width: 0.3rem;
+  height: 0.55rem;
+  border: solid #ffffff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.12s ease;
+}
+.notification-select-all input:checked,
+.notification-select-control input:checked,
+.notification-select-all input:indeterminate {
+  border-color: var(--blue-main);
+  background: var(--blue-main);
+}
+.notification-select-all input:checked::after,
+.notification-select-control input:checked::after {
+  transform: rotate(45deg) scale(1);
+}
+.notification-select-all input:indeterminate::after {
+  width: 0.55rem;
+  height: 2px;
+  border: 0;
+  border-radius: 1px;
+  background: #ffffff;
+  transform: none;
+}
+.notification-select-all input:hover,
+.notification-select-control input:hover {
+  border-color: var(--blue-main);
+}
+.notification-select-all input:focus-visible,
+.notification-select-control input:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline-offset: 2px;
+}
+[data-theme='light'] .notification-select-all input,
+[data-theme='light'] .notification-select-control input {
+  border-color: rgba(71, 85, 105, 0.55);
+  background: #ffffff;
+}
+[data-theme='light'] .notification-select-all input:checked,
+[data-theme='light'] .notification-select-control input:checked,
+[data-theme='light'] .notification-select-all input:indeterminate {
+  border-color: var(--blue-main);
+  background: var(--blue-main);
 }
 .btn-delete-notifications {
   padding: 0.35rem 0.65rem;
