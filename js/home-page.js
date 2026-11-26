@@ -69,7 +69,7 @@ function renderAuthenticatedHeader(user) {
             <strong>${escapeHtml(displayName)}</strong>
             <small>${escapeHtml(user.email || '')}</small>
           </div>
-          <button type="button" class="user-account-menu-item" role="menuitem" data-action="openKeyboardShortcutsModal">
+          <button type="button" class="user-account-menu-item keyboard-shortcuts-menu-item" role="menuitem" data-action="openKeyboardShortcutsModal">
             Keyboard shortcuts
           </button>
           <button type="button" class="user-account-menu-item" role="menuitem" data-action="openChangePasswordModal">

@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <strong></strong>
             <small></small>
           </div>
-          <button type="button" class="user-account-menu-item" role="menuitem" data-action="goToKeyboardShortcuts">
+          <button type="button" class="user-account-menu-item keyboard-shortcuts-menu-item" role="menuitem" data-action="goToKeyboardShortcuts">
             Keyboard shortcuts
           </button>
           <button type="button" class="user-account-menu-item" role="menuitem" data-action="goToChangePassword">

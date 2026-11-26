@@ -1875,7 +1875,8 @@ input[type='submit'] {
 
 @media (max-width: 1024px), (pointer: coarse), (hover: none) {
   .keyboard-shortcuts-trigger,
-  .search-shortcut-hint {
+  .search-shortcut-hint,
+  .keyboard-shortcuts-menu-item {
     display: none !important;
   }
 }
