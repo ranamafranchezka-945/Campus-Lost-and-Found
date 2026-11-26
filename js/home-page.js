@@ -2710,8 +2710,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">💬</span>
             <strong>QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
         ${n.lastMessage ? `<p class="notif-msg">${escapeHtml(n.lastMessage)}</p>` : ''}
         ${
@@ -2749,8 +2749,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">💬</span>
             <strong>QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
         <p class="notif-msg">${escapeHtml(n.lastMessage || n.message || '')}</p>
         ${
@@ -2779,8 +2779,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">💬</span>
             <strong>Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${
           n.unreadCount
             ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
@@ -2805,8 +2805,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">🏷️</span>
             <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         ${meetupNotificationHtml(n)}
       </div>
     `
@@ -2818,8 +2818,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">💬</span>
             <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount > 1 ? ` sent ${n.unreadCount} messages` : ' replied'}</p>
         <p class="notif-msg">${escapeHtml(n.message)}</p>
         <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
@@ -2842,8 +2842,8 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             <span class="notif-title-icon" aria-hidden="true">🏷️</span>
             <strong>${n.itemTitle || n.refCode}</strong>
           </div>
+          <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         ${
           n.notificationType === 'match'
             ? `<p class="notif-msg"><strong>Possible match—not confirmed</strong></p>
