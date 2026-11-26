@@ -1626,6 +1626,38 @@
             </button>
           </div>
         </div>
+        <div class="notification-filter-tabs" role="group" aria-label="Filter notifications">
+          <button
+            type="button"
+            class="notification-filter-tab is-active"
+            data-filter="all"
+            aria-pressed="true"
+            data-action="setNotificationsFilter"
+            data-args='["all"]'
+          >
+            All
+          </button>
+          <button
+            type="button"
+            class="notification-filter-tab"
+            data-filter="alert"
+            aria-pressed="false"
+            data-action="setNotificationsFilter"
+            data-args='["alert"]'
+          >
+            Alerts
+          </button>
+          <button
+            type="button"
+            class="notification-filter-tab"
+            data-filter="conversation"
+            aria-pressed="false"
+            data-action="setNotificationsFilter"
+            data-args='["conversation"]'
+          >
+            Conversations
+          </button>
+        </div>
         <div id="notificationsList" class="notifications-list">
           <!-- Filled dynamically -->
         </div>
