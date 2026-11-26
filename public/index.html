@@ -1605,15 +1605,26 @@
             <span>Select all</span>
           </label>
           <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
-          <button
-            id="deleteSelectedNotifications"
-            type="button"
-            class="btn-delete-notifications"
-            data-action="deleteSelectedNotifications"
-            disabled
-          >
-            Delete selected
-          </button>
+          <div class="notification-bulk-actions">
+            <button
+              id="markSelectedNotificationsRead"
+              type="button"
+              class="btn-mark-notifications-read"
+              data-action="markSelectedNotificationsRead"
+              disabled
+            >
+              Mark as read
+            </button>
+            <button
+              id="deleteSelectedNotifications"
+              type="button"
+              class="btn-delete-notifications"
+              data-action="deleteSelectedNotifications"
+              disabled
+            >
+              Delete selected
+            </button>
+          </div>
         </div>
         <div id="notificationsList" class="notifications-list">
           <!-- Filled dynamically -->

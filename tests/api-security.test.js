@@ -1302,6 +1302,22 @@ test('claim requests are private and require moderator review', async () => {
   assert.equal(notifications[0].notificationType, 'claim');
   assert.match(notifications[0].message, /Room 101/);
 
+  const bulkReadResponse = await fetch(`${baseUrl}/api/items/notifications/read`, {
+    method: 'PATCH',
+    headers: { Cookie: studentCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      notificationIds: [
+        {
+          kind: 'claim',
+          recordId: String(notifications[0].claimId),
+          id: String(notifications[0].id),
+        },
+      ],
+    }),
+  });
+  assert.equal(bulkReadResponse.status, 200);
+  assert.equal((await bulkReadResponse.json()).updatedCount, 1);
+
   const readResponse = await fetch(
     `${baseUrl}/api/items/notifications/${encodeURIComponent(notifications[0].id)}/read`,
     {
@@ -1638,6 +1654,26 @@ test('owner and finder of an approved claim can share a one-time location, only 
     assert.equal(ownerConversation.message, 'Initials on the handle.');
     assert.equal(ownerConversation.read, true, 'the starter message is not unread for its sender');
     assert.equal(finderConversation.unreadCount, 1, 'the starter message remains unread for the other participant');
+    const markConversationReadResponse = await fetch(`${baseUrl}/api/items/notifications/read`, {
+      method: 'PATCH',
+      headers: { Cookie: finderCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        notificationIds: [
+          {
+            kind: 'claim-conversation',
+            recordId: 'claim-meetup-test',
+            id: 'claim-conversation-claim-meetup-test',
+          },
+        ],
+      }),
+    });
+    assert.equal(markConversationReadResponse.status, 200);
+    assert.equal((await markConversationReadResponse.json()).updatedCount, 1);
+    assert.equal(
+      (await claimConversationEntry(finderCookie)).read,
+      true,
+      'bulk mark-read persists conversation read state for the selected participant'
+    );
     assert.equal(
       await claimConversationEntry(adminCookie),
       undefined,

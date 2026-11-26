@@ -491,11 +491,18 @@ label {
 }
 .notification-selection-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
   color: var(--text-muted);
   font-size: 0.875rem;
+}
+.notification-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 .notification-selection-toolbar[hidden] {
   display: none;
@@ -517,7 +524,6 @@ label {
   accent-color: var(--blue-main);
 }
 .btn-delete-notifications {
-  margin-left: auto;
   padding: 0.35rem 0.65rem;
   border: 1px solid #b91c1c;
   border-radius: 6px;
@@ -526,6 +532,24 @@ label {
   font: inherit;
   font-weight: 650;
   cursor: pointer;
+}
+.btn-mark-notifications-read {
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--blue-main);
+  border-radius: 6px;
+  background: var(--blue-main);
+  color: #ffffff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+.btn-mark-notifications-read:hover:not(:disabled) {
+  background: var(--blue-dark);
+  border-color: var(--blue-dark);
+}
+.btn-mark-notifications-read:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 .btn-delete-notifications:hover:not(:disabled) {
   background: #991b1b;
@@ -537,6 +561,20 @@ label {
   color: #ffffff;
   opacity: 1;
   cursor: not-allowed;
+}
+@media (max-width: 480px) {
+  .notification-selection-toolbar {
+    align-items: flex-start;
+  }
+
+  .notification-bulk-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .notification-bulk-actions button {
+    flex: 1 1 0;
+  }
 }
 .btn-delete-conversation {
   display: block;

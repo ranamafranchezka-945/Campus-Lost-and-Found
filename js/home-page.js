@@ -2758,6 +2758,16 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             : n.notificationType === 'claim-conversation'
               ? `
       <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+        <label class="notification-select-control">
+          <input class="notification-select" type="checkbox" value="${escapeHtml(
+            JSON.stringify({
+              kind: 'claim-conversation',
+              recordId: String(n.claimId),
+              id: String(n.id),
+            })
+          )}" data-change="updateNotificationSelection">
+          <span>Select conversation</span>
+        </label>
         <div class="notif-header">
           <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
@@ -2891,6 +2901,34 @@ function updateNotificationSelection() {
   selectAll.indeterminate = selectedCount > 0 && selectedCount < checkboxes.length;
   document.getElementById('selectedNotificationCount').textContent = `${selectedCount} selected`;
   document.getElementById('deleteSelectedNotifications').disabled = selectedCount === 0;
+  document.getElementById('markSelectedNotificationsRead').disabled = !checkboxes.some(
+    (input) => input.checked && input.closest('.notif-item')?.classList.contains('unread')
+  );
+}
+
+async function markSelectedNotificationsRead() {
+  const notificationIds = [...document.querySelectorAll('#notificationsList .notification-select:checked')].map(
+    (input) => JSON.parse(input.value)
+  );
+  if (!notificationIds.length) return;
+
+  const button = document.getElementById('markSelectedNotificationsRead');
+  button.disabled = true;
+  try {
+    const res = await fetch('/api/items/notifications/read', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ notificationIds }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) throw new Error(data.message || 'Could not mark notifications as read.');
+    showToast(`${data.updatedCount} notification${data.updatedCount === 1 ? '' : 's'} marked as read.`);
+    await loadNotificationsIntoModal({ silent: true });
+    await loadMyNotifications();
+  } catch (error) {
+    showToast(error.message || 'Could not mark notifications as read.', 'error');
+    updateNotificationSelection();
+  }
 }
 
 async function deleteSelectedNotifications() {
@@ -3013,6 +3051,7 @@ async function markNotifRead(notifId, btn) {
       const item = btn.closest('.notif-item');
       if (item) item.classList.remove('unread');
       btn.remove();
+      updateNotificationSelection();
       await loadMyNotifications(); // refresh badge
     }
   } catch (err) {

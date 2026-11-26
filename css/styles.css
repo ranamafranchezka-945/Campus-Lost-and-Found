@@ -1513,8 +1513,8 @@ h2 {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border: 0;
+  padding: 0.25rem;
+  border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: transparent;
   color: var(--text-muted);
@@ -1530,6 +1530,7 @@ h2 {
 .notifications-modal-close:focus-visible {
   color: #ffffff;
   background: rgba(30, 41, 59, 0.6);
+  border-color: var(--blue-main);
 }
 
 .notifications-modal-close:focus-visible {
@@ -1541,6 +1542,7 @@ h2 {
 [data-theme='light'] .notifications-modal-close:focus-visible {
   color: #0f172a;
   background: rgba(148, 163, 184, 0.2);
+  border-color: var(--blue-main);
 }
 
 [data-theme='light'] .site-footer {
