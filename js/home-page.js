@@ -2731,18 +2731,20 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
           : n.notificationType === 'finder-conversation'
             ? `
       <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: 'item',
-              recordId: String(n.itemId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select conversation</span>
-        </label>
         <div class="notif-header">
-          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: 'item',
+                  recordId: String(n.itemId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select conversation</span>
+            </label>
+            <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
@@ -2758,18 +2760,20 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             : n.notificationType === 'claim-conversation'
               ? `
       <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: 'claim-conversation',
-              recordId: String(n.claimId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select conversation</span>
-        </label>
         <div class="notif-header">
-          <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: 'claim-conversation',
+                  recordId: String(n.claimId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select conversation</span>
+            </label>
+            <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${
@@ -2812,18 +2816,20 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
     `
                   : `
       <div class="notif-item${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: n.notificationType === 'claim' ? 'claim' : 'item',
-              recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select notification</span>
-        </label>
         <div class="notif-header">
-          <strong>🏷️ ${n.itemTitle || n.refCode}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: n.notificationType === 'claim' ? 'claim' : 'item',
+                  recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select notification</span>
+            </label>
+            <strong>🏷️ ${n.itemTitle || n.refCode}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         ${
