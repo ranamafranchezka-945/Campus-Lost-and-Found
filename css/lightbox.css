@@ -83,9 +83,24 @@
   width: 2.6rem;
   height: 2.6rem;
 }
+.lightbox-tool[aria-label='Close photo'] {
+  flex: 0 0 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-color: var(--border);
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+}
 .lightbox-tool:hover,
 .lightbox-nav:hover {
   background: rgba(255, 255, 255, 0.18);
+}
+.lightbox-tool[aria-label='Close photo']:hover,
+.lightbox-tool[aria-label='Close photo']:focus-visible {
+  border-color: var(--blue-main);
+  background: rgba(59, 130, 246, 0.12);
+  color: #f8fafc;
 }
 .lightbox-tool:focus-visible,
 .lightbox-nav:focus-visible {

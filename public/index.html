@@ -1624,16 +1624,19 @@
         </div>
 
         <div id="notificationSelectionToolbar" class="notification-selection-toolbar" hidden>
-          <label class="notification-select-all">
-            <input
-              id="selectAllNotifications"
-              type="checkbox"
-              data-change="selectAllNotifications"
-              data-args='["$checked"]'
-            />
-            <span>Select all</span>
-          </label>
-          <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
+          <div class="notification-selection-info">
+            <div class="notification-select-all">
+              <input
+                id="selectAllNotifications"
+                type="checkbox"
+                aria-labelledby="selectAllNotificationsLabel"
+                data-change="selectAllNotifications"
+                data-args='["$checked"]'
+              />
+              <span id="selectAllNotificationsLabel">Select all</span>
+            </div>
+            <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
+          </div>
           <div class="notification-bulk-actions">
             <button
               id="markSelectedNotificationsRead"
@@ -1651,9 +1654,41 @@
               data-action="deleteSelectedNotifications"
               disabled
             >
-              Delete selected
+              Delete
             </button>
           </div>
+        </div>
+        <div class="notification-filter-tabs" role="group" aria-label="Filter notifications">
+          <button
+            type="button"
+            class="notification-filter-tab is-active"
+            data-filter="all"
+            aria-pressed="true"
+            data-action="setNotificationsFilter"
+            data-args='["all"]'
+          >
+            All
+          </button>
+          <button
+            type="button"
+            class="notification-filter-tab"
+            data-filter="alert"
+            aria-pressed="false"
+            data-action="setNotificationsFilter"
+            data-args='["alert"]'
+          >
+            Alerts
+          </button>
+          <button
+            type="button"
+            class="notification-filter-tab"
+            data-filter="conversation"
+            aria-pressed="false"
+            data-action="setNotificationsFilter"
+            data-args='["conversation"]'
+          >
+            Conversations
+          </button>
         </div>
         <div id="notificationsList" class="notifications-list">
           <!-- Filled dynamically -->

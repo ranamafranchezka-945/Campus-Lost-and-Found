@@ -1963,12 +1963,20 @@ function meetupTime(iso) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
+function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false, notificationCard = false) {
   const other = escapeHtml(n.otherName);
   const otherRole = n.role === 'owner' ? 'the finder' : 'the owner';
   const claimArg = actionArgs(n.claimId, '$el');
-  const askButton = (label) =>
-    `<button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="requestMeetupLocation" data-args="${claimArg}">${label}</button>`;
+  const notificationActionsPrimary = [];
+  const notificationActionsSecondary = [];
+  const askButton = (label) => {
+    const button = `<button type="button" class="btn ${notificationCard ? 'btn-primary' : 'btn-outline'} btn-compact meetup-btn" data-action="requestMeetupLocation" data-args="${claimArg}">${label}</button>`;
+    if (notificationCard) {
+      notificationActionsPrimary.push(button);
+      return '';
+    }
+    return button;
+  };
 
   // Their location (what I asked for).
   const theirs = n.theirLocation || {};
@@ -1981,7 +1989,12 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
     theirsHtml =
       idPrefix === 'thread-'
         ? meetupMapHtml(theirs.location, n.otherName, n.claimId, idPrefix, mapExpanded)
-        : meetupSharedSummaryHtml(theirs.location, n.otherName, n.claimId);
+        : meetupSharedSummaryHtml(theirs.location, n.otherName, n.claimId, !notificationCard);
+    if (notificationCard && idPrefix !== 'thread-') {
+      notificationActionsPrimary.push(
+        `<button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">View in conversation</button>`
+      );
+    }
   } else if (theirs.status === 'pending') {
     theirsHtml = `<p class="meetup-status"><span class="meetup-waiting" aria-hidden="true"></span>Waiting for ${other} to share their location…</p>`;
   } else if (theirs.status === 'declined') {
@@ -2002,22 +2015,43 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
   const mine = n.myLocation || {};
   let mineHtml = '';
   if (mine.status === 'pending') {
+    if (notificationCard) {
+      notificationActionsPrimary.push(
+        `<button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="shareMeetupLocation" data-args="${claimArg}">Share my current location</button>`
+      );
+      notificationActionsSecondary.push(
+        `<button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="declineMeetupLocation" data-args="${claimArg}">Decline</button>`
+      );
+    }
     mineHtml = `
       <div class="meetup-incoming">
         <p class="meetup-incoming-title"><strong>${other} is asking for your location</strong> to meet you for the handover.</p>
         <input type="text" class="meetup-note" maxlength="160" aria-label="Optional note for ${other}" placeholder="Optional note, e.g. I'm at the library entrance" />
-        <div class="meetup-actions">
-          <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="shareMeetupLocation" data-args="${claimArg}">Share my current location</button>
-          <button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="declineMeetupLocation" data-args="${claimArg}">Decline</button>
-        </div>
+        ${
+          notificationCard
+            ? ''
+            : `<div class="meetup-actions">
+                <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="shareMeetupLocation" data-args="${claimArg}">Share my current location</button>
+                <button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="declineMeetupLocation" data-args="${claimArg}">Decline</button>
+              </div>`
+        }
         <p class="meetup-hint">Your location updates live while you're sharing, is shown only to ${other}, and stops the moment you tap Stop sharing (or after an hour of no updates).</p>
       </div>`;
   } else if (mine.status === 'shared' && mine.expiresAt) {
+    if (notificationCard) {
+      notificationActionsPrimary.push(
+        `<button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="stopMeetupLocation" data-args="${claimArg}">Stop sharing</button>`
+      );
+    }
     mineHtml = `
       <div class="meetup-sharing">
         <p class="meetup-status"><span class="meetup-live" aria-hidden="true"></span>You are live-sharing your location with ${other}, updating as you move.</p>
         <p class="meetup-hint">Keeps updating until ${meetupTime(mine.expiresAt)} unless you stop sharing sooner.</p>
-        <button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="stopMeetupLocation" data-args="${claimArg}">Stop sharing</button>
+        ${
+          notificationCard
+            ? ''
+            : `<button type="button" class="btn btn-outline btn-compact meetup-btn" data-action="stopMeetupLocation" data-args="${claimArg}">Stop sharing</button>`
+        }
       </div>`;
   }
 
@@ -2025,6 +2059,27 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
     n.role === 'owner'
       ? `Once you both agree the item matches, arrange where to meet ${otherRole}, ${other}.`
       : `${other} has a claim open on the item you found. Once you both agree it matches, arrange where to meet ${otherRole}, ${other}.`;
+  if (notificationCard) {
+    const actions = notificationActionsPrimary.length || notificationActionsSecondary.length
+      ? `<div class="notif-actions">
+           <div class="notif-actions-primary">${notificationActionsPrimary.join('')}</div>
+           <div class="notif-actions-secondary">${notificationActionsSecondary.join('')}</div>
+         </div>`
+      : '';
+    return `
+      <div class="notif-body">
+        <div class="notif-summary">
+          <span class="notif-badge notif-badge--alert">Handover meetup</span>
+          <p class="notif-msg">${intro}</p>
+        </div>
+        ${mineHtml}
+        <div class="meetup-section">
+          <p class="meetup-label">${other}'s location</p>
+          ${theirsHtml}
+        </div>
+      </div>
+      ${actions}`;
+  }
   return `
     <p class="notif-msg"><strong>Handover meetup</strong> · ${intro}</p>
     ${mineHtml}
@@ -2036,13 +2091,17 @@ function meetupNotificationHtml(n, idPrefix = '', mapExpanded = false) {
 
 // Notifications-list stand-in for meetupMapHtml below: no embedded map, just the
 // facts plus a button into the claim conversation, where the real map lives.
-function meetupSharedSummaryHtml(location, otherName, claimId) {
+function meetupSharedSummaryHtml(location, otherName, claimId, includeAction = true) {
   const name = escapeHtml(otherName);
   return `
     <p class="meetup-status"><span class="meetup-live" aria-hidden="true"></span>${name} shared their location · accurate to about ${escapeHtml(String(location.accuracy))} m · visible until ${meetupTime(location.expiresAt)}</p>
-    <div class="meetup-actions">
-      <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="openClaimThreadModal" data-args="${actionArgs(claimId)}">View in conversation</button>
-    </div>`;
+    ${
+      includeAction
+        ? `<div class="meetup-actions">
+            <button type="button" class="btn btn-primary btn-compact meetup-btn" data-action="openClaimThreadModal" data-args="${actionArgs(claimId)}">View in conversation</button>
+          </div>`
+        : ''
+    }`;
 }
 
 // A live, pannable/zoomable OpenStreetMap (via Leaflet) centred on the shared point,
@@ -2371,9 +2430,14 @@ function stopClaimThreadPolling() {
   claimThreadPollTimer = null;
 }
 
+function resetClaimThreadComposer() {
+  document.querySelector('#claimThreadModal .thread-compose').hidden = false;
+}
+
 async function openClaimThreadModal(claimId) {
   if (!claimId) return;
   closeNotificationsModal();
+  resetClaimThreadComposer();
   activeRegisteredFinderConversation = null;
   activeClaimThreadId = claimId;
   pendingClaimStart = null;
@@ -2405,6 +2469,7 @@ async function openRegisteredFinderConversation(conversationId, token) {
   saveFinderConversation({ id: conversationId, token });
   closeNotificationsModal();
   closeAnonymousFinderModal();
+  resetClaimThreadComposer();
   activeClaimThreadId = null;
   pendingClaimStart = null;
   activeRegisteredFinderConversation = { id: conversationId, token, role: 'finder' };
@@ -2432,6 +2497,7 @@ function openSavedFinderConversation(conversationId) {
 async function openRegisteredOwnerConversation(conversationId) {
   if (!conversationId) return;
   closeNotificationsModal();
+  resetClaimThreadComposer();
   activeClaimThreadId = null;
   pendingClaimStart = null;
   activeRegisteredFinderConversation = { id: conversationId, role: 'owner' };
@@ -2451,6 +2517,7 @@ async function openRegisteredOwnerConversation(conversationId) {
 // claim request, submitted the moment the claimant sends their first message.
 function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
   stopClaimThreadPolling();
+  resetClaimThreadComposer();
   activeRegisteredFinderConversation = null;
   activeClaimThreadId = null;
   pendingClaimStart = { lostId, foundId };
@@ -2506,6 +2573,7 @@ function applyClaimThreadUpdate(thread, { silent = false } = {}) {
 
 function renderClaimThread(thread) {
   const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
+  const isCompleted = thread.claim.status === 'approved' || thread.claim.status === 'returned';
   document.getElementById('claimThreadTitle').textContent =
     `${isRegisteredConversation ? 'QR finder conversation' : 'Claim conversation'} · ${thread.item.title}`;
   document.getElementById('claimThreadSubtitle').textContent = `You and ${thread.otherName}`;
@@ -2514,13 +2582,17 @@ function renderClaimThread(thread) {
   const wasScrolledToEnd = body.scrollHeight - body.scrollTop - body.clientHeight < 16;
   body.innerHTML = thread.messages.length
     ? thread.messages.map(claimThreadMessageHtml).join('')
-    : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
+    : isCompleted
+      ? '<p class="thread-empty">This claim is complete. No messages are available in this conversation.</p>'
+      : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
   if (wasScrolledToEnd) body.scrollTop = body.scrollHeight;
 
+  document.querySelector('#claimThreadModal .thread-compose').hidden = isCompleted;
   const confirmBox = document.getElementById('claimThreadConfirm');
-  if (thread.claim.status === 'approved' || thread.claim.status === 'returned') {
+  if (isCompleted) {
     confirmBox.innerHTML = `
-      <p class="thread-resolved">✅ Both sides confirmed. The return is complete.</p>`;
+      <p class="thread-resolved">✅ Both sides confirmed. The return is complete.</p>
+      <p class="thread-readonly">This conversation is now read-only. New messages are disabled.</p>`;
   } else if (thread.confirmedByMe) {
     confirmBox.innerHTML = `<p class="thread-waiting">You confirmed. Waiting for ${escapeHtml(thread.otherName)} to confirm too…</p>`;
   } else {
@@ -2528,7 +2600,8 @@ function renderClaimThread(thread) {
       <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item ${isRegisteredConversation ? 'returned' : 'received/returned'}</button>
       ${thread.confirmedByOther ? `<p class="thread-waiting">${escapeHtml(thread.otherName)} already confirmed.</p>` : ''}`;
   }
-  if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
+  if (isCompleted) renderClaimThreadMeetupNotification(null);
+  else if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
 }
 
 // The last meetup notification fully rendered into the claim-thread box, so the 5s
@@ -2658,7 +2731,9 @@ async function refreshClaimThread({ silent = false } = {}) {
     }
     applyClaimThreadUpdate(thread, { silent });
     if (registeredConversation) renderClaimThreadMeetupNotification(thread.meetupNotification);
-    else await refreshClaimThreadMeetup();
+    else if (thread.claim.status === 'approved' || thread.claim.status === 'returned') {
+      renderClaimThreadMeetupNotification(null);
+    } else await refreshClaimThreadMeetup();
   } catch (error) {
     if (!silent) showToast('Could not load the conversation. Please try again.', true);
   }
@@ -2766,6 +2841,21 @@ async function deleteClaimThread() {
   }
 }
 
+function setNotificationsFilter(filter) {
+  const tabs = [...document.querySelectorAll('.notification-filter-tab')];
+  if (!tabs.some((tab) => tab.dataset.filter === filter)) return;
+
+  tabs.forEach((tab) => {
+    const active = tab.dataset.filter === filter;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-pressed', String(active));
+  });
+
+  document.querySelectorAll('#notificationsList .notif-item').forEach((item) => {
+    item.hidden = filter !== 'all' && item.dataset.category !== filter;
+  });
+}
+
 async function loadNotificationsIntoModal({ silent = false } = {}) {
   const list = document.getElementById('notificationsList');
   const requestId = ++notificationsLoadRequestId;
@@ -2810,156 +2900,258 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
       .map((n) =>
         n.notificationType === 'guest-finder-conversation'
           ? `
-      <div class="notif-item notif-item--message notif-item--guest-finder-conversation${n.conversationStatus === 'returned' ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+      <div class="notif-item notif-item--message notif-item--guest-finder-conversation${n.conversationStatus === 'returned' ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}" data-category="conversation">
         <div class="notif-header">
-          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>QR finder · ${escapeHtml(n.itemTitle || 'Registered item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
-        ${n.lastMessage ? `<p class="notif-msg">${escapeHtml(n.lastMessage)}</p>` : ''}
-        ${
-          n.loadError
-            ? '<p class="notif-contact">Could not refresh this conversation. Your saved access is still available; try again shortly.</p>'
-            : n.conversationStatus === 'expired'
-              ? '<p class="notif-contact">This conversation has expired.</p>'
-              : n.conversationStatus === 'returned'
-                ? '<p class="notif-contact">Both sides confirmed the return.</p>'
+        <div class="notif-body">
+          <span class="notif-badge notif-badge--conversation${
+            n.conversationStatus === 'returned'
+              ? ' notif-badge--resolved'
+              : n.conversationStatus === 'expired'
+                ? ' notif-badge--expired'
                 : ''
-        }
-        ${
-          n.conversationStatus !== 'expired'
-            ? `<button type="button" class="btn-mark-read" data-action="openSavedFinderConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
-            : ''
-        }
-        <button type="button" class="btn-delete-conversation" data-action="removeSavedFinderConversationFromInbox" data-args="${actionArgs(n.conversationId, '$el')}">Remove from this browser</button>
+          }">${
+            n.conversationStatus === 'expired'
+              ? 'Expired'
+              : n.conversationStatus === 'returned'
+                ? 'Return confirmed'
+                : 'Saved conversation'
+          }</span>
+          <p class="notif-msg">Saved on this browser so you can return to the conversation after closing the page.</p>
+          ${n.lastMessage ? `<p class="notif-msg">${escapeHtml(n.lastMessage)}</p>` : ''}
+          ${
+            n.loadError
+              ? '<p class="notif-contact">Could not refresh this conversation. Your saved access is still available; try again shortly.</p>'
+              : n.conversationStatus === 'expired'
+                ? '<p class="notif-contact">This conversation has expired.</p>'
+                : n.conversationStatus === 'returned'
+                  ? '<p class="notif-contact">Both sides confirmed the return.</p>'
+                  : ''
+          }
+        </div>
+        <div class="notif-actions">
+          <div class="notif-actions-primary">
+            ${
+              n.conversationStatus !== 'expired'
+                ? `<button type="button" class="btn btn-primary btn-compact" data-action="openSavedFinderConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+                : ''
+            }
+          </div>
+          <div class="notif-actions-secondary">
+            <button type="button" class="btn-delete-conversation" data-action="removeSavedFinderConversationFromInbox" data-args="${actionArgs(n.conversationId, '$el')}">Remove from this browser</button>
+          </div>
+        </div>
       </div>
     `
           : n.notificationType === 'finder-conversation'
             ? `
-      <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: 'item',
-              recordId: String(n.itemId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select conversation</span>
-        </label>
+      <div class="notif-item notif-item--message notif-item--finder-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}" data-category="conversation">
         <div class="notif-header">
-          <strong>💬 QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: 'item',
+                  recordId: String(n.itemId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select conversation</span>
+            </label>
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>QR finder · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
-        <p class="notif-msg">${escapeHtml(n.lastMessage || n.message || '')}</p>
-        ${
-          Date.parse(n.conversationExpiresAt) > Date.now()
-            ? `<button type="button" class="btn-mark-read" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
-            : '<p class="notif-contact">This conversation has expired.</p>'
-        }
-        <button type="button" class="btn-delete-conversation" data-action="deleteRegisteredConversationNotification" data-args="${actionArgs(n.id, n.itemId, '$el')}">Delete conversation</button>
+        <div class="notif-body">
+          <span class="notif-badge notif-badge--conversation${
+            Date.parse(n.conversationExpiresAt) > Date.now() ? '' : ' notif-badge--expired'
+          }">${
+            Date.parse(n.conversationExpiresAt) > Date.now() ? 'Active conversation' : 'Expired'
+          }</span>
+          <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
+          <p class="notif-msg">${escapeHtml(n.lastMessage || n.message || '')}</p>
+          ${Date.parse(n.conversationExpiresAt) <= Date.now() ? '<p class="notif-contact">This conversation has expired.</p>' : ''}
+        </div>
+        <div class="notif-actions">
+          <div class="notif-actions-primary">
+            ${
+              Date.parse(n.conversationExpiresAt) > Date.now()
+                ? `<button type="button" class="btn btn-primary btn-compact" data-action="openRegisteredOwnerConversation" data-args="${actionArgs(n.conversationId)}">Open conversation</button>`
+                : ''
+            }
+          </div>
+          <div class="notif-actions-secondary">
+            <button type="button" class="btn-delete-conversation" data-action="deleteRegisteredConversationNotification" data-args="${actionArgs(n.id, n.itemId, '$el')}">Delete conversation</button>
+          </div>
+        </div>
       </div>
     `
             : n.notificationType === 'claim-conversation'
               ? `
-      <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: 'claim-conversation',
-              recordId: String(n.claimId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select conversation</span>
-        </label>
+      <div class="notif-item notif-item--message notif-item--claim-conversation${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}" data-category="conversation">
         <div class="notif-header">
-          <strong>💬 Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: 'claim-conversation',
+                  recordId: String(n.claimId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select conversation</span>
+            </label>
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>Claim conversation · ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${
-          n.unreadCount
-            ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
-            : n.status === 'approved'
-              ? ' · handover confirmed'
-              : ' · conversation in progress'
-        }</p>
-        ${
-          n.message
-            ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
-            : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'
-        }
-        <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
-        <button type="button" class="btn-delete-conversation" data-action="deleteClaimConversationNotification" data-args="${actionArgs(n.claimId, '$el')}">Delete conversation</button>
+        <div class="notif-body">
+          <span class="notif-badge notif-badge--conversation${
+            !n.unreadCount && n.status === 'approved' ? ' notif-badge--resolved' : ''
+          }">${
+            n.unreadCount
+              ? `${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
+              : n.status === 'approved'
+                ? 'Handover confirmed'
+                : 'Conversation in progress'
+          }</span>
+          <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${
+            n.unreadCount
+              ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
+              : n.status === 'approved'
+                ? ' · return complete'
+                : ' · conversation in progress'
+          }</p>
+          ${
+            n.message
+              ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
+              : '<p class="notif-msg">Open this conversation to continue discussing the potential match.</p>'
+          }
+        </div>
+        <div class="notif-actions">
+          <div class="notif-actions-primary">
+            <button type="button" class="btn btn-primary btn-compact" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
+          </div>
+          <div class="notif-actions-secondary">
+            <button type="button" class="btn-delete-conversation" data-action="deleteClaimConversationNotification" data-args="${actionArgs(n.claimId, '$el')}">Delete conversation</button>
+          </div>
+        </div>
       </div>
     `
               : n.notificationType === 'meetup'
                 ? `
-      <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
+      <div class="notif-item notif-item--meetup${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}" data-category="conversation">
         <div class="notif-header">
-          <strong>🏷️ ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">🏷️</span>
+            <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        ${meetupNotificationHtml(n)}
+        ${meetupNotificationHtml(n, '', false, true)}
       </div>
     `
                 : n.notificationType === 'claim-message'
                   ? `
-      <div class="notif-item notif-item--message unread" data-id="${escapeHtml(String(n.id))}">
+      <div class="notif-item notif-item--message unread" data-id="${escapeHtml(String(n.id))}" data-category="conversation">
         <div class="notif-header">
-          <strong>💬 ${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          <div class="notif-title-group">
+            <span class="notif-title-icon" aria-hidden="true">💬</span>
+            <strong>${escapeHtml(n.itemTitle || n.refCode || 'Item')}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
-        <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount > 1 ? ` sent ${n.unreadCount} messages` : ' replied'}</p>
-        <p class="notif-msg">${escapeHtml(n.message)}</p>
-        <button type="button" class="btn-mark-read" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
+        <div class="notif-body">
+          <span class="notif-badge notif-badge--conversation">New message</span>
+          <p class="notif-msg"><strong>${escapeHtml(n.otherName)}</strong>${n.unreadCount > 1 ? ` sent ${n.unreadCount} messages` : ' replied'}</p>
+          <p class="notif-msg">${escapeHtml(n.message)}</p>
+        </div>
+        <div class="notif-actions">
+          <div class="notif-actions-primary">
+            <button type="button" class="btn btn-primary btn-compact" data-action="openClaimThreadModal" data-args="${actionArgs(n.claimId)}">Open conversation</button>
+          </div>
+        </div>
       </div>
     `
                   : `
-      <div class="notif-item${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}">
-        <label class="notification-select-control">
-          <input class="notification-select" type="checkbox" value="${escapeHtml(
-            JSON.stringify({
-              kind: n.notificationType === 'claim' ? 'claim' : 'item',
-              recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
-              id: String(n.id),
-            })
-          )}" data-change="updateNotificationSelection">
-          <span>Select notification</span>
-        </label>
+      <div class="notif-item${n.read ? '' : ' unread'}" data-id="${escapeHtml(String(n.id))}" data-category="alert">
         <div class="notif-header">
-          <strong>🏷️ ${n.itemTitle || n.refCode}</strong>
+          <div class="notif-title-group">
+            <label class="notification-select-control">
+              <input class="notification-select" type="checkbox" value="${escapeHtml(
+                JSON.stringify({
+                  kind: n.notificationType === 'claim' ? 'claim' : 'item',
+                  recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
+                  id: String(n.id),
+                })
+              )}" data-change="updateNotificationSelection">
+              <span class="visually-hidden">Select notification</span>
+            </label>
+            <span class="notif-title-icon" aria-hidden="true">🏷️</span>
+            <strong>${n.itemTitle || n.refCode}</strong>
+          </div>
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
+        <div class="notif-body">
+          <span class="notif-badge notif-badge--alert">${
+            n.notificationType === 'match'
+              ? 'Possible match—not confirmed'
+              : n.notificationType === 'claim'
+                ? 'Claim request update'
+                : 'Lost & Found alert'
+          }</span>
+          ${
+            n.notificationType === 'match'
+              ? `<p class="notif-msg">Found item: ${escapeHtml(n.matchItemTitle || n.matchRefCode || 'Found item')} ${n.matchRefCode ? `(${escapeHtml(n.matchRefCode)})` : ''}</p>
+               ${n.matchLocation ? `<p class="notif-msg">Reported location: ${escapeHtml(n.matchLocation)}</p>` : ''}
+               <p class="notif-msg">${escapeHtml(n.message)}</p>`
+              : n.notificationType === 'claim'
+                ? `<p class="notif-msg">${escapeHtml(n.message)}</p>`
+                : `<p class="notif-msg">📍 <em>${escapeHtml(n.locationFound || 'Location not specified')}</em></p>
+                   <p class="notif-msg">💬 ${escapeHtml(n.message)}</p>
+                   ${
+                     n.finderContact && n.finderContact !== 'Anonymous Student / Finder'
+                       ? `<p class="notif-contact">📞 Contact the finder: ${contactLinkHtml(n.finderContact)}</p>`
+                       : '<p class="notif-contact">🔒 Finder remained anonymous</p>'
+                   }`
+          }
+        </div>
         ${
-          n.notificationType === 'match'
-            ? `<p class="notif-msg"><strong>Possible match—not confirmed</strong></p>
-             <p class="notif-msg">Found item: ${escapeHtml(n.matchItemTitle || n.matchRefCode || 'Found item')} ${n.matchRefCode ? `(${escapeHtml(n.matchRefCode)})` : ''}</p>
-             ${n.matchLocation ? `<p class="notif-msg">Reported location: ${escapeHtml(n.matchLocation)}</p>` : ''}
-             <p class="notif-msg">${escapeHtml(n.message)}</p>
-             <a class="btn-mark-read" style="display:inline-block;text-decoration:none;" href="/?search=${encodeURIComponent(n.matchRefCode || '')}&amp;matchItemId=${encodeURIComponent(n.matchItemId || '')}#items">Review possible match</a>`
-            : n.notificationType === 'claim'
-              ? `<p class="notif-msg">Claim request update</p><p class="notif-msg">${escapeHtml(n.message)}</p>`
-              : `<p class="notif-msg">📍 <em>${escapeHtml(n.locationFound || 'Location not specified')}</em></p>
-             <p class="notif-msg">💬 ${escapeHtml(n.message)}</p>
-             ${
-               n.finderContact && n.finderContact !== 'Anonymous Student / Finder'
-                 ? `<p class="notif-contact">📞 Contact the finder: ${contactLinkHtml(n.finderContact)}</p>`
-                 : '<p class="notif-contact">🔒 Finder remained anonymous</p>'
-             }`
+          n.notificationType === 'match' || !n.read
+            ? `<div class="notif-actions">
+                 <div class="notif-actions-primary">
+                   ${
+                     n.notificationType === 'match'
+                       ? `<a class="btn btn-primary btn-compact notif-action-link" href="/?search=${encodeURIComponent(n.matchRefCode || '')}&amp;matchItemId=${encodeURIComponent(n.matchItemId || '')}#items">Review possible match</a>`
+                       : ''
+                   }
+                 </div>
+                 <div class="notif-actions-secondary">
+                   ${!n.read ? `<button type="button" class="btn-mark-read" data-action="markNotifRead" data-args="${actionArgs(n.id, '$el')}">Mark as read</button>` : ''}
+                 </div>
+               </div>`
+            : ''
         }
-        ${!n.read ? `<button class="btn-mark-read" data-action="markNotifRead" data-args="${actionArgs(n.id, '$el')}">Mark as read</button>` : ''}
       </div>
     `
       )
       .join('');
     if (!silent || list.dataset.renderKey !== renderKey) {
       const scrollTop = list.scrollTop;
+      const activeFilter =
+        document.querySelector('.notification-filter-tab[aria-pressed="true"]')?.dataset.filter || 'all';
       destroyMeetupMaps();
       list.innerHTML = notificationMarkup;
       list.scrollTop = scrollTop;
       list.dataset.renderKey = renderKey;
+      setNotificationsFilter(activeFilter);
       document.getElementById('selectAllNotifications').checked = false;
       updateNotificationSelection();
       initMeetupMaps();
@@ -3001,6 +3193,9 @@ function selectAllNotifications(checked) {
 
 function updateNotificationSelection() {
   const checkboxes = [...document.querySelectorAll('#notificationsList .notification-select')];
+  checkboxes.forEach((input) => {
+    input.closest('.notif-item')?.classList.toggle('is-selected', input.checked);
+  });
   const selectedCount = checkboxes.filter((input) => input.checked).length;
   const selectAll = document.getElementById('selectAllNotifications');
   selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;
