@@ -2668,9 +2668,8 @@ button {
 }
 
 /* Shrink the floating QR scanner widget further on phones: 300px already
-   reads as "nearly full width" on a narrow screen. Camera mode is excluded:
-   it's a full-screen viewfinder there (see modals.css), not a floating
-   corner widget, so it should stay large on phones, not shrink. */
+   reads as "nearly full width" on a narrow screen. Only applies to the
+   screen-share flow - camera mode below goes full-screen instead. */
 @media (max-width: 480px) {
   #qrScannerModal:not(.qr-scanner-modal--camera) .modal-card {
     max-width: 170px !important;
@@ -2687,5 +2686,78 @@ button {
   }
   #qrScannerModal:not(.qr-scanner-modal--camera) .qr-scanner-status {
     font-size: 0.7rem !important;
+  }
+}
+
+/* Camera mode (the common case on phones, since getDisplayMedia isn't
+   available there) fills the whole screen as a real viewfinder instead of a
+   postage-stamp preview - no need to screen-share or screenshot to scan. */
+@media (max-width: 768px) {
+  #qrScannerModal.qr-scanner-modal--camera .modal-card {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: 100% !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+  #qrScannerModal.qr-scanner-modal--camera .modal-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 1rem 1.1rem;
+    border-bottom: none;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
+  }
+  #qrScannerModal.qr-scanner-modal--camera .modal-heading,
+  #qrScannerModal.qr-scanner-modal--camera .modal-subtitle {
+    color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
+    font-size: initial !important;
+  }
+  #qrScannerModal.qr-scanner-modal--camera .modal-close {
+    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+  }
+  #qrScannerModal.qr-scanner-modal--camera .qr-scanner-viewport {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    aspect-ratio: auto !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+  }
+  #qrScannerModal.qr-scanner-modal--camera .qr-scanner-status {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 5.5rem;
+    z-index: 2;
+    margin: 0 !important;
+    padding: 0 1.25rem;
+    color: #fff;
+    font-size: 0.9rem !important;
+  }
+  #qrScannerModal.qr-scanner-modal--camera .modal-actions {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2;
+    margin: 0;
+    padding: 1.1rem 1.25rem calc(1.1rem + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
   }
 }
