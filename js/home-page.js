@@ -3087,6 +3087,9 @@ function selectAllNotifications(checked) {
 
 function updateNotificationSelection() {
   const checkboxes = [...document.querySelectorAll('#notificationsList .notification-select')];
+  checkboxes.forEach((input) => {
+    input.closest('.notif-item')?.classList.toggle('is-selected', input.checked);
+  });
   const selectedCount = checkboxes.filter((input) => input.checked).length;
   const selectAll = document.getElementById('selectAllNotifications');
   selectAll.checked = checkboxes.length > 0 && selectedCount === checkboxes.length;

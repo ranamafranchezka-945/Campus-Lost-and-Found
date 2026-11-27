@@ -954,6 +954,31 @@ label {
 :root[data-theme='light'] #notificationsModal .notification-selection-toolbar {
   color: #64748b;
 }
+:root[data-theme='light'] #notificationsModal .notification-select-all input,
+:root[data-theme='light'] #notificationsModal .notification-select-control input {
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+:root[data-theme='light'] #notificationsModal .notification-select-all input:checked,
+:root[data-theme='light'] #notificationsModal .notification-select-control input:checked,
+:root[data-theme='light'] #notificationsModal .notification-select-all input:indeterminate {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16);
+}
+:root[data-theme='light'] #notificationsModal .notification-select-all input:hover:not(:checked):not(:indeterminate),
+:root[data-theme='light'] #notificationsModal .notification-select-control input:hover:not(:checked):not(:indeterminate) {
+  border-color: #1d4ed8;
+  background: #eff6ff;
+}
+:root[data-theme='light'] #notificationsModal .notification-select-all input:focus-visible,
+:root[data-theme='light'] #notificationsModal .notification-select-control input:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}
+:root[data-theme='light'] #notificationsModal .notification-select-control:hover {
+  background: #eff6ff;
+}
 :root[data-theme='light'] #notificationsModal .notification-filter-tabs {
   border-color: #e2e8f0;
   background: #f1f5f9;
@@ -982,6 +1007,20 @@ label {
   box-shadow:
     inset 3px 0 0 #2563eb,
     0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-theme='light'] #notificationsModal .notif-item:hover {
+  border-color: #94a3b8;
+}
+:root[data-theme='light'] #notificationsModal .notif-item.is-selected {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  box-shadow:
+    inset 3px 0 0 #2563eb,
+    0 0 0 1px rgba(37, 99, 235, 0.12);
+}
+:root[data-theme='light'] #notificationsModal .notif-item.is-selected:hover {
+  border-color: #3b82f6;
+  background: #dbeafe;
 }
 :root[data-theme='light'] #notificationsModal .notif-header,
 :root[data-theme='light'] #notificationsModal .notif-title-group strong {
