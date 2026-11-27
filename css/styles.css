@@ -38,6 +38,23 @@
   animation-duration: 0.45s;
   animation-timing-function: ease-in-out;
 }
+/* Circular reveal from a theme toggle click (js/main.js: applyTheme adds
+   .theme-reveal and animates clip-path on the new snapshot). The old snapshot
+   stays still underneath while the new one is uncovered from the click point,
+   so the default fade is switched off and the new snapshot is drawn on top.
+   html.theme-reveal makes these more specific than the bare ::view-transition
+   rules further down (page navigation), so they win regardless of order. */
+html.theme-reveal::view-transition-old(root),
+html.theme-reveal::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+html.theme-reveal::view-transition-old(root) {
+  z-index: 1;
+}
+html.theme-reveal::view-transition-new(root) {
+  z-index: 2;
+}
 /* Browsers without view transitions: colours fade while the theme changes. */
 .theme-switching,
 .theme-switching *,
