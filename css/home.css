@@ -720,11 +720,11 @@ label {
   appearance: none;
   -webkit-appearance: none;
   display: grid;
-  flex: 0 0 1.15rem;
+  flex: 0 0 1rem;
   flex-shrink: 0;
   place-content: center;
-  width: 1.15rem;
-  height: 1.15rem;
+  width: 1rem;
+  height: 1rem;
   margin: 0;
   border: 1px solid rgba(148, 163, 184, 0.55);
   border-radius: 0.32rem;
@@ -1016,9 +1016,9 @@ label {
 .notification-select-box {
   position: relative;
   display: block;
-  flex: 0 0 1.15rem;
-  width: 1.15rem;
-  height: 1.15rem;
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
 }
 .notification-select-box input {
   width: 100%;
@@ -1071,6 +1071,17 @@ label {
 :root[data-theme='light'] #notificationsModal .notif-item.is-selected:hover {
   border-color: #3b82f6;
   background: #dbeafe;
+}
+:root:not([data-theme='light']) #notificationsModal .notif-item.is-selected {
+  border-color: rgba(96, 165, 250, 0.62);
+  background: rgba(59, 130, 246, 0.16);
+  box-shadow:
+    inset 3px 0 0 #60a5fa,
+    0 0 0 1px rgba(96, 165, 250, 0.16);
+}
+:root:not([data-theme='light']) #notificationsModal .notif-item.is-selected:hover {
+  border-color: rgba(96, 165, 250, 0.82);
+  background: rgba(59, 130, 246, 0.23);
 }
 :root[data-theme='light'] #notificationsModal .notif-header,
 :root[data-theme='light'] #notificationsModal .notif-title-group strong {
