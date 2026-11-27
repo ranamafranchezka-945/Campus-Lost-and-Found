@@ -676,6 +676,45 @@ label {
 .notif-actions .btn-delete-conversation {
   margin-top: 0;
 }
+/* Card actions: "Open conversation" (.btn-compact) and "Delete conversation"
+   share one size so both read as a matched pair. */
+.notif-actions .btn-compact,
+.notif-actions .btn-delete-conversation,
+.notif-actions .btn-mark-read {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  box-sizing: border-box;
+  min-height: 2.125rem;
+  padding: 0 0.9rem;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.notif-actions .btn-compact {
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.28);
+}
+.notif-actions .btn-compact:hover {
+  box-shadow: 0 3px 12px rgba(59, 130, 246, 0.4);
+  transform: none;
+}
+.notif-actions .btn-compact svg,
+.notif-actions .btn-delete-conversation svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+.notif-actions .btn-compact:active,
+.notif-actions .btn-delete-conversation:active:not(:disabled),
+.notif-actions .btn-mark-read:active {
+  transform: translateY(1px);
+}
 .notif-actions .notif-action-link {
   text-decoration: none;
 }
@@ -822,50 +861,65 @@ label {
   border-color: var(--blue-main);
   background: var(--blue-main);
 }
-.btn-delete-notifications {
+.btn-delete-notifications,
+.btn-mark-notifications-read {
+  display: inline-flex;
   flex: 0 0 auto;
-  min-height: 2.1rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid #b91c1c;
-  border-radius: 6px;
-  background: #b91c1c;
-  color: #ffffff;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 1.85rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
   font: inherit;
   font-size: 0.75rem;
   font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
 }
 .btn-mark-notifications-read {
-  flex: 0 0 auto;
-  min-height: 2.1rem;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--blue-main);
-  border-radius: 6px;
-  background: var(--blue-main);
-  color: #ffffff;
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 650;
-  white-space: nowrap;
-  cursor: pointer;
+  border-color: rgba(96, 165, 250, 0.45);
+  background: rgba(59, 130, 246, 0.16);
+  color: #bfdbfe;
 }
 .btn-mark-notifications-read:hover:not(:disabled) {
-  background: var(--blue-dark);
-  border-color: var(--blue-dark);
+  border-color: #60a5fa;
+  background: rgba(59, 130, 246, 0.28);
+  color: #ffffff;
 }
-.btn-mark-notifications-read:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.btn-delete-notifications {
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(220, 38, 38, 0.16);
+  color: #fecaca;
 }
 .btn-delete-notifications:hover:not(:disabled) {
-  background: #991b1b;
-  border-color: #991b1b;
-}
-.btn-delete-notifications:disabled {
-  background: #7f1d1d;
-  border-color: #7f1d1d;
+  border-color: #f87171;
+  background: rgba(220, 38, 38, 0.3);
   color: #ffffff;
+}
+.btn-mark-notifications-read:active:not(:disabled),
+.btn-delete-notifications:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.btn-mark-notifications-read:focus-visible,
+.btn-delete-notifications:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.7);
+  outline-offset: 2px;
+}
+.btn-mark-notifications-read:disabled,
+.btn-delete-notifications:disabled {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.08);
+  color: #64748b;
   opacity: 1;
   cursor: not-allowed;
 }
@@ -902,8 +956,8 @@ label {
   }
 
   .notification-bulk-actions button {
-    min-height: 2rem;
-    padding: 0.25rem 0.35rem;
+    min-height: 1.75rem;
+    padding: 0.2rem 0.5rem;
     font-size: 0.6875rem;
   }
 
@@ -937,6 +991,10 @@ label {
   font: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 .btn-delete-conversation:hover:not(:disabled) {
   background: #b91c1c;
