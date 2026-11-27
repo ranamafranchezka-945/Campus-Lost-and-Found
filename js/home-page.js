@@ -1155,6 +1155,167 @@ function printQrSticker() {
   window.print();
 }
 
+// ── QR Scanner ──────────────────────────────────────────────────────────
+// Desktop browsers share a screen/window/tab (getDisplayMedia); phones don't
+// implement that API at all, so there the camera (getUserMedia) is used
+// instead - a printed sticker isn't on the same screen, so nothing gets
+// covered there either way.
+let qrScannerStream = null;
+let qrScannerRafId = null;
+let qrScannerStopped = true;
+let qrScannerMode = null; // 'screen' | 'camera'
+
+// Full-viewport spinner while the camera/screen stream is still connecting
+// (otherwise the video box is just black and looks stuck or broken).
+function setQrScannerConnecting(connecting) {
+  const overlay = document.getElementById('qrScannerLoading');
+  if (overlay) overlay.hidden = !connecting;
+}
+
+// Small spinner next to the status text for the whole time frames are
+// actively being decoded, so scanning doesn't look idle once the feed is live.
+function setQrScannerBusy(busy) {
+  const spinner = document.getElementById('qrScannerStatusSpinner');
+  if (spinner) spinner.hidden = !busy;
+}
+
+function setQrScannerStatus(text) {
+  const textEl = document.getElementById('qrScannerStatusText');
+  if (textEl) textEl.textContent = text;
+}
+
+async function openQrScanner() {
+  const titleEl = document.getElementById('qrScannerTitle');
+  const subtitleEl = document.getElementById('qrScannerSubtitle');
+  const video = document.getElementById('qrScannerVideo');
+  qrScannerStopped = false;
+  document.getElementById('qrScannerModal').classList.add('open');
+  setQrScannerConnecting(true);
+  setQrScannerBusy(false);
+
+  const canShareScreen = typeof navigator.mediaDevices?.getDisplayMedia === 'function';
+  const canUseCamera = typeof navigator.mediaDevices?.getUserMedia === 'function';
+
+  if (typeof jsQR !== 'function' || (!canShareScreen && !canUseCamera)) {
+    setQrScannerConnecting(false);
+    setQrScannerStatus("This device can't scan QR codes in-app. Open the sticker link directly instead.");
+    return;
+  }
+
+  qrScannerMode = canShareScreen ? 'screen' : 'camera';
+  video.classList.toggle('qr-scanner-video--camera', qrScannerMode === 'camera');
+  if (titleEl) titleEl.textContent = qrScannerMode === 'screen' ? 'Scan QR From Screen' : 'Scan QR With Camera';
+  if (subtitleEl) {
+    subtitleEl.textContent =
+      qrScannerMode === 'screen' ? 'Share the screen or window showing the QR code.' : 'Point your camera at the sticker.';
+  }
+  setQrScannerStatus(qrScannerMode === 'screen' ? 'Requesting screen share…' : 'Requesting camera access…');
+
+  let stream;
+  try {
+    stream =
+      qrScannerMode === 'screen'
+        ? await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'never' }, audio: false })
+        : await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+  } catch (error) {
+    console.error('Scanner media access failed:', error);
+    setQrScannerConnecting(false);
+    setQrScannerStatus(
+      qrScannerMode === 'screen'
+        ? 'Screen share was cancelled or unavailable. Try again and pick the window showing the code.'
+        : 'Camera access was denied or unavailable. Allow camera access and try again.'
+    );
+    return;
+  }
+
+  if (qrScannerStopped) {
+    // The modal was closed while the permission/share prompt was still open.
+    stream.getTracks().forEach((track) => track.stop());
+    return;
+  }
+
+  qrScannerStream = stream;
+  if (qrScannerMode === 'screen') {
+    // If the person stops sharing from the browser's own "Stop sharing" control,
+    // close the modal instead of looping forever against a dead video track.
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      if (!qrScannerStopped) closeQrScanner();
+    });
+  }
+
+  video.srcObject = stream;
+  await video.play();
+  setQrScannerConnecting(false);
+  setQrScannerBusy(true);
+  setQrScannerStatus(
+    qrScannerMode === 'screen' ? 'Move the QR code into view on the shared screen.' : 'Align the QR code in the camera view.'
+  );
+  scanQrFrame();
+}
+
+function scanQrFrame() {
+  if (qrScannerStopped) return;
+  const video = document.getElementById('qrScannerVideo');
+  const canvas = document.getElementById('qrScannerCanvas');
+
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
+    if (code?.data) {
+      handleScannedQrText(code.data);
+      return;
+    }
+  }
+  qrScannerRafId = requestAnimationFrame(scanQrFrame);
+}
+
+// Scanned text is either the full sticker URL (https://host/found?ref=CODE) or,
+// if someone scans a plain printout of the code, the ref code text itself.
+function handleScannedQrText(text) {
+  let refCode = null;
+  try {
+    refCode = new URL(text, window.location.origin).searchParams.get('ref');
+  } catch {
+    // Not a URL: fall through to the raw ref-code check below.
+  }
+  if (!refCode && /^CSPC-[A-Z0-9-]+$/i.test(text.trim())) {
+    refCode = text.trim();
+  }
+
+  if (!refCode) {
+    setQrScannerStatus("That's not a Back2You code. Keep it in view and try again.");
+    qrScannerRafId = requestAnimationFrame(scanQrFrame);
+    return;
+  }
+
+  closeQrScanner();
+  closeQrModal();
+  openAnonymousFinderModal(refCode);
+}
+
+function closeQrScanner() {
+  qrScannerStopped = true;
+  qrScannerMode = null;
+  if (qrScannerRafId) cancelAnimationFrame(qrScannerRafId);
+  qrScannerRafId = null;
+  if (qrScannerStream) {
+    qrScannerStream.getTracks().forEach((track) => track.stop());
+    qrScannerStream = null;
+  }
+  const video = document.getElementById('qrScannerVideo');
+  if (video) {
+    video.srcObject = null;
+    video.classList.remove('qr-scanner-video--camera');
+  }
+  setQrScannerBusy(false);
+  setQrScannerConnecting(true);
+  document.getElementById('qrScannerModal').classList.remove('open');
+}
+
 function toggleAnonymousDemo(show) {
   const box = document.getElementById('anonymousDemoBox');
   const btn = document.getElementById('demoToggleBtn');

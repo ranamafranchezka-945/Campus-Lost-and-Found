@@ -1046,6 +1046,95 @@
 .account-delete-list strong {
   color: var(--text-main);
 }
+/* ── QR scanner (shared-screen preview inside #qrScannerModal) ─────────────
+   A scan is often of a QR code on this same screen/tab (e.g. the sticker
+   behind this very dialog), so this overlay skips the shared dark/blurred
+   .slip-overlay backdrop and floats as a small corner widget instead of a
+   centered dialog - otherwise it would hide the very code being scanned. */
+#qrScannerModal {
+  background: transparent;
+  backdrop-filter: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+#qrScannerModal .modal-card {
+  max-width: 250px;
+  margin: 1rem;
+  padding: 1rem;
+  pointer-events: auto;
+  box-shadow: var(--modal-shadow), 0 0 0 2000px rgba(0, 0, 0, 0.12);
+}
+.qr-scanner-viewport {
+  position: relative;
+  width: 100%;
+  max-width: 210px;
+  aspect-ratio: 4 / 3;
+  margin: 0.65rem auto 0;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #000;
+}
+.qr-scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+/* Camera fallback (phones without screen-capture support): fill the frame
+   instead of letterboxing, since there's no risk of cropping out a shared
+   window the way there is with a screen capture. */
+.qr-scanner-video--camera {
+  object-fit: cover;
+}
+/* Shown over the (otherwise black) viewport while the camera/screen stream
+   is still connecting, so it doesn't read as stuck or broken. */
+.qr-scanner-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.45);
+}
+.qr-scanner-loading[hidden] {
+  display: none;
+}
+.qr-scanner-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.qr-scanner-spinner,
+.qr-scanner-status-spinner {
+  width: 1.1em;
+  height: 1.1em;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: qr-scanner-spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+/* The inline status spinner sits on the card's own background, not the dark
+   video, so it needs theme-aware colours instead of the video overlay's. */
+.qr-scanner-status-spinner {
+  width: 0.95em;
+  height: 0.95em;
+  border-color: var(--surface-subtle-border);
+  border-top-color: var(--blue-main);
+}
+.qr-scanner-status-spinner[hidden] {
+  display: none;
+}
+@keyframes qr-scanner-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;

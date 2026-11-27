@@ -2666,3 +2666,24 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
 }
+
+/* Shrink the floating QR scanner widget further on phones: 300px already
+   reads as "nearly full width" on a narrow screen. */
+@media (max-width: 480px) {
+  #qrScannerModal .modal-card {
+    max-width: 170px !important;
+    padding: 0.7rem !important;
+  }
+  #qrScannerModal .modal-heading {
+    font-size: 0.85rem !important;
+  }
+  #qrScannerModal .modal-subtitle {
+    font-size: 0.7rem !important;
+  }
+  #qrScannerModal .qr-scanner-viewport {
+    max-width: 145px !important;
+  }
+  #qrScannerModal .qr-scanner-status {
+    font-size: 0.7rem !important;
+  }
+}
