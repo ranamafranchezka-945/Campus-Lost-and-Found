@@ -1077,6 +1077,15 @@ label {
   color: #86efac;
   margin: 0.4rem 0 0;
 }
+/* The phone/email link had no colour of its own, so it fell back to the
+   browser's default link blue: nearly unreadable on the dark card. */
+.notif-contact a {
+  color: var(--blue-light);
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
 .btn-mark-read {
   background: none;
   border: 1px solid rgba(59, 130, 246, 0.3);

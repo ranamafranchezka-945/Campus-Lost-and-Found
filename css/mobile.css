@@ -1,0 +1,314 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Phone layout pass (≤599px, tuned at 360 and 440px). Loaded last on index.html.
+
+   Goal: reach search, filters and the first listing within about one screen,
+   with 40px+ tap targets and no sideways overflow. Uses only theme tokens
+   (--text-main, --well-bg, --float-bg, ...) so light and dark stay identical in
+   layout and both follow the existing palettes.
+
+   !important appears only where an earlier mobile rule (responsive.css,
+   inline hero padding) already uses it.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 599px) {
+  /* ── Hero: smaller globe, tighter type, stats in one row ─────────────── */
+
+  /* The globe sits above the text (column-reverse). At 82vw it took ~330px of
+     an 800px screen; 168px still reads as the brand mark. */
+  .portal-hero-globe {
+    --portal-globe-size: 168px;
+  }
+  .portal-hero-stage {
+    inset: 0 0 22px;
+  }
+  .portal-hero-shadow {
+    bottom: -10px;
+  }
+
+  /* Inline style on the header sets 4rem/3rem padding. */
+  .hero-section {
+    gap: 0.75rem !important;
+    padding: 1rem 1rem 1.15rem !important;
+  }
+  .hero-greeting {
+    margin-bottom: 0.15rem !important;
+    font-size: 0.8125rem !important;
+  }
+  .hero-name {
+    margin-bottom: 0.35rem !important;
+    font-size: 2.25rem !important;
+    line-height: 1.1 !important;
+  }
+  .hero-tagline {
+    margin-bottom: 0.9rem !important;
+    font-size: 0.9375rem !important;
+    line-height: 1.5 !important;
+  }
+
+  /* Report buttons: 44px tall (comfortable thumb target) with a small gap. */
+  :root .hero-actions {
+    gap: 0.5rem;
+  }
+  :root .hero-actions .btn {
+    min-height: 44px;
+    padding-block: 0.6rem;
+  }
+
+  /* Four stats on one row instead of a 2×2 grid of 76px tiles: same tap
+     targets (they double as filter shortcuts), half the height. */
+  .hero-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.4rem !important;
+    margin-top: 0.9rem !important;
+  }
+  .hero-stats .stat-box {
+    align-items: center;
+    justify-content: center;
+    min-height: 3.5rem;
+    padding: 0.5rem 0.25rem !important;
+    text-align: center;
+  }
+  .hero-stats .stat-val {
+    font-size: 1.3rem;
+  }
+  .hero-stats .stat-lbl {
+    margin-top: 0.2rem;
+    font-size: 0.625rem;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+  }
+
+  /* ── Items section header: title + count on one line ─────────────────── */
+
+  /* The search placeholder already says what the subtitle said. */
+  :root #items .section-eyebrow,
+  :root #items .section-subtitle {
+    display: none;
+  }
+  :root #items .section-head {
+    flex-wrap: nowrap;
+    align-items: baseline;
+    margin-bottom: 0.85rem;
+  }
+  :root #items .section-head-text {
+    flex: 1 1 auto;
+  }
+  :root #items .section-meta {
+    font-size: 0.8125rem;
+  }
+
+  /* ── Filter chips: All/Lost/Found/Claimed in one row ─────────────────── */
+
+  .filter-row {
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+  .filter-chips {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 0.375rem !important;
+  }
+  .filter-chips:has(.chip-my-vault[style*='display: none']) {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+  .filter-chips .chip {
+    min-height: 2.5rem;
+    padding-inline: 0.2rem;
+  }
+  /* My Belongings gets its own full row, with its lock icon and count back:
+     there is room for them now. */
+  .filter-chips .chip.chip-my-vault {
+    grid-column: 1 / -1 !important;
+  }
+  .filter-chips .chip-my-vault .my-belongings-icon,
+  .filter-chips .chip-my-vault .my-belongings-count {
+    display: inline;
+  }
+
+  /* ── Office + sort side by side ──────────────────────────────────────── */
+
+  /* Each control's button already announces its label ("Office:", "Sort:"),
+     so the visible labels go and both selects share one row. */
+  .hotspots-row {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.9rem;
+  }
+  .hotspots-row > label,
+  .hotspots-row .sort-filter-wrap > label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .hotspots-row .location-filter-wrap,
+  .hotspots-row .sort-filter-wrap {
+    min-width: 0;
+    width: auto;
+  }
+  /* The trigger is a flex row with the chevron after the text, so a long label
+     pushed the chevron out of the pill. As a block with the chevron pinned
+     right, the label truncates with "…" and the chevron always shows. */
+  :root .hotspots-row .button-select-trigger {
+    position: relative;
+    display: block;
+    min-height: 2.75rem;
+    padding: 0.65rem 2rem 0.65rem 0.9rem;
+    overflow: hidden;
+    font-size: 0.875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :root .hotspots-row .button-select-trigger::after {
+    position: absolute;
+    top: 50%;
+    right: 0.9rem;
+    transform: translateY(-70%) rotate(45deg);
+  }
+  /* Office names are long: let that menu use the row's full width. */
+  .hotspots-row .location-filter-wrap .button-select-menu {
+    width: calc(100vw - 2rem);
+    max-width: 30rem;
+  }
+  .hotspots-row .sort-filter-wrap .button-select-menu {
+    right: 0;
+    left: auto;
+    width: max(100%, 11rem);
+  }
+
+  /* ── Listing cards: thumbnail beside the header, details full width ──── */
+
+  /* The body's children join the card grid, so the title block sits beside a
+     72px thumbnail while description, location and actions use the whole card
+     width instead of a ~180px column. */
+  :root #items .projects-grid > .project-card.listing-card {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+    row-gap: 0.3rem;
+    padding: 0.8rem;
+  }
+  :root #items .listing-card .listing-media {
+    grid-row: 1 / span 3;
+    align-self: start;
+  }
+  :root #items .listing-card .listing-body {
+    display: contents;
+  }
+  :root #items .listing-card .listing-body > * {
+    grid-column: 2;
+    min-width: 0;
+  }
+  :root #items .listing-card .listing-body > .listing-desc,
+  :root #items .listing-card .listing-body > .listing-more,
+  :root #items .listing-card .listing-body > .listing-facts,
+  :root #items .listing-card .listing-body > .listing-actions {
+    grid-column: 1 / -1;
+  }
+  :root #items .listing-card .listing-body > .listing-desc {
+    margin-top: 0.25rem;
+  }
+  :root #items .listing-card .listing-ref-button {
+    max-width: 100%;
+  }
+}
+
+/* ── Account Notifications as a bottom sheet (≤480px) ───────────────────── */
+
+@media (max-width: 480px) {
+  /* Full width instead of a card inset by 20px each side: the list gains about
+     40px of line length, and the sheet rises from where the thumb is. */
+  #notificationsModal.slip-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+  #notificationsModal .modal-card {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 2.5rem);
+    margin: 0;
+    padding: 1rem 0.875rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+  }
+  #notificationsModal:not(.open) > .modal-card {
+    transform: translateY(24px);
+  }
+  @starting-style {
+    #notificationsModal.open > .modal-card {
+      transform: translateY(24px);
+    }
+  }
+
+  #notificationsModal .notifications-modal-header {
+    padding-bottom: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  #notificationsModal .modal-subtitle {
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  /* Toolbar: 12px text (11px was hard to read) and wrap instead of squeezing. */
+  .notification-selection-toolbar {
+    flex-wrap: wrap;
+    row-gap: 0.4rem;
+  }
+  .notification-selection-info,
+  .notification-select-all {
+    font-size: 0.75rem;
+  }
+  .notification-bulk-actions button {
+    min-height: 2rem;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.75rem;
+  }
+
+  /* Tabs size to their labels, so "Conversations" no longer touches the edge. */
+  .notification-filter-tabs {
+    display: flex;
+  }
+  .notification-filter-tab {
+    flex: 1 1 auto;
+    min-height: 2.25rem;
+    padding-inline: 0.5rem;
+    white-space: nowrap;
+  }
+
+  /* Message text runs under the checkbox instead of indented past it. */
+  #notificationsModal .notif-item {
+    --notif-content-indent: 0px;
+    padding: 0.8rem;
+  }
+  #notificationsModal .notif-body {
+    margin-top: 0.4rem;
+  }
+
+  /* Actions: one row of equal-height buttons that share the width, wrapping to
+     full-width buttons only if the labels do not fit. */
+  #notificationsModal .notif-actions {
+    gap: 0.5rem;
+  }
+  #notificationsModal .notif-actions-primary,
+  #notificationsModal .notif-actions-secondary {
+    flex: 1 1 auto;
+    margin-left: 0;
+  }
+  #notificationsModal .notif-actions-primary > *,
+  #notificationsModal .notif-actions-secondary > * {
+    flex: 1 1 auto;
+    min-height: 2.5rem;
+  }
+  #notificationsModal .notif-actions-primary:empty,
+  #notificationsModal .notif-actions-secondary:empty {
+    display: none;
+  }
+}
+
+/* Reduced motion: the sheet still fades (motion.css) but does not slide. */
+@media (max-width: 480px) and (prefers-reduced-motion: reduce) {
+  #notificationsModal:not(.open) > .modal-card {
+    transform: none !important;
+  }
+}
