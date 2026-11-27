@@ -1080,6 +1080,12 @@
   height: 100%;
   object-fit: contain;
 }
+/* Camera fallback (phones without screen-capture support): fill the frame
+   instead of letterboxing, since there's no risk of cropping out a shared
+   window the way there is with a screen capture. */
+.qr-scanner-video--camera {
+  object-fit: cover;
+}
 .qr-scanner-status {
   margin: 0.9rem 0 0;
   color: var(--text-muted);

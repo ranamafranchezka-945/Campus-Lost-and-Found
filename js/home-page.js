@@ -1155,51 +1155,75 @@ function printQrSticker() {
   window.print();
 }
 
-// ── QR Scanner (reads a QR code off a shared screen/window/tab, no camera needed) ──
+// ── QR Scanner ──────────────────────────────────────────────────────────
+// Desktop browsers share a screen/window/tab (getDisplayMedia); phones don't
+// implement that API at all, so there the camera (getUserMedia) is used
+// instead - a printed sticker isn't on the same screen, so nothing gets
+// covered there either way.
 let qrScannerStream = null;
 let qrScannerRafId = null;
 let qrScannerStopped = true;
+let qrScannerMode = null; // 'screen' | 'camera'
 
 async function openQrScanner() {
   const statusEl = document.getElementById('qrScannerStatus');
+  const titleEl = document.getElementById('qrScannerTitle');
+  const subtitleEl = document.getElementById('qrScannerSubtitle');
   const video = document.getElementById('qrScannerVideo');
   qrScannerStopped = false;
-  statusEl.textContent = 'Requesting screen share…';
   document.getElementById('qrScannerModal').classList.add('open');
 
-  if (typeof jsQR !== 'function' || !navigator.mediaDevices?.getDisplayMedia) {
-    statusEl.textContent = "This browser can't scan from the screen. Open the sticker link directly instead.";
+  const canShareScreen = typeof navigator.mediaDevices?.getDisplayMedia === 'function';
+  const canUseCamera = typeof navigator.mediaDevices?.getUserMedia === 'function';
+
+  if (typeof jsQR !== 'function' || (!canShareScreen && !canUseCamera)) {
+    statusEl.textContent = "This device can't scan QR codes in-app. Open the sticker link directly instead.";
     return;
   }
 
+  qrScannerMode = canShareScreen ? 'screen' : 'camera';
+  video.classList.toggle('qr-scanner-video--camera', qrScannerMode === 'camera');
+  if (titleEl) titleEl.textContent = qrScannerMode === 'screen' ? 'Scan QR From Screen' : 'Scan QR With Camera';
+  if (subtitleEl) {
+    subtitleEl.textContent =
+      qrScannerMode === 'screen' ? 'Share the screen or window showing the QR code.' : 'Point your camera at the sticker.';
+  }
+  statusEl.textContent = qrScannerMode === 'screen' ? 'Requesting screen share…' : 'Requesting camera access…';
+
   let stream;
   try {
-    stream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: 'never' },
-      audio: false,
-    });
+    stream =
+      qrScannerMode === 'screen'
+        ? await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'never' }, audio: false })
+        : await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
   } catch (error) {
-    console.error('Screen share failed:', error);
-    statusEl.textContent = 'Screen share was cancelled or unavailable. Try again and pick the window showing the code.';
+    console.error('Scanner media access failed:', error);
+    statusEl.textContent =
+      qrScannerMode === 'screen'
+        ? 'Screen share was cancelled or unavailable. Try again and pick the window showing the code.'
+        : 'Camera access was denied or unavailable. Allow camera access and try again.';
     return;
   }
 
   if (qrScannerStopped) {
-    // The modal was closed while the share picker was still open.
+    // The modal was closed while the permission/share prompt was still open.
     stream.getTracks().forEach((track) => track.stop());
     return;
   }
 
   qrScannerStream = stream;
-  // If the person stops sharing from the browser's own "Stop sharing" control,
-  // close the modal instead of looping forever against a dead video track.
-  stream.getVideoTracks()[0]?.addEventListener('ended', () => {
-    if (!qrScannerStopped) closeQrScanner();
-  });
+  if (qrScannerMode === 'screen') {
+    // If the person stops sharing from the browser's own "Stop sharing" control,
+    // close the modal instead of looping forever against a dead video track.
+    stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+      if (!qrScannerStopped) closeQrScanner();
+    });
+  }
 
   video.srcObject = stream;
   await video.play();
-  statusEl.textContent = 'Move the QR code into view on the shared screen.';
+  statusEl.textContent =
+    qrScannerMode === 'screen' ? 'Move the QR code into view on the shared screen.' : 'Align the QR code in the camera view.';
   scanQrFrame();
 }
 
@@ -1238,7 +1262,7 @@ function handleScannedQrText(text) {
 
   if (!refCode) {
     const statusEl = document.getElementById('qrScannerStatus');
-    if (statusEl) statusEl.textContent = "That's not a Back2You code. Keep it visible on the shared screen and try again.";
+    if (statusEl) statusEl.textContent = "That's not a Back2You code. Keep it in view and try again.";
     qrScannerRafId = requestAnimationFrame(scanQrFrame);
     return;
   }
@@ -1250,6 +1274,7 @@ function handleScannedQrText(text) {
 
 function closeQrScanner() {
   qrScannerStopped = true;
+  qrScannerMode = null;
   if (qrScannerRafId) cancelAnimationFrame(qrScannerRafId);
   qrScannerRafId = null;
   if (qrScannerStream) {
@@ -1257,7 +1282,10 @@ function closeQrScanner() {
     qrScannerStream = null;
   }
   const video = document.getElementById('qrScannerVideo');
-  if (video) video.srcObject = null;
+  if (video) {
+    video.srcObject = null;
+    video.classList.remove('qr-scanner-video--camera');
+  }
   document.getElementById('qrScannerModal').classList.remove('open');
 }
 

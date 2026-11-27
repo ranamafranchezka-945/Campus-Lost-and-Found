@@ -744,7 +744,7 @@
         <div class="qr-actions no-print modal-actions">
           <button type="button" class="btn btn-outline btn-compact" data-action="closeQrModal">Close</button>
           <button type="button" class="btn btn-outline btn-compact" data-action="openQrScanner">
-            🖥️ Scan From Screen
+            📷 Scan QR Code
           </button>
           <button
             type="button"
@@ -762,13 +762,13 @@
       </div>
     </div>
 
-    <!-- QR SCANNER: scan a Back2You QR code shown on-screen (a shared window/tab/screen), no camera needed -->
+    <!-- QR SCANNER: scan a Back2You QR code via screen share (desktop) or camera (mobile/no screen-capture support) -->
     <div class="slip-overlay" id="qrScannerModal" data-close="closeQrScanner">
       <div class="modal-card modal-card--lg modal-card--center">
         <div class="modal-header">
           <div>
-            <h2 class="modal-heading modal-heading--plain">Scan QR From Screen</h2>
-            <p class="modal-subtitle">Share the screen or window showing the QR code.</p>
+            <h2 class="modal-heading modal-heading--plain" id="qrScannerTitle">Scan QR Code</h2>
+            <p class="modal-subtitle" id="qrScannerSubtitle">Opening scanner&hellip;</p>
           </div>
           <button type="button" class="modal-close" data-action="closeQrScanner" aria-label="Close">&times;</button>
         </div>
