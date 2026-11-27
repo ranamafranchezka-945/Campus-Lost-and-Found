@@ -487,28 +487,43 @@ label {
 .notif-item[hidden] {
   display: none;
 }
+/* Header row: every first-line element (checkbox, icon, title, time) sits in
+   the same fixed-height line box (--notif-row-h) and the row is top-aligned.
+   That keeps them on one shared center line, and when the timestamp wraps
+   below on narrow screens the checkbox stays level with the title instead
+   of drifting to the middle of a taller row. */
 .notif-header {
+  --notif-row-h: 1.5rem;
+  --notif-check-slot: 1.5rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  gap: 0.25rem 0.5rem;
+  align-items: flex-start;
+  gap: 0.25rem 0.75rem;
   font-size: 0.9375rem;
-  line-height: 1.2;
+  line-height: var(--notif-row-h);
   color: #ffffff;
 }
 .notif-title-group {
   display: flex;
   flex: 1 1 14rem;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   min-width: 0;
-  line-height: 1.2;
+}
+/* Cards without a checkbox get an empty slot so icons and titles line up
+   in one column across the whole list. */
+.notif-title-group:not(:has(.notification-select-control)) {
+  padding-left: calc(var(--notif-check-slot) + 0.5rem);
 }
 .notif-title-icon {
+  display: inline-flex;
   flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  height: var(--notif-row-h);
   font-size: 1rem;
-  line-height: 1.2;
+  line-height: 1;
 }
 .notif-title-group strong {
   display: block;
@@ -517,23 +532,34 @@ label {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.2;
+  line-height: var(--notif-row-h);
 }
 .notif-title-group .notification-select-control {
-  flex: 0 0 auto;
-  margin: 0;
-  min-height: 1.5rem;
-  padding: 0;
+  display: inline-flex;
+  flex: 0 0 var(--notif-check-slot);
+  align-items: center;
   justify-content: center;
+  width: var(--notif-check-slot);
+  height: var(--notif-row-h);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
   gap: 0;
+  border-radius: 0.4rem;
   line-height: 1;
+}
+.notif-title-group .notification-select-box {
+  flex: 0 0 1rem;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
 }
 .notif-time {
   flex: 0 0 auto;
   margin-left: auto;
   white-space: nowrap;
   font-size: 0.8125rem;
-  line-height: 1.2;
+  line-height: var(--notif-row-h);
   color: var(--text-muted);
 }
 .notification-selection-toolbar {
