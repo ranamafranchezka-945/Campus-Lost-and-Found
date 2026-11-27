@@ -775,10 +775,16 @@
 
         <div class="qr-scanner-viewport">
           <video id="qrScannerVideo" class="qr-scanner-video" playsinline muted></video>
+          <div class="qr-scanner-loading" id="qrScannerLoading" aria-hidden="true">
+            <span class="qr-scanner-spinner"></span>
+          </div>
         </div>
         <canvas id="qrScannerCanvas" hidden></canvas>
 
-        <p class="qr-scanner-status" id="qrScannerStatus" aria-live="polite">Requesting screen share&hellip;</p>
+        <p class="qr-scanner-status" id="qrScannerStatus" aria-live="polite">
+          <span class="qr-scanner-status-spinner" id="qrScannerStatusSpinner" aria-hidden="true" hidden></span>
+          <span id="qrScannerStatusText">Requesting screen share&hellip;</span>
+        </p>
 
         <div class="modal-actions modal-actions--center">
           <button type="button" class="btn btn-outline btn-compact" data-action="closeQrScanner">Cancel</button>

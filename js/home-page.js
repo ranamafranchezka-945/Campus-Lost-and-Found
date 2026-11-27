@@ -1165,19 +1165,40 @@ let qrScannerRafId = null;
 let qrScannerStopped = true;
 let qrScannerMode = null; // 'screen' | 'camera'
 
+// Full-viewport spinner while the camera/screen stream is still connecting
+// (otherwise the video box is just black and looks stuck or broken).
+function setQrScannerConnecting(connecting) {
+  const overlay = document.getElementById('qrScannerLoading');
+  if (overlay) overlay.hidden = !connecting;
+}
+
+// Small spinner next to the status text for the whole time frames are
+// actively being decoded, so scanning doesn't look idle once the feed is live.
+function setQrScannerBusy(busy) {
+  const spinner = document.getElementById('qrScannerStatusSpinner');
+  if (spinner) spinner.hidden = !busy;
+}
+
+function setQrScannerStatus(text) {
+  const textEl = document.getElementById('qrScannerStatusText');
+  if (textEl) textEl.textContent = text;
+}
+
 async function openQrScanner() {
-  const statusEl = document.getElementById('qrScannerStatus');
   const titleEl = document.getElementById('qrScannerTitle');
   const subtitleEl = document.getElementById('qrScannerSubtitle');
   const video = document.getElementById('qrScannerVideo');
   qrScannerStopped = false;
   document.getElementById('qrScannerModal').classList.add('open');
+  setQrScannerConnecting(true);
+  setQrScannerBusy(false);
 
   const canShareScreen = typeof navigator.mediaDevices?.getDisplayMedia === 'function';
   const canUseCamera = typeof navigator.mediaDevices?.getUserMedia === 'function';
 
   if (typeof jsQR !== 'function' || (!canShareScreen && !canUseCamera)) {
-    statusEl.textContent = "This device can't scan QR codes in-app. Open the sticker link directly instead.";
+    setQrScannerConnecting(false);
+    setQrScannerStatus("This device can't scan QR codes in-app. Open the sticker link directly instead.");
     return;
   }
 
@@ -1188,7 +1209,7 @@ async function openQrScanner() {
     subtitleEl.textContent =
       qrScannerMode === 'screen' ? 'Share the screen or window showing the QR code.' : 'Point your camera at the sticker.';
   }
-  statusEl.textContent = qrScannerMode === 'screen' ? 'Requesting screen share…' : 'Requesting camera access…';
+  setQrScannerStatus(qrScannerMode === 'screen' ? 'Requesting screen share…' : 'Requesting camera access…');
 
   let stream;
   try {
@@ -1198,10 +1219,12 @@ async function openQrScanner() {
         : await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
   } catch (error) {
     console.error('Scanner media access failed:', error);
-    statusEl.textContent =
+    setQrScannerConnecting(false);
+    setQrScannerStatus(
       qrScannerMode === 'screen'
         ? 'Screen share was cancelled or unavailable. Try again and pick the window showing the code.'
-        : 'Camera access was denied or unavailable. Allow camera access and try again.';
+        : 'Camera access was denied or unavailable. Allow camera access and try again.'
+    );
     return;
   }
 
@@ -1222,8 +1245,11 @@ async function openQrScanner() {
 
   video.srcObject = stream;
   await video.play();
-  statusEl.textContent =
-    qrScannerMode === 'screen' ? 'Move the QR code into view on the shared screen.' : 'Align the QR code in the camera view.';
+  setQrScannerConnecting(false);
+  setQrScannerBusy(true);
+  setQrScannerStatus(
+    qrScannerMode === 'screen' ? 'Move the QR code into view on the shared screen.' : 'Align the QR code in the camera view.'
+  );
   scanQrFrame();
 }
 
@@ -1261,8 +1287,7 @@ function handleScannedQrText(text) {
   }
 
   if (!refCode) {
-    const statusEl = document.getElementById('qrScannerStatus');
-    if (statusEl) statusEl.textContent = "That's not a Back2You code. Keep it in view and try again.";
+    setQrScannerStatus("That's not a Back2You code. Keep it in view and try again.");
     qrScannerRafId = requestAnimationFrame(scanQrFrame);
     return;
   }
@@ -1286,6 +1311,8 @@ function closeQrScanner() {
     video.srcObject = null;
     video.classList.remove('qr-scanner-video--camera');
   }
+  setQrScannerBusy(false);
+  setQrScannerConnecting(true);
   document.getElementById('qrScannerModal').classList.remove('open');
 }
 
