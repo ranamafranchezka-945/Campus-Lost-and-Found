@@ -65,34 +65,46 @@
   --dash-solid: var(--clay-surface);
 }
 
+/* Light mode, softened: no surface is pure white any more. The page is a cool slate
+   grey, cards and panels sit one step lighter on top, and borders are a touch
+   stronger so cards stay clearly separated now that page and card are closer in
+   tone. Text stays dark slate (12:1+ on every surface below). */
 :root[data-theme='light'] {
-  --clay-surface: #ffffff;
+  --clay-surface: #f4f6f9; /* cards, panels, controls (was #ffffff) */
   --clay-shadow-light: transparent;
   --clay-shadow-dark: transparent;
-  --clay-edge: #e2e8f0;
-  --form-outline: #cbd5e1;
+  --clay-edge: #d3dae3; /* was #e2e8f0 */
+  --form-outline: #b8c2cf; /* was #cbd5e1 */
   --clay-raised: none;
   --clay-inset: none;
-  --scene: #f8fafc;
+  --scene: #e7ebf0; /* page background (was #f8fafc) */
   --panel-bg: var(--clay-surface);
   --panel-border: var(--clay-edge);
   --panel-shadow: var(--clay-raised);
+  --card-bg: var(--clay-surface);
   --card-glass: var(--clay-surface);
-  --card-glass-hover: #f8fafc;
+  --card-glass-hover: #f8f9fb; /* hover brightens slightly instead of darkening */
   --card-border: var(--clay-edge);
-  --card-shadow: var(--clay-raised);
-  --well-bg: #f1f5f9;
-  --well-border: #e2e8f0;
+  /* A hairline shadow under cards helps them read as raised on the softer page. */
+  --card-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --well-bg: #eaeef3;
+  --well-border: #d3dae3;
   --control-bg: var(--clay-surface);
   --control-border: var(--clay-edge);
-  --field-bg: #ffffff;
-  --field-border: #e2e8f0;
-  --bar-bg: #ffffff;
+  --field-bg: #f9fafb; /* inputs stay a shade brighter so they read as "type here" */
+  --field-border: #c9d1dc;
+  --bar-bg: #eef1f5; /* navbar, footer */
   --bar-border: var(--clay-edge);
-  --float-bg: #ffffff;
+  --float-bg: #f6f8fa; /* modals, menus, toasts */
   --float-border: var(--clay-edge);
-  --float-shadow: none;
-  --text-main: #0f172a;
+  --float-shadow: 0 18px 48px -20px rgba(15, 23, 42, 0.28);
+  --modal-bg: var(--float-bg);
+  --surface-subtle: #eef1f5;
+  --surface-subtle-border: #d3dae3;
+  --surface-raised: #e9edf2;
+  --scrim: rgba(15, 23, 42, 0.32);
+  --badge-found-fg: #166534; /* #15803d was ~4.5:1 on the tinted badge; this is ~7:1 */
+  --text-main: #1e293b; /* slate-800: a little softer than near-black #0f172a */
   --text-muted: #475569;
   --wordmark-primary: #0f172a;
   --wordmark-accent: #1d4ed8;
@@ -621,4 +633,59 @@
   --cspc-globe-arrow-shadow: #a9adb8;
   --cspc-globe-ring: #101528;
   --cspc-globe-pin: #3b4256;
+}
+/* ── Soft light mode: surfaces that older light rules hard-coded to #ffffff ──
+   These come from styles.css / home.css / responsive.css ([data-theme='light'] X,
+   some with !important). The extra :root here outranks them, so every one of them
+   now follows the softened tokens above instead of glaring white. */
+:root[data-theme='light'] .registered-belonging-card,
+:root[data-theme='light'] .item-card,
+:root[data-theme='light'] .stat-card,
+:root[data-theme='light'] .admin-table-wrap {
+  background: var(--card-glass);
+}
+:root[data-theme='light'] .modal,
+:root[data-theme='light'] .toast,
+:root[data-theme='light'] .button-select-menu,
+:root[data-theme='light'] .belonging-menu {
+  background: var(--float-bg);
+}
+:root[data-theme='light'] .del-modal,
+:root[data-theme='light'] .slip-overlay > div:not(.slip-box):not(.modal-card):not(.lightbox) {
+  background: var(--float-bg) !important;
+}
+:root[data-theme='light'] .search-box input:focus,
+:root[data-theme='light'] .sort-select,
+:root[data-theme='light'] .notification-select-control input {
+  background: var(--field-bg);
+}
+:root[data-theme='light'] .modal textarea,
+:root[data-theme='light'] #regLocation,
+:root[data-theme='light'] .form-control {
+  background: var(--field-bg) !important;
+}
+:root[data-theme='light'] .notif-item,
+:root[data-theme='light'] #notificationsModal .notif-item,
+:root[data-theme='light'] #notificationsModal .notif-item.unread {
+  background: var(--clay-surface);
+}
+/* Unread keeps its blue edge and gains a faint blue wash, so it still stands out
+   from read rows without relying on brightness. */
+:root[data-theme='light'] #notificationsModal .notif-item.unread {
+  background: color-mix(in srgb, #2563eb 5%, var(--clay-surface));
+}
+:root[data-theme='light'] #notificationsModal .notification-filter-tab.is-active {
+  background: var(--field-bg);
+}
+@media (max-width: 768px) {
+  :root[data-theme='light'] .nav-links,
+  :root[data-theme='light'] .navbar .nav-links {
+    background: var(--float-bg);
+  }
+}
+
+/* Native <select> popups are drawn by the OS; matching their rows to the soft
+   field colour keeps them from flashing white over the page. */
+:root[data-theme='light'] select option {
+  background: var(--field-bg) !important;
 }
