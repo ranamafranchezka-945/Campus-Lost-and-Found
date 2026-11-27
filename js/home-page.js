@@ -2324,9 +2324,14 @@ function stopClaimThreadPolling() {
   claimThreadPollTimer = null;
 }
 
+function resetClaimThreadComposer() {
+  document.querySelector('#claimThreadModal .thread-compose').hidden = false;
+}
+
 async function openClaimThreadModal(claimId) {
   if (!claimId) return;
   closeNotificationsModal();
+  resetClaimThreadComposer();
   activeRegisteredFinderConversation = null;
   activeClaimThreadId = claimId;
   pendingClaimStart = null;
@@ -2358,6 +2363,7 @@ async function openRegisteredFinderConversation(conversationId, token) {
   saveFinderConversation({ id: conversationId, token });
   closeNotificationsModal();
   closeAnonymousFinderModal();
+  resetClaimThreadComposer();
   activeClaimThreadId = null;
   pendingClaimStart = null;
   activeRegisteredFinderConversation = { id: conversationId, token, role: 'finder' };
@@ -2385,6 +2391,7 @@ function openSavedFinderConversation(conversationId) {
 async function openRegisteredOwnerConversation(conversationId) {
   if (!conversationId) return;
   closeNotificationsModal();
+  resetClaimThreadComposer();
   activeClaimThreadId = null;
   pendingClaimStart = null;
   activeRegisteredFinderConversation = { id: conversationId, role: 'owner' };
@@ -2404,6 +2411,7 @@ async function openRegisteredOwnerConversation(conversationId) {
 // claim request, submitted the moment the claimant sends their first message.
 function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
   stopClaimThreadPolling();
+  resetClaimThreadComposer();
   activeRegisteredFinderConversation = null;
   activeClaimThreadId = null;
   pendingClaimStart = { lostId, foundId };
@@ -2459,6 +2467,7 @@ function applyClaimThreadUpdate(thread, { silent = false } = {}) {
 
 function renderClaimThread(thread) {
   const isRegisteredConversation = Boolean(activeRegisteredFinderConversation);
+  const isCompleted = thread.claim.status === 'approved' || thread.claim.status === 'returned';
   document.getElementById('claimThreadTitle').textContent =
     `${isRegisteredConversation ? 'QR finder conversation' : 'Claim conversation'} · ${thread.item.title}`;
   document.getElementById('claimThreadSubtitle').textContent = `You and ${thread.otherName}`;
@@ -2467,13 +2476,17 @@ function renderClaimThread(thread) {
   const wasScrolledToEnd = body.scrollHeight - body.scrollTop - body.clientHeight < 16;
   body.innerHTML = thread.messages.length
     ? thread.messages.map(claimThreadMessageHtml).join('')
-    : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
+    : isCompleted
+      ? '<p class="thread-empty">This claim is complete. No messages are available in this conversation.</p>'
+      : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
   if (wasScrolledToEnd) body.scrollTop = body.scrollHeight;
 
+  document.querySelector('#claimThreadModal .thread-compose').hidden = isCompleted;
   const confirmBox = document.getElementById('claimThreadConfirm');
-  if (thread.claim.status === 'approved' || thread.claim.status === 'returned') {
+  if (isCompleted) {
     confirmBox.innerHTML = `
-      <p class="thread-resolved">✅ Both sides confirmed. The return is complete.</p>`;
+      <p class="thread-resolved">✅ Both sides confirmed. The return is complete.</p>
+      <p class="thread-readonly">This conversation is now read-only. New messages are disabled.</p>`;
   } else if (thread.confirmedByMe) {
     confirmBox.innerHTML = `<p class="thread-waiting">You confirmed. Waiting for ${escapeHtml(thread.otherName)} to confirm too…</p>`;
   } else {
@@ -2481,7 +2494,8 @@ function renderClaimThread(thread) {
       <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item ${isRegisteredConversation ? 'returned' : 'received/returned'}</button>
       ${thread.confirmedByOther ? `<p class="thread-waiting">${escapeHtml(thread.otherName)} already confirmed.</p>` : ''}`;
   }
-  if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
+  if (isCompleted) renderClaimThreadMeetupNotification(null);
+  else if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
 }
 
 // The last meetup notification fully rendered into the claim-thread box, so the 5s
@@ -2611,7 +2625,9 @@ async function refreshClaimThread({ silent = false } = {}) {
     }
     applyClaimThreadUpdate(thread, { silent });
     if (registeredConversation) renderClaimThreadMeetupNotification(thread.meetupNotification);
-    else await refreshClaimThreadMeetup();
+    else if (thread.claim.status === 'approved' || thread.claim.status === 'returned') {
+      renderClaimThreadMeetupNotification(null);
+    } else await refreshClaimThreadMeetup();
   } catch (error) {
     if (!silent) showToast('Could not load the conversation. Please try again.', true);
   }
@@ -2894,7 +2910,7 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
             n.unreadCount
               ? ` sent ${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
               : n.status === 'approved'
-                ? ' · handover confirmed'
+                ? ' · return complete'
                 : ' · conversation in progress'
           }</p>
           ${

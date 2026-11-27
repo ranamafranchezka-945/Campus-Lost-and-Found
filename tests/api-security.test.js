@@ -1374,6 +1374,82 @@ test('a student cannot start a claim conversation with themself as owner and fin
   assert.equal(conversationResponse.status, 403);
 });
 
+test('completed claim conversations are read-only and preserve their message history', async (t) => {
+  const itemsFile = path.join(dataDir, 'items.json');
+  const claimsFile = path.join(dataDir, 'claims.json');
+  const originalItems = fs.readFileSync(itemsFile, 'utf8');
+  const originalClaims = fs.existsSync(claimsFile) ? fs.readFileSync(claimsFile, 'utf8') : null;
+  t.after(() => {
+    fs.writeFileSync(itemsFile, originalItems);
+    if (originalClaims === null) fs.rmSync(claimsFile, { force: true });
+    else fs.writeFileSync(claimsFile, originalClaims);
+  });
+
+  const ownerCookie = await login('student@my.cspc.edu.ph', studentPassword);
+  const claimantCookie = await login('match.student@my.cspc.edu.ph', studentPassword);
+  const pair = {
+    title: 'Claim conversation test backpack',
+    category: 'Others',
+    location: 'Library',
+    contact: 'student@my.cspc.edu.ph',
+    desc: 'A dark backpack with a distinctive patch.',
+  };
+  const foundResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: ownerCookie },
+    body: reportFormData(null, { ...pair, type: 'found' }),
+  });
+  assert.equal(foundResponse.status, 201);
+  const found = (await foundResponse.json()).item;
+
+  const lostResponse = await fetch(`${baseUrl}/api/items`, {
+    method: 'POST',
+    headers: { Cookie: claimantCookie },
+    body: reportFormData(null, { ...pair, type: 'lost' }),
+  });
+  assert.equal(lostResponse.status, 201);
+  const lost = (await lostResponse.json()).item;
+
+  const claimResponse = await fetch(`${baseUrl}/api/items/${found.id}/claim-requests`, {
+    method: 'POST',
+    headers: { Cookie: claimantCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ proof: 'The patch is a red mountain.', lostId: lost.id }),
+  });
+  assert.equal(claimResponse.status, 201);
+  const { claim } = await claimResponse.json();
+
+  const messageResponse = await fetch(`${baseUrl}/api/items/claims/${claim.id}/thread/messages`, {
+    method: 'POST',
+    headers: { Cookie: ownerCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'I have the backpack ready for handover.' }),
+  });
+  assert.equal(messageResponse.status, 201);
+
+  for (const cookie of [claimantCookie, ownerCookie]) {
+    const confirmationResponse = await fetch(`${baseUrl}/api/items/claims/${claim.id}/thread/confirm`, {
+      method: 'POST',
+      headers: { Cookie: cookie },
+    });
+    assert.equal(confirmationResponse.status, 200);
+  }
+
+  const rejectedMessageResponse = await fetch(`${baseUrl}/api/items/claims/${claim.id}/thread/messages`, {
+    method: 'POST',
+    headers: { Cookie: ownerCookie, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: 'This message must not be added.' }),
+  });
+  assert.equal(rejectedMessageResponse.status, 409);
+  assert.match((await rejectedMessageResponse.json()).message, /read-only/);
+
+  const reopenedThreadResponse = await fetch(`${baseUrl}/api/items/claims/${claim.id}/thread`, {
+    headers: { Cookie: ownerCookie },
+  });
+  const reopenedThread = await reopenedThreadResponse.json();
+  assert.equal(reopenedThread.claim.status, 'approved');
+  assert.equal(reopenedThread.messages.length, 2);
+  assert.ok(reopenedThread.messages.some((message) => message.text === 'I have the backpack ready for handover.'));
+});
+
 test('rejected claims restore availability and notify the claimant', async () => {
   const studentCookie = await login('student@my.cspc.edu.ph', studentPassword);
   const claimResponse = await fetch(`${baseUrl}/api/items/14/claim-requests`, {

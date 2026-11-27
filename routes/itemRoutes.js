@@ -1216,6 +1216,9 @@ router.post('/claims/:claimId/thread/messages', requireAuth, (req, res) => {
   const context = loadClaimThread(req, res);
   if (!context) return;
   const { claims, claim, item, me, other } = context;
+  if (claim.status === 'approved' || claim.status === 'returned') {
+    return res.status(409).json({ success: false, message: 'This claim is complete. The conversation is read-only.' });
+  }
   const text = sanitizeString(req.body.text || '');
   if (text.length < 1 || text.length > 500) {
     return res.status(400).json({ success: false, message: 'Message must be 1-500 characters.' });
