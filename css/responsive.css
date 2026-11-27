@@ -2668,22 +2668,24 @@ button {
 }
 
 /* Shrink the floating QR scanner widget further on phones: 300px already
-   reads as "nearly full width" on a narrow screen. */
+   reads as "nearly full width" on a narrow screen. Camera mode is excluded:
+   it's a full-screen viewfinder there (see modals.css), not a floating
+   corner widget, so it should stay large on phones, not shrink. */
 @media (max-width: 480px) {
-  #qrScannerModal .modal-card {
+  #qrScannerModal:not(.qr-scanner-modal--camera) .modal-card {
     max-width: 170px !important;
     padding: 0.7rem !important;
   }
-  #qrScannerModal .modal-heading {
+  #qrScannerModal:not(.qr-scanner-modal--camera) .modal-heading {
     font-size: 0.85rem !important;
   }
-  #qrScannerModal .modal-subtitle {
+  #qrScannerModal:not(.qr-scanner-modal--camera) .modal-subtitle {
     font-size: 0.7rem !important;
   }
-  #qrScannerModal .qr-scanner-viewport {
+  #qrScannerModal:not(.qr-scanner-modal--camera) .qr-scanner-viewport {
     max-width: 145px !important;
   }
-  #qrScannerModal .qr-scanner-status {
+  #qrScannerModal:not(.qr-scanner-modal--camera) .qr-scanner-status {
     font-size: 0.7rem !important;
   }
 }

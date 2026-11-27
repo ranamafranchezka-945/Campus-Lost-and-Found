@@ -1065,6 +1065,28 @@
   pointer-events: auto;
   box-shadow: var(--modal-shadow), 0 0 0 2000px rgba(0, 0, 0, 0.12);
 }
+/* Camera mode points at something else entirely (a sticker, another screen),
+   so there's nothing on this page for a large viewfinder to hide - give it
+   the full centered dialog + a big viewfinder instead of the small corner
+   widget screen-share mode needs. */
+#qrScannerModal.qr-scanner-modal--camera {
+  background: rgba(0, 0, 0, 0.78);
+  backdrop-filter: blur(5px);
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+#qrScannerModal.qr-scanner-modal--camera .modal-card {
+  max-width: 420px;
+  width: 92%;
+  margin: 0;
+  padding: 1.6rem;
+  box-shadow: var(--modal-shadow);
+}
+#qrScannerModal.qr-scanner-modal--camera .qr-scanner-viewport {
+  max-width: 100%;
+  aspect-ratio: 3 / 4;
+}
 .qr-scanner-viewport {
   position: relative;
   width: 100%;
