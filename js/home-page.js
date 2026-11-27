@@ -1204,9 +1204,6 @@ async function openQrScanner() {
 
   qrScannerMode = canShareScreen ? 'screen' : 'camera';
   video.classList.toggle('qr-scanner-video--camera', qrScannerMode === 'camera');
-  document
-    .getElementById('qrScannerModal')
-    .classList.toggle('qr-scanner-modal--camera', qrScannerMode === 'camera');
   if (titleEl) titleEl.textContent = qrScannerMode === 'screen' ? 'Scan QR From Screen' : 'Scan QR With Camera';
   if (subtitleEl) {
     subtitleEl.textContent =
@@ -1316,9 +1313,7 @@ function closeQrScanner() {
   }
   setQrScannerBusy(false);
   setQrScannerConnecting(true);
-  const modal = document.getElementById('qrScannerModal');
-  modal.classList.remove('open');
-  modal.classList.remove('qr-scanner-modal--camera');
+  document.getElementById('qrScannerModal').classList.remove('open');
 }
 
 function toggleAnonymousDemo(show) {
