@@ -951,6 +951,124 @@ label {
   background: rgba(59, 130, 246, 0.15);
   border-color: var(--blue-main);
 }
+:root[data-theme='light'] #notificationsModal .notification-selection-toolbar {
+  color: #64748b;
+}
+:root[data-theme='light'] #notificationsModal .notification-filter-tabs {
+  border-color: #e2e8f0;
+  background: #f1f5f9;
+}
+:root[data-theme='light'] #notificationsModal .notification-filter-tab {
+  color: #475569;
+}
+:root[data-theme='light'] #notificationsModal .notification-filter-tab:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+:root[data-theme='light'] #notificationsModal .notification-filter-tab.is-active {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+}
+:root[data-theme='light'] #notificationsModal .notif-item {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-theme='light'] #notificationsModal .notif-item.unread {
+  border-color: #bfdbfe;
+  background: #ffffff;
+  box-shadow:
+    inset 3px 0 0 #2563eb,
+    0 1px 2px rgba(15, 23, 42, 0.04);
+}
+:root[data-theme='light'] #notificationsModal .notif-header,
+:root[data-theme='light'] #notificationsModal .notif-title-group strong {
+  color: #0f172a;
+}
+:root[data-theme='light'] #notificationsModal .notif-time {
+  color: #64748b;
+}
+:root[data-theme='light'] #notificationsModal .notif-msg {
+  color: #475569;
+}
+:root[data-theme='light'] #notificationsModal .notif-msg strong {
+  color: #0f172a;
+}
+:root[data-theme='light'] #notificationsModal .notif-contact {
+  color: #475569;
+}
+:root[data-theme='light'] #notificationsModal .notif-actions {
+  border-color: #e2e8f0;
+}
+:root[data-theme='light'] #notificationsModal .notifications-list .notif-badge {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1e40af;
+}
+:root[data-theme='light'] #notificationsModal .notifications-list .notif-badge--alert {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #92400e;
+}
+:root[data-theme='light'] #notificationsModal .notifications-list .notif-badge--resolved {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+:root[data-theme='light'] #notificationsModal .notifications-list .notif-badge--expired {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+  color: #475569;
+}
+:root[data-theme='light'] #notificationsModal .btn-mark-notifications-read,
+:root[data-theme='light'] #notificationsModal .btn-mark-read {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+:root[data-theme='light'] #notificationsModal .btn-mark-notifications-read:hover:not(:disabled),
+:root[data-theme='light'] #notificationsModal .btn-mark-read:hover {
+  border-color: #93c5fd;
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+:root[data-theme='light'] #notificationsModal .btn-delete-notifications,
+:root[data-theme='light'] #notificationsModal .btn-delete-conversation {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #b91c1c;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+:root[data-theme='light'] #notificationsModal .btn-delete-notifications:hover:not(:disabled),
+:root[data-theme='light'] #notificationsModal .btn-delete-conversation:hover:not(:disabled) {
+  border-color: #fda4af;
+  background: #ffe4e6;
+  color: #9f1239;
+}
+:root[data-theme='light'] #notificationsModal .btn-mark-notifications-read:disabled,
+:root[data-theme='light'] #notificationsModal .btn-delete-notifications:disabled {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+  opacity: 1;
+  cursor: not-allowed;
+}
+:root[data-theme='light'] #notificationsModal .btn-mark-notifications-read:focus-visible,
+:root[data-theme='light'] #notificationsModal .btn-delete-notifications:focus-visible,
+:root[data-theme='light'] #notificationsModal .btn-mark-read:focus-visible,
+:root[data-theme='light'] #notificationsModal .btn-delete-conversation:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
 .badge-registered {
   background: rgba(59, 130, 246, 0.15);
   color: #93c5fd;

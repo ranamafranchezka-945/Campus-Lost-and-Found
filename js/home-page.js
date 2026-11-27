@@ -2803,7 +2803,13 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <div class="notif-body">
-          <span class="notif-badge notif-badge--conversation">${
+          <span class="notif-badge notif-badge--conversation${
+            n.conversationStatus === 'returned'
+              ? ' notif-badge--resolved'
+              : n.conversationStatus === 'expired'
+                ? ' notif-badge--expired'
+                : ''
+          }">${
             n.conversationStatus === 'expired'
               ? 'Expired'
               : n.conversationStatus === 'returned'
@@ -2857,7 +2863,9 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <div class="notif-body">
-          <span class="notif-badge notif-badge--conversation">${
+          <span class="notif-badge notif-badge--conversation${
+            Date.parse(n.conversationExpiresAt) > Date.now() ? '' : ' notif-badge--expired'
+          }">${
             Date.parse(n.conversationExpiresAt) > Date.now() ? 'Active conversation' : 'Expired'
           }</span>
           <p class="notif-msg"><strong>${escapeHtml(n.finderContact && n.finderContact !== 'Anonymous Student / Finder' ? n.finderContact : 'Anonymous finder')}</strong> started a secure conversation after scanning the item QR code.</p>
@@ -2899,7 +2907,9 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
           <span class="notif-time">${new Date(n.timestamp).toLocaleString()}</span>
         </div>
         <div class="notif-body">
-          <span class="notif-badge notif-badge--conversation">${
+          <span class="notif-badge notif-badge--conversation${
+            !n.unreadCount && n.status === 'approved' ? ' notif-badge--resolved' : ''
+          }">${
             n.unreadCount
               ? `${n.unreadCount} new message${n.unreadCount === 1 ? '' : 's'}`
               : n.status === 'approved'
