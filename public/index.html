@@ -1596,15 +1596,16 @@
 
         <div id="notificationSelectionToolbar" class="notification-selection-toolbar" hidden>
           <div class="notification-selection-info">
-            <label class="notification-select-all">
+            <div class="notification-select-all">
               <input
                 id="selectAllNotifications"
                 type="checkbox"
+                aria-labelledby="selectAllNotificationsLabel"
                 data-change="selectAllNotifications"
                 data-args='["$checked"]'
               />
-              <span>Select all</span>
-            </label>
+              <span id="selectAllNotificationsLabel">Select all</span>
+            </div>
             <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
           </div>
           <div class="notification-bulk-actions">
