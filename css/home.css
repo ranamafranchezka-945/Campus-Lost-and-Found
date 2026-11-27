@@ -522,6 +522,10 @@ label {
 .notif-title-group .notification-select-control {
   flex: 0 0 auto;
   margin: 0;
+  min-height: 1.5rem;
+  padding: 0;
+  justify-content: center;
+  gap: 0;
   line-height: 1;
 }
 .notif-time {
@@ -575,8 +579,8 @@ label {
   background: rgba(15, 23, 42, 0.35);
 }
 .notification-filter-tab {
-  min-height: 2.5rem;
-  padding: 0.4rem 0.6rem;
+  min-height: 2.1rem;
+  padding: 0.25rem 0.5rem;
   border: 1px solid transparent;
   border-radius: 0.55rem;
   background: transparent;
@@ -609,11 +613,20 @@ label {
   gap: 0.45rem;
   min-width: 0;
 }
-.notif-badge {
+.notifications-list .notif-badge {
+  position: static;
+  top: auto;
+  right: auto;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
   max-width: 100%;
+  flex: 0 1 auto;
+  overflow: hidden;
   padding: 0.2rem 0.55rem;
   border: 1px solid rgba(59, 130, 246, 0.28);
   border-radius: 999px;
@@ -622,14 +635,23 @@ label {
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
-.notif-badge--alert {
+.notifications-list .notif-badge--alert {
   border-color: rgba(245, 158, 11, 0.3);
   background: rgba(245, 158, 11, 0.1);
   color: #fbbf24;
 }
-[data-theme='light'] .notif-badge--alert {
+[data-theme='light'] .notifications-list .notif-badge--alert {
   color: #92400e;
+}
+.notif-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.45rem;
+  min-width: 0;
 }
 .notif-actions {
   display: flex;
@@ -673,9 +695,11 @@ label {
   transition: background-color 0.15s ease;
 }
 .notification-selection-toolbar .notification-select-all {
-  min-height: 2.25rem;
-  padding: 0.2rem 0.25rem;
+  min-height: 0;
+  padding: 0;
   gap: 0.3rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 .notification-select-all:hover,
 .notification-select-control:hover {
