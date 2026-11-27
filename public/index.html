@@ -1595,16 +1595,18 @@
         </div>
 
         <div id="notificationSelectionToolbar" class="notification-selection-toolbar" hidden>
-          <label class="notification-select-all">
-            <input
-              id="selectAllNotifications"
-              type="checkbox"
-              data-change="selectAllNotifications"
-              data-args='["$checked"]'
-            />
-            <span>Select all</span>
-          </label>
-          <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
+          <div class="notification-selection-info">
+            <label class="notification-select-all">
+              <input
+                id="selectAllNotifications"
+                type="checkbox"
+                data-change="selectAllNotifications"
+                data-args='["$checked"]'
+              />
+              <span>Select all</span>
+            </label>
+            <span id="selectedNotificationCount" aria-live="polite">0 selected</span>
+          </div>
           <div class="notification-bulk-actions">
             <button
               id="markSelectedNotificationsRead"
@@ -1622,7 +1624,7 @@
               data-action="deleteSelectedNotifications"
               disabled
             >
-              Delete selected
+              Delete
             </button>
           </div>
         </div>
