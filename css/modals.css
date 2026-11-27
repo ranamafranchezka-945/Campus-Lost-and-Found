@@ -1022,6 +1022,28 @@
 .account-delete-list strong {
   color: var(--text-main);
 }
+/* ── QR scanner (shared-screen preview inside #qrScannerModal) ───────────── */
+.qr-scanner-viewport {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 16 / 9;
+  margin: 1rem auto 0;
+  overflow: hidden;
+  border-radius: 16px;
+  background: #000;
+}
+.qr-scanner-video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.qr-scanner-status {
+  margin: 0.9rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .btn-danger:disabled {
   opacity: 0.5;
   cursor: not-allowed;

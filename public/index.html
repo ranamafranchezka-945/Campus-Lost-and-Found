@@ -743,6 +743,9 @@
         <!-- Action Buttons -->
         <div class="qr-actions no-print modal-actions">
           <button type="button" class="btn btn-outline btn-compact" data-action="closeQrModal">Close</button>
+          <button type="button" class="btn btn-outline btn-compact" data-action="openQrScanner">
+            🖥️ Scan From Screen
+          </button>
           <button
             type="button"
             class="btn btn-outline btn-compact btn-outline-accent inline-flex items-center justify-center gap-2"
@@ -755,6 +758,32 @@
           <button type="button" class="btn btn-primary btn-compact" data-action="printQrSticker">
             🖨️ Print Sticker
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR SCANNER: scan a Back2You QR code shown on-screen (a shared window/tab/screen), no camera needed -->
+    <div class="slip-overlay" id="qrScannerModal" data-close="closeQrScanner">
+      <div class="modal-card modal-card--lg modal-card--center">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-heading modal-heading--plain">Scan QR From Screen</h2>
+            <p class="modal-subtitle">
+              Share the screen, window, or tab showing a Back2You QR code and it will be looked up automatically.
+            </p>
+          </div>
+          <button type="button" class="modal-close" data-action="closeQrScanner" aria-label="Close">&times;</button>
+        </div>
+
+        <div class="qr-scanner-viewport">
+          <video id="qrScannerVideo" class="qr-scanner-video" playsinline muted></video>
+        </div>
+        <canvas id="qrScannerCanvas" hidden></canvas>
+
+        <p class="qr-scanner-status" id="qrScannerStatus" aria-live="polite">Requesting screen share&hellip;</p>
+
+        <div class="modal-actions modal-actions--center">
+          <button type="button" class="btn btn-outline btn-compact" data-action="closeQrScanner">Cancel</button>
         </div>
       </div>
     </div>
@@ -1807,6 +1836,7 @@
     <script src="/vendor/three.min.js"></script>
     <script src="/js/cspc-3d-logo.js"></script>
     <script src="/vendor/leaflet.js"></script>
+    <script src="/vendor/jsQR.js"></script>
     <script src="/js/home-page.js"></script>
     <script src="/js/report-assistant.js"></script>
     <script src="/icons.js"></script>

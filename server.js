@@ -47,6 +47,7 @@ const siteUnavailableHtml = `<!doctype html>
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
   if (urlPath === '/vendor/qrcode.js') return require.resolve('qrcode-generator/qrcode.js');
+  if (urlPath === '/vendor/jsQR.js') return require.resolve('jsqr/dist/jsQR.js');
   // three's package.json "exports" map only lists the ESM/CJS entry points, so
   // the UMD/global build can't be resolved as a subpath import. Derive its path
   // from the main entry instead, since both files live in the same build/ dir.
@@ -128,10 +129,12 @@ function createApp() {
       // Location only for this site's own pages: the handover meetup asks for one reading
       // when a student agrees to share it. Embedded frames can never ask.
       // The microphone is allowed for this site's own pages only, for dictating a report in
-      // the Quick Report Assistant. Third-party frames still get nothing, and frames of this
-      // site are blocked outright by frame-ancestors/X-Frame-Options, so (self) is the whole
-      // surface. The browser still asks the student before any audio is captured.
-      'Permissions-Policy': 'geolocation=(self), microphone=(self)',
+      // the Quick Report Assistant. Display-capture is allowed the same way, for the built-in
+      // QR scanner that reads a code off a shared screen/window/tab. Third-party frames still
+      // get nothing, and frames of this site are blocked outright by frame-ancestors/
+      // X-Frame-Options, so (self) is the whole surface. The browser still asks the student
+      // before any audio is captured or a screen is shared.
+      'Permissions-Policy': 'geolocation=(self), microphone=(self), display-capture=(self)',
       // Scripts only from this site (no inline code or handlers); inline style
       // attributes are still used by some markup. QR codes and photo previews use data:/blob: images.
       // OpenStreetMap tiles draw the small map of a shared meetup location.
@@ -283,7 +286,14 @@ function createApp() {
   app.use('/css', express.static(path.join(__dirname, 'css'), { setHeaders: setAssetCacheHeaders }));
   app.use('/js', express.static(path.join(__dirname, 'js'), { setHeaders: setAssetCacheHeaders }));
   app.get(
-    ['/icons.js', '/vendor/qrcode.js', '/vendor/three.min.js', '/vendor/leaflet.js', '/vendor/leaflet.css'],
+    [
+      '/icons.js',
+      '/vendor/qrcode.js',
+      '/vendor/jsQR.js',
+      '/vendor/three.min.js',
+      '/vendor/leaflet.js',
+      '/vendor/leaflet.css',
+    ],
     (req, res) => {
       setAssetCacheHeaders(res);
       res.sendFile(assetFile(req.path));

@@ -1155,6 +1155,112 @@ function printQrSticker() {
   window.print();
 }
 
+// ── QR Scanner (reads a QR code off a shared screen/window/tab, no camera needed) ──
+let qrScannerStream = null;
+let qrScannerRafId = null;
+let qrScannerStopped = true;
+
+async function openQrScanner() {
+  const statusEl = document.getElementById('qrScannerStatus');
+  const video = document.getElementById('qrScannerVideo');
+  qrScannerStopped = false;
+  statusEl.textContent = 'Requesting screen share…';
+  document.getElementById('qrScannerModal').classList.add('open');
+
+  if (typeof jsQR !== 'function' || !navigator.mediaDevices?.getDisplayMedia) {
+    statusEl.textContent = "This browser can't scan from the screen. Open the sticker link directly instead.";
+    return;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'never' },
+      audio: false,
+    });
+  } catch (error) {
+    console.error('Screen share failed:', error);
+    statusEl.textContent = 'Screen share was cancelled or unavailable. Try again and pick the window showing the code.';
+    return;
+  }
+
+  if (qrScannerStopped) {
+    // The modal was closed while the share picker was still open.
+    stream.getTracks().forEach((track) => track.stop());
+    return;
+  }
+
+  qrScannerStream = stream;
+  // If the person stops sharing from the browser's own "Stop sharing" control,
+  // close the modal instead of looping forever against a dead video track.
+  stream.getVideoTracks()[0]?.addEventListener('ended', () => {
+    if (!qrScannerStopped) closeQrScanner();
+  });
+
+  video.srcObject = stream;
+  await video.play();
+  statusEl.textContent = 'Move the QR code into view on the shared screen.';
+  scanQrFrame();
+}
+
+function scanQrFrame() {
+  if (qrScannerStopped) return;
+  const video = document.getElementById('qrScannerVideo');
+  const canvas = document.getElementById('qrScannerCanvas');
+
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
+    if (code?.data) {
+      handleScannedQrText(code.data);
+      return;
+    }
+  }
+  qrScannerRafId = requestAnimationFrame(scanQrFrame);
+}
+
+// Scanned text is either the full sticker URL (https://host/found?ref=CODE) or,
+// if someone scans a plain printout of the code, the ref code text itself.
+function handleScannedQrText(text) {
+  let refCode = null;
+  try {
+    refCode = new URL(text, window.location.origin).searchParams.get('ref');
+  } catch {
+    // Not a URL: fall through to the raw ref-code check below.
+  }
+  if (!refCode && /^CSPC-[A-Z0-9-]+$/i.test(text.trim())) {
+    refCode = text.trim();
+  }
+
+  if (!refCode) {
+    const statusEl = document.getElementById('qrScannerStatus');
+    if (statusEl) statusEl.textContent = "That's not a Back2You code. Keep it visible on the shared screen and try again.";
+    qrScannerRafId = requestAnimationFrame(scanQrFrame);
+    return;
+  }
+
+  closeQrScanner();
+  closeQrModal();
+  openAnonymousFinderModal(refCode);
+}
+
+function closeQrScanner() {
+  qrScannerStopped = true;
+  if (qrScannerRafId) cancelAnimationFrame(qrScannerRafId);
+  qrScannerRafId = null;
+  if (qrScannerStream) {
+    qrScannerStream.getTracks().forEach((track) => track.stop());
+    qrScannerStream = null;
+  }
+  const video = document.getElementById('qrScannerVideo');
+  if (video) video.srcObject = null;
+  document.getElementById('qrScannerModal').classList.remove('open');
+}
+
 function toggleAnonymousDemo(show) {
   const box = document.getElementById('anonymousDemoBox');
   const btn = document.getElementById('demoToggleBtn');
