@@ -12,8 +12,11 @@
   --card-bg: rgba(255, 255, 255, 0.04);
   --label-color: #93c5fd;
   --navbar-height: 64px;
+  /* Thumb vs the dark page: ~3.7:1 resting, higher on hover (WCAG 1.4.11 non-text). */
   --scrollbar-thumb: #64748b;
   --scrollbar-thumb-hover: #94a3b8;
+  --scrollbar-thumb-active: #cbd5e1;
+  --scrollbar-track: rgba(255, 255, 255, 0.04);
 }
 [data-theme='light'] {
   --blue-light: #1d4ed8;
@@ -27,8 +30,11 @@
   --border: rgba(37, 99, 235, 0.18);
   --card-bg: #ffffff;
   --label-color: #1e3a8a;
-  --scrollbar-thumb: #94a3b8;
+  /* #94a3b8 was only ~2.4:1 on the light page; #8190a5 clears 3:1. */
+  --scrollbar-thumb: #8190a5;
   --scrollbar-thumb-hover: #64748b;
+  --scrollbar-thumb-active: #475569;
+  --scrollbar-track: rgba(15, 23, 42, 0.05);
 }
 
 /* ── Smooth light / dark switch (js/main.js: switchTheme) ── */
@@ -92,20 +98,26 @@ html.page-entering body {
     -apple-system,
     sans-serif;
   scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
 }
 
+/* ── Scrollbars ──
+   Chrome/Edge 121+ and Firefox read scrollbar-width/scrollbar-color above (and then
+   ignore the ::-webkit-* rules). Safari and older Chromium use the ::-webkit-* rules:
+   a 10px hit area whose transparent border insets the thumb to a slim 6px pill. */
 *::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 10px;
+  height: 10px;
 }
 
 *::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track);
 }
 
 *::-webkit-scrollbar-thumb {
   background-color: var(--scrollbar-thumb);
+  background-clip: padding-box;
+  border: 2px solid transparent;
   border-radius: 9999px;
 }
 
@@ -113,8 +125,34 @@ html.page-entering body {
   background-color: var(--scrollbar-thumb-hover);
 }
 
-*:hover {
-  scrollbar-color: var(--scrollbar-thumb-hover) transparent;
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-thumb-active);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Inner scroll areas (assistant log, modals, lists) darken their thumb while the
+   pointer is over them, hinting that they scroll. The page itself is always
+   "hovered", so it keeps the resting colour. */
+:not(html):hover {
+  scrollbar-color: var(--scrollbar-thumb-hover) var(--scrollbar-track);
+}
+
+/* High-contrast / forced-colours modes: let the OS draw its own scrollbar. */
+@media (forced-colors: active) {
+  * {
+    scrollbar-color: auto;
+  }
+}
+
+/* Reserve the page scrollbar's space even when content is short, so switching
+   filters, paging or a search with few results never changes the page width.
+   Overlay scrollbars (phones, macOS default) take no space, so this is a no-op
+   there. The admin shell scrolls an inner pane, not the page, so it is left out. */
+html:not(:has(> body.admin-body)) {
+  scrollbar-gutter: stable;
 }
 
 html {

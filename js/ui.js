@@ -107,7 +107,10 @@
     if (locked) {
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
-      const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+      // With scrollbar-gutter: stable (styles.css) the gutter stays reserved while the
+      // page is locked, so padding for the scrollbar would shift the page the other way.
+      const gutterIsStable = (getComputedStyle(root).scrollbarGutter || '').startsWith('stable');
+      const scrollbarWidth = gutterIsStable ? 0 : Math.max(0, window.innerWidth - root.clientWidth);
       const bodyPadding = parseFloat(getComputedStyle(body).paddingRight) || 0;
       const adminContent = document.querySelector('.admin-content');
       const adminPadding = adminContent ? parseFloat(getComputedStyle(adminContent).paddingRight) || 0 : 0;
