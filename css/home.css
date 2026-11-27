@@ -472,11 +472,11 @@ label {
 .notif-item {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.45rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 10px;
-  padding: 0.9rem;
+  padding: 0.75rem 0.85rem;
   position: relative;
   transition: border-color 0.2s;
 }
@@ -494,7 +494,6 @@ label {
    of drifting to the middle of a taller row. */
 .notif-header {
   --notif-row-h: 1.5rem;
-  --notif-check-slot: 1.5rem;
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -508,19 +507,20 @@ label {
   display: flex;
   flex: 1 1 14rem;
   align-items: flex-start;
-  gap: 0.5rem;
+  gap: var(--notif-col-gap);
   min-width: 0;
 }
 /* Cards without a checkbox get an empty slot so icons and titles line up
    in one column across the whole list. */
 .notif-title-group:not(:has(.notification-select-control)) {
-  padding-left: calc(var(--notif-check-slot) + 0.5rem);
+  padding-left: calc(var(--notif-check-slot) + var(--notif-col-gap));
 }
 .notif-title-icon {
   display: inline-flex;
-  flex: 0 0 auto;
+  flex: 0 0 var(--notif-icon-slot);
   align-items: center;
   justify-content: center;
+  width: var(--notif-icon-slot);
   height: var(--notif-row-h);
   font-size: 1rem;
   line-height: 1;
@@ -633,11 +633,33 @@ label {
   outline: 2px solid var(--blue-main);
   outline-offset: 2px;
 }
+/* Body content (status pill + messages) is indented to start exactly under
+   the title text: checkbox slot + gap + icon slot + gap. The left gutter then
+   holds only the checkbox/icon, so titles and pills form one scan column. */
+.notif-item {
+  --notif-check-slot: 1.5rem;
+  --notif-icon-slot: 1.25rem;
+  --notif-col-gap: 0.5rem;
+  --notif-content-indent: calc(
+    var(--notif-check-slot) + var(--notif-icon-slot) + 2 * var(--notif-col-gap)
+  );
+}
 .notif-body {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.3rem;
   min-width: 0;
+  padding-left: var(--notif-content-indent);
+}
+.notif-body .notif-badge + .notif-msg {
+  margin-top: 0.1rem;
+}
+@media (max-width: 480px) {
+  /* On narrow cards keep the text width: align the body under the icon
+     column instead of the title. */
+  .notif-item {
+    --notif-content-indent: calc(var(--notif-check-slot) + var(--notif-col-gap));
+  }
 }
 .notifications-list .notif-badge {
   position: static;
@@ -653,21 +675,26 @@ label {
   max-width: 100%;
   flex: 0 1 auto;
   overflow: hidden;
-  padding: 0.2rem 0.55rem;
-  border: 1px solid rgba(59, 130, 246, 0.28);
+  height: 1.375rem;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(96, 165, 250, 0.4);
   border-radius: 999px;
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--blue-light);
+  background: rgba(59, 130, 246, 0.14);
+  color: #bfdbfe;
   font-size: 0.75rem;
-  font-weight: 700;
-  line-height: 1.25;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.01em;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* Dark mode amber: a pale amber text (#fde68a) on a low-alpha amber fill
+   reads ~12:1 against the dark card — clearly a warning tone without the
+   glare of saturated #fbbf24 at bold weight. */
 .notifications-list .notif-badge--alert {
-  border-color: rgba(245, 158, 11, 0.3);
-  background: rgba(245, 158, 11, 0.1);
-  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.42);
+  background: rgba(245, 158, 11, 0.14);
+  color: #fde68a;
 }
 [data-theme='light'] .notifications-list .notif-badge--alert {
   color: #92400e;
@@ -685,7 +712,8 @@ label {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding-top: 0.6rem;
+  margin-top: 0.1rem;
+  padding-top: 0.5rem;
   border-top: 1px solid rgba(148, 163, 184, 0.16);
 }
 .notif-actions-primary,
