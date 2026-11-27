@@ -3031,13 +3031,16 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
         <div class="notif-header">
           <div class="notif-title-group">
             <label class="notification-select-control">
-              <input class="notification-select" type="checkbox" value="${escapeHtml(
-                JSON.stringify({
-                  kind: 'item',
-                  recordId: String(n.itemId),
-                  id: String(n.id),
-                })
-              )}" data-change="updateNotificationSelection">
+              <span class="notification-select-box">
+                <input class="notification-select" type="checkbox" value="${escapeHtml(
+                  JSON.stringify({
+                    kind: 'item',
+                    recordId: String(n.itemId),
+                    id: String(n.id),
+                  })
+                )}" data-change="updateNotificationSelection">
+                <span class="notification-select-check" aria-hidden="true"></span>
+              </span>
               <span class="visually-hidden">Select conversation</span>
             </label>
             <span class="notif-title-icon" aria-hidden="true">💬</span>
@@ -3075,13 +3078,16 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
         <div class="notif-header">
           <div class="notif-title-group">
             <label class="notification-select-control">
-              <input class="notification-select" type="checkbox" value="${escapeHtml(
-                JSON.stringify({
-                  kind: 'claim-conversation',
-                  recordId: String(n.claimId),
-                  id: String(n.id),
-                })
-              )}" data-change="updateNotificationSelection">
+              <span class="notification-select-box">
+                <input class="notification-select" type="checkbox" value="${escapeHtml(
+                  JSON.stringify({
+                    kind: 'claim-conversation',
+                    recordId: String(n.claimId),
+                    id: String(n.id),
+                  })
+                )}" data-change="updateNotificationSelection">
+                <span class="notification-select-check" aria-hidden="true"></span>
+              </span>
               <span class="visually-hidden">Select conversation</span>
             </label>
             <span class="notif-title-icon" aria-hidden="true">💬</span>
@@ -3162,13 +3168,16 @@ async function loadNotificationsIntoModal({ silent = false } = {}) {
         <div class="notif-header">
           <div class="notif-title-group">
             <label class="notification-select-control">
-              <input class="notification-select" type="checkbox" value="${escapeHtml(
-                JSON.stringify({
-                  kind: n.notificationType === 'claim' ? 'claim' : 'item',
-                  recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
-                  id: String(n.id),
-                })
-              )}" data-change="updateNotificationSelection">
+              <span class="notification-select-box">
+                <input class="notification-select" type="checkbox" value="${escapeHtml(
+                  JSON.stringify({
+                    kind: n.notificationType === 'claim' ? 'claim' : 'item',
+                    recordId: String(n.notificationType === 'claim' ? n.claimId : n.itemId),
+                    id: String(n.id),
+                  })
+                )}" data-change="updateNotificationSelection">
+                <span class="notification-select-check" aria-hidden="true"></span>
+              </span>
               <span class="visually-hidden">Select notification</span>
             </label>
             <span class="notif-title-icon" aria-hidden="true">🏷️</span>
