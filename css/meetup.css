@@ -198,16 +198,54 @@
   flex-direction: column;
   max-height: 85vh;
 }
+/* Single-scroll layout. The card is a fixed-height flex column that never
+   scrolls itself; every section is a fixed-size (flex: none) band except the
+   message list, which takes the leftover height (flex: 1 1 auto; min-height: 0)
+   and is the one scroll area. The header stays on top, and the meetup info,
+   composer and confirm button stay pinned at the bottom however long the
+   conversation gets. */
 #claimThreadModal .thread-card {
-  max-height: 85vh;
-  overflow-x: hidden;
+  height: min(85vh, 48rem);
+  height: min(85dvh, 48rem);
+  max-height: none;
+  padding: 1.25rem 1.25rem 1rem;
+  overflow: hidden;
+}
+#claimThreadModal .thread-card > .modal-header {
+  flex: none;
+  margin-bottom: 0;
+  padding-bottom: 0.75rem;
+}
+#claimThreadModal .thread-messages {
+  flex: 1 1 auto;
+  min-height: 8rem;
+  max-height: none;
+  margin: 0.75rem 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 0.75rem;
+}
+/* Location/handover info sits at its natural height. Only if it is taller
+   than the space left after keeping 8rem for messages (open map on a short
+   phone) does it shrink and scroll, and it does so as a sibling region,
+   never nested inside another scroller. */
+#claimThreadModal .thread-meetup {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 45%;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
-#claimThreadModal .thread-messages {
-  min-height: 220px;
-  flex-shrink: 0;
-  overflow-y: auto;
+#claimThreadModal .thread-compose,
+#claimThreadModal .thread-confirm {
+  flex: none;
+}
+#claimThreadModal .thread-confirm:empty {
+  display: none;
+}
+/* Background page stays still while the conversation is open. */
+html:has(#claimThreadModal.open) {
+  overflow: hidden;
 }
 #claimThreadModal .meetup-map {
   height: 160px;
@@ -245,6 +283,31 @@
   font-size: 0.875rem;
   text-align: center;
 }
+/* Spacing between bubbles: a normal gap between different senders, a tight
+   one between consecutive messages from the same sender (set in
+   claimThreadMessagesHtml, js/home-page.js). The touching corners are
+   squared off a little so a run reads as one block. */
+#claimThreadModal .thread-messages {
+  gap: 0;
+}
+#claimThreadModal .thread-messages > .thread-msg + .thread-msg {
+  margin-top: 0.6rem;
+}
+#claimThreadModal .thread-messages > .thread-msg.thread-msg--grouped {
+  margin-top: 0.15rem;
+}
+.thread-msg--mine.thread-msg--grouped {
+  border-top-right-radius: 5px;
+}
+.thread-msg--mine.thread-msg--continued {
+  border-bottom-right-radius: 5px;
+}
+.thread-msg--theirs.thread-msg--grouped {
+  border-top-left-radius: 5px;
+}
+.thread-msg--theirs.thread-msg--continued {
+  border-bottom-left-radius: 5px;
+}
 .thread-msg {
   max-width: 80%;
   padding: 0.5rem 0.75rem;
@@ -259,9 +322,10 @@
 }
 .thread-msg-time {
   display: block;
-  margin-top: 0.2rem;
+  margin-top: 0.15rem;
   color: inherit;
   font-size: 0.75rem;
+  opacity: 0.85;
 }
 .thread-msg--theirs {
   align-self: flex-start;
@@ -346,14 +410,49 @@
   font-size: 0.875rem;
 }
 
+#claimThreadModal .thread-meetup:not(:empty) {
+  margin-bottom: 0.6rem;
+  padding-top: 0.6rem;
+}
+#claimThreadModal .thread-confirm {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+}
+
+/* Phones: the conversation becomes a full-screen sheet (dynamic viewport
+   height, so the composer is not hidden behind the mobile browser's toolbar
+   or the on-screen keyboard), and the same flex column applies. */
 @media (max-width: 600px) {
+  #claimThreadModal.slip-overlay {
+    align-items: stretch;
+    padding: 0;
+  }
   #claimThreadModal .thread-card {
-    max-height: 85vh;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    height: 100dvh;
+    padding: calc(0.85rem + env(safe-area-inset-top, 0px)) 0.85rem
+      calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    border: none;
+    border-radius: 0;
   }
   #claimThreadModal .thread-messages {
-    max-height: 16rem;
+    min-height: 6rem;
+    margin: 0.6rem 0;
+    padding: 0.6rem;
+  }
+  #claimThreadModal .thread-meetup {
+    max-height: 40%;
+  }
+  #claimThreadModal .thread-msg {
+    max-width: 86%;
   }
   #claimThreadModal .thread-compose {
     align-items: stretch;
+  }
+  /* 16px stops iOS Safari from zooming the page when the input is focused. */
+  #claimThreadModal .thread-compose input {
+    font-size: 1rem;
   }
 }

@@ -2624,13 +2624,54 @@ function closeClaimThreadModal() {
   document.getElementById('claimThreadModal').classList.remove('open');
 }
 
-function claimThreadMessageHtml(message) {
-  const time = new Date(message.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  return `
-    <div class="thread-msg ${message.mine ? 'thread-msg--mine' : 'thread-msg--theirs'}">
+// Consecutive messages from the same sender within this window render as one
+// tight run (see .thread-msg--grouped / --continued in css/meetup.css).
+const THREAD_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+function claimThreadMessageTime(message) {
+  return new Date(message.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function claimThreadSameRun(a, b) {
+  return (
+    Boolean(a && b) &&
+    a.mine === b.mine &&
+    Math.abs(new Date(b.createdAt) - new Date(a.createdAt)) <= THREAD_GROUP_WINDOW_MS
+  );
+}
+
+function claimThreadMessagesHtml(messages) {
+  return messages
+    .map((message, index) => {
+      const prev = messages[index - 1];
+      const next = messages[index + 1];
+      const grouped = claimThreadSameRun(prev, message);
+      const continued = claimThreadSameRun(message, next);
+      const time = claimThreadMessageTime(message);
+      // Within a run, a timestamp repeated by the next bubble adds nothing - show it once, on the last.
+      const showTime = !continued || claimThreadMessageTime(next) !== time;
+      const classes = [
+        'thread-msg',
+        message.mine ? 'thread-msg--mine' : 'thread-msg--theirs',
+        grouped ? 'thread-msg--grouped' : '',
+        continued ? 'thread-msg--continued' : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+      return `
+    <div class="${classes}">
       <p class="thread-msg-text">${escapeHtml(message.text)}</p>
-      <span class="thread-msg-time">${time}</span>
+      ${showTime ? `<span class="thread-msg-time">${time}</span>` : ''}
     </div>`;
+    })
+    .join('');
+}
+
+// Smooth for new messages in an open thread; instant on first load so opening
+// a long conversation doesn't animate from the top.
+function scrollClaimThreadToEnd(body, { smooth = true } = {}) {
+  const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  body.scrollTo({ top: body.scrollHeight, behavior: smooth && !reduceMotion ? 'smooth' : 'auto' });
 }
 
 // Renders the thread and, on a background poll, toasts about any message the
@@ -2656,13 +2697,30 @@ function renderClaimThread(thread) {
   document.getElementById('claimThreadSubtitle').textContent = `You and ${thread.otherName}`;
 
   const body = document.getElementById('claimThreadBody');
-  const wasScrolledToEnd = body.scrollHeight - body.scrollTop - body.clientHeight < 16;
-  body.innerHTML = thread.messages.length
-    ? thread.messages.map(claimThreadMessageHtml).join('')
+  const wasScrolledToEnd = body.scrollHeight - body.scrollTop - body.clientHeight < 48;
+  const previousCount = body.querySelectorAll('.thread-msg').length;
+  const isFirstRender = previousCount === 0;
+  const newest = thread.messages[thread.messages.length - 1];
+  const iJustSent = thread.messages.length > previousCount && Boolean(newest?.mine);
+  const previousScrollTop = body.scrollTop;
+  const html = thread.messages.length
+    ? claimThreadMessagesHtml(thread.messages)
     : isCompleted
       ? '<p class="thread-empty">This claim is complete. No messages are available in this conversation.</p>'
       : '<p class="thread-empty">No messages yet. Say hello and describe the item to confirm it\'s a match.</p>';
-  if (wasScrolledToEnd) body.scrollTop = body.scrollHeight;
+  // The 5s poll re-renders even when nothing changed; skipping identical HTML
+  // keeps a reader's scroll position and any in-progress smooth scroll intact.
+  // (Compared against a cached copy, not body.innerHTML, which the browser
+  // re-serializes; the firstChild check catches the "Loading…" placeholder.)
+  const unchanged = body._renderedHtml === html && body._renderedFirstChild === body.firstChild;
+  if (!unchanged) {
+    body.innerHTML = html;
+    body._renderedHtml = html;
+    body._renderedFirstChild = body.firstChild;
+    if (isFirstRender) scrollClaimThreadToEnd(body, { smooth: false });
+    else if (wasScrolledToEnd || iJustSent) scrollClaimThreadToEnd(body);
+    else body.scrollTop = previousScrollTop;
+  }
 
   document.querySelector('#claimThreadModal .thread-compose').hidden = isCompleted;
   const confirmBox = document.getElementById('claimThreadConfirm');
