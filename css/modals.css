@@ -1046,15 +1046,33 @@
 .account-delete-list strong {
   color: var(--text-main);
 }
-/* ── QR scanner (shared-screen preview inside #qrScannerModal) ───────────── */
+/* ── QR scanner (shared-screen preview inside #qrScannerModal) ─────────────
+   A scan is often of a QR code on this same screen/tab (e.g. the sticker
+   behind this very dialog), so this overlay skips the shared dark/blurred
+   .slip-overlay backdrop and floats as a small corner widget instead of a
+   centered dialog - otherwise it would hide the very code being scanned. */
+#qrScannerModal {
+  background: transparent;
+  backdrop-filter: none;
+  align-items: flex-end;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+#qrScannerModal .modal-card {
+  max-width: 300px;
+  margin: 1rem;
+  padding: 1.2rem;
+  pointer-events: auto;
+  box-shadow: var(--modal-shadow), 0 0 0 2000px rgba(0, 0, 0, 0.12);
+}
 .qr-scanner-viewport {
   position: relative;
   width: 100%;
-  max-width: 480px;
-  aspect-ratio: 16 / 9;
-  margin: 1rem auto 0;
+  max-width: 260px;
+  aspect-ratio: 4 / 3;
+  margin: 0.75rem auto 0;
   overflow: hidden;
-  border-radius: 16px;
+  border-radius: 12px;
   background: #000;
 }
 .qr-scanner-video {
