@@ -2514,6 +2514,112 @@ function stopClaimThreadPolling() {
 
 function resetClaimThreadComposer() {
   document.querySelector('#claimThreadModal .thread-compose').hidden = false;
+  resetClaimThreadHandover();
+}
+
+// ── Handover region (item, confirmation progress, location sharing) ─────────
+// A side panel on wide screens and a collapsible bar on narrow ones (see the
+// .thread-layout grid in css/meetup.css). The bar's one-line summary is what
+// lets it stay collapsed without anything important being hidden.
+const claimThreadWideQuery = window.matchMedia('(min-width: 860px)');
+let lastRenderedThreadState = null;
+let claimThreadHandoverAutoOpened = false;
+
+function syncClaimThreadHandoverMode() {
+  const toggle = document.getElementById('claimThreadHandoverToggle');
+  const section = document.getElementById('claimThreadHandover');
+  if (!toggle || !section) return;
+  // On wide screens the panel is always open, so the toggle is just a heading.
+  toggle.disabled = claimThreadWideQuery.matches;
+  toggle.setAttribute(
+    'aria-expanded',
+    String(claimThreadWideQuery.matches || !section.classList.contains('is-collapsed'))
+  );
+}
+claimThreadWideQuery.addEventListener?.('change', syncClaimThreadHandoverMode);
+
+function setClaimThreadHandoverExpanded(expanded) {
+  const section = document.getElementById('claimThreadHandover');
+  if (!section) return;
+  section.classList.toggle('is-collapsed', !expanded);
+  syncClaimThreadHandoverMode();
+}
+
+function toggleClaimThreadHandover() {
+  const section = document.getElementById('claimThreadHandover');
+  if (!section || claimThreadWideQuery.matches) return;
+  setClaimThreadHandoverExpanded(section.classList.contains('is-collapsed'));
+  // A map that was laid out while hidden needs Leaflet to re-measure it.
+  if (!section.classList.contains('is-collapsed')) {
+    section.querySelectorAll('[data-meetup-map]').forEach((container) => {
+      const map = activeMeetupMaps.get(container.id);
+      if (map) requestAnimationFrame(() => map.invalidateSize());
+    });
+  }
+}
+
+function resetClaimThreadHandover() {
+  lastRenderedThreadState = null;
+  claimThreadHandoverAutoOpened = false;
+  setClaimThreadHandoverExpanded(false);
+  const section = document.getElementById('claimThreadHandover');
+  if (section) delete section.dataset.tone;
+  const summary = document.getElementById('claimThreadSummary');
+  if (summary) summary.innerHTML = '';
+  const barSummary = document.getElementById('claimThreadHandoverSummary');
+  if (barSummary) barSummary.textContent = '';
+}
+
+// Picks the single most important line for the collapsed bar, most urgent first.
+function claimThreadHandoverStatus(state, meetup) {
+  if (!state) return { tone: '', text: pendingClaimStart ? 'Starts once you send your first message' : '' };
+  const other = state.otherName;
+  if (state.isCompleted) return { tone: 'done', text: 'Return complete' };
+  const mine = meetup?.myLocation?.status;
+  const theirs = meetup?.theirLocation?.status;
+  if (mine === 'pending') return { tone: 'attention', text: `${other} is asking for your location` };
+  if (state.confirmedByOther && !state.confirmedByMe) {
+    return { tone: 'attention', text: `${other} confirmed · confirm once you have the item` };
+  }
+  if (mine === 'shared') return { tone: 'live', text: "You're live-sharing your location" };
+  if (theirs === 'shared') return { tone: 'live', text: `${other} is sharing their location` };
+  if (theirs === 'pending') return { tone: 'waiting', text: `Waiting for ${other}'s location` };
+  if (state.confirmedByMe) return { tone: 'waiting', text: `Waiting for ${other} to confirm` };
+  return { tone: '', text: meetup ? 'Arrange where to meet' : `Confirm with ${other} that it's a match` };
+}
+
+function updateClaimThreadHandover() {
+  const section = document.getElementById('claimThreadHandover');
+  if (!section) return;
+  const state = lastRenderedThreadState;
+  const status = claimThreadHandoverStatus(state, lastRenderedThreadMeetup);
+  if (status.tone) section.dataset.tone = status.tone;
+  else delete section.dataset.tone;
+  document.getElementById('claimThreadHandoverSummary').textContent = status.text;
+
+  const summary = document.getElementById('claimThreadSummary');
+  if (!state) {
+    summary.innerHTML = '';
+  } else {
+    const other = escapeHtml(state.otherName);
+    const me = state.isCompleted || state.confirmedByMe;
+    const them = state.isCompleted || state.confirmedByOther;
+    summary.innerHTML = `
+      <p class="thread-summary-item">
+        <span class="thread-summary-kicker">Item</span>
+        <strong>${escapeHtml(state.itemTitle)}</strong>
+      </p>
+      <ul class="thread-steps" aria-label="Return confirmation">
+        <li class="${me ? 'is-done' : ''}">${me ? 'You confirmed' : "You haven't confirmed yet"}</li>
+        <li class="${them ? 'is-done' : ''}">${them ? `${other} confirmed` : `${other} hasn't confirmed yet`}</li>
+      </ul>`;
+  }
+
+  // A location request needs an answer: open the bar once so it isn't missed.
+  if (status.tone === 'attention' && !claimThreadHandoverAutoOpened && !claimThreadWideQuery.matches) {
+    claimThreadHandoverAutoOpened = true;
+    setClaimThreadHandoverExpanded(true);
+  }
 }
 
 async function openClaimThreadModal(claimId) {
@@ -2618,6 +2724,7 @@ function openClaimThreadStarter(lostId, foundId, foundTitle, requesterRole) {
     requesterRole === 'finder'
       ? 'e.g. Found it near the gym entrance, handed it to campus security.'
       : "e.g. There's a small scratch near the charging port, and a blue sticker inside the lid.";
+  updateClaimThreadHandover();
   document.getElementById('claimThreadModal').classList.add('open');
 }
 
@@ -2740,8 +2847,16 @@ function renderClaimThread(thread) {
       <button type="button" class="btn btn-primary btn-compact" data-action="confirmClaimThread">✓ Confirm item ${isRegisteredConversation ? 'returned' : 'received/returned'}</button>
       ${thread.confirmedByOther ? `<p class="thread-waiting">${escapeHtml(thread.otherName)} already confirmed.</p>` : ''}`;
   }
+  lastRenderedThreadState = {
+    otherName: thread.otherName,
+    itemTitle: thread.item.title,
+    isCompleted,
+    confirmedByMe: Boolean(thread.confirmedByMe),
+    confirmedByOther: Boolean(thread.confirmedByOther),
+  };
   if (isCompleted) renderClaimThreadMeetupNotification(null);
   else if (thread.meetupNotification) renderClaimThreadMeetupNotification(thread.meetupNotification);
+  updateClaimThreadHandover();
 }
 
 // The last meetup notification fully rendered into the claim-thread box, so the 5s
@@ -2804,6 +2919,7 @@ function renderClaimThreadMeetupNotification(notification) {
   if (canUpdateMeetupMapInPlace(lastRenderedThreadMeetup, notification, mapExpanded)) {
     updateMeetupMapInPlace(meetupBox, notification);
     lastRenderedThreadMeetup = notification;
+    updateClaimThreadHandover();
     return;
   }
   lastRenderedThreadMeetup = notification;
@@ -2834,6 +2950,7 @@ function renderClaimThreadMeetupNotification(notification) {
     });
   }
   if (mapExpanded) initMeetupMaps(meetupBox);
+  updateClaimThreadHandover();
 }
 
 async function refreshClaimThreadMeetup() {
