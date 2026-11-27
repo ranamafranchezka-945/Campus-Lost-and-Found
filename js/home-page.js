@@ -1445,8 +1445,12 @@ function deleteRegisteredBelonging(event, id) {
   openDeleteModal(id);
 }
 
+let registerBelongingSubmissionInProgress = false;
+
 async function handleRegisterBelongingSubmit(e) {
   e.preventDefault();
+  if (registerBelongingSubmissionInProgress) return;
+
   const title = document.getElementById('regTitle').value.trim();
   const category = document.getElementById('regCategory').value;
   const location = document.getElementById('regLocation')
@@ -1460,8 +1464,17 @@ async function handleRegisterBelongingSubmit(e) {
     return;
   }
 
+  const isEditing = Boolean(editingBelongingId);
+  const submitButton = document.getElementById('regSubmitBtn');
+  const originalLabel = submitButton ? submitButton.textContent : '';
+  registerBelongingSubmissionInProgress = true;
+  if (submitButton) {
+    submitButton.disabled = true;
+    submitButton.textContent = isEditing ? 'Saving Changes…' : 'Saving…';
+  }
+
+  let succeeded = false;
   try {
-    const isEditing = Boolean(editingBelongingId);
     const res = await fetch(
       isEditing ? `/api/items/${encodeURIComponent(editingBelongingId)}/registered` : '/api/items/register-belonging',
       {
@@ -1476,6 +1489,7 @@ async function handleRegisterBelongingSubmit(e) {
       return;
     }
 
+    succeeded = true;
     closeRegisterBelongingModal();
     showToast(isEditing ? 'Belonging details updated.' : 'Belonging saved in your private vault.');
 
@@ -1486,6 +1500,14 @@ async function handleRegisterBelongingSubmit(e) {
     if (currentFilter === 'registered') fetchAndRenderItems();
   } catch (err) {
     showToast('Server error. Please try again.', 'error');
+  } finally {
+    registerBelongingSubmissionInProgress = false;
+    if (submitButton) {
+      submitButton.disabled = false;
+      // A successful submit already closed the modal and reset the label via
+      // closeRegisterBelongingModal(); only restore it here on failure.
+      if (!succeeded) submitButton.textContent = originalLabel;
+    }
   }
 }
 
