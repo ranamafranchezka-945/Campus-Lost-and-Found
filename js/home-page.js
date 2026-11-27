@@ -3654,6 +3654,12 @@ function swayNotificationBellIfNew(unreadCount) {
       void icon.getBoundingClientRect();
       icon.classList.add('is-swaying');
     });
+    const badge = document.getElementById('notifCountBadge');
+    if (badge) {
+      badge.classList.remove('is-bumped');
+      void badge.offsetWidth;
+      badge.classList.add('is-bumped');
+    }
   }
   lastDisplayedUnreadNotificationCount = unreadCount;
 }
