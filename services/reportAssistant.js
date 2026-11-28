@@ -317,7 +317,7 @@ const CATEGORY_KEYWORDS = {
 };
 
 // Keyword -> exactly the <option> value the report form offers, so a parsed location is
-// always selectable. Keep these values identical to the location select in public/index.html.
+// always selectable. Keep these values identical to the location select in pages/index.html.
 const LOCATION_KEYWORDS = [
   {
     value: 'Learning Resources and Development (Library)',

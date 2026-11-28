@@ -204,7 +204,7 @@ function createApp() {
       // Show the real public landing page rather than a generic placeholder, just
       // gated behind a 503 so it's still clearly not the live app underneath.
       res.status(503);
-      sendPage(res, path.join(__dirname, 'public', 'home.html'));
+      sendPage(res, path.join(__dirname, 'pages', 'home.html'));
     };
     if (req.session?.user) return req.session.regenerate(sendUnavailable);
     sendUnavailable();
@@ -235,7 +235,7 @@ function createApp() {
   app.use('/api/stats', (req, res) => res.redirect('/api/items/stats'));
   app.use('/uploads', express.static(path.join(dataDir, 'uploads'), { fallthrough: false, maxAge: '7d' }));
 
-  const page = (name) => path.join(__dirname, 'public', name);
+  const page = (name) => path.join(__dirname, 'pages', name);
 
   app.get('/admin.html', (req, res) => {
     if (!req.session?.user) return res.redirect('/login?redirect=/admin.html');
@@ -265,7 +265,11 @@ function createApp() {
   });
   app.get(['/login.html', '/about.html'], (req, res) => sendPage(res, page(path.basename(req.path))));
 
-  app.use(express.static(path.join(__dirname, 'public')));
+  // Named "pages", not "public": some Node.js hosts (Hostinger included) serve a
+  // top-level "public" directory directly from their edge/CDN, bypassing this app -
+  // and with it the allowlist gate above. Keeping the HTML pages under a
+  // non-conventional name forces every request through this Express app instead.
+  app.use(express.static(path.join(__dirname, 'pages')));
   // Serve only browser assets from the project root; server code, scripts and data stay private.
   app.use('/css', express.static(path.join(__dirname, 'css'), { setHeaders: setAssetCacheHeaders }));
   app.use('/js', express.static(path.join(__dirname, 'js'), { setHeaders: setAssetCacheHeaders }));
