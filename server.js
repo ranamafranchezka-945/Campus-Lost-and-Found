@@ -165,50 +165,9 @@ function createApp() {
     next();
   });
 
-  // While the admin-managed allowlist holds any emails, the whole site (not just
-  // register/login) is hidden from anyone who isn't on it: visitors see an "unavailable"
-  // page instead of the app. Admins always bypass this, and a handful of paths (the
-  // login page, its assets, and the auth API, which already enforces its own allowlist
-  // check with a clearer message) stay reachable. getAllowedEmailsDirect() queries the
-  // database directly, not through the per-request transaction context set up below,
-  // since this must run on every request, not just /api/* ones.
-  const allowlistExemptPaths = new Set([
-    '/login',
-    '/login.html',
-    '/icons.js',
-    '/cspc-logo.png',
-    '/api/messenger/webhook',
-  ]);
-  const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
-  app.use(async (req, res, next) => {
-    if (req.session?.user?.role === 'admin') return next();
-    if (allowlistExemptPaths.has(req.path) || allowlistExemptPrefixes.some((prefix) => req.path.startsWith(prefix))) {
-      return next();
-    }
-    let allowedEmails;
-    try {
-      allowedEmails = await postgresStore.getAllowedEmailsDirect();
-    } catch (error) {
-      console.error(`Could not read the allowlist (${postgresStore.connectionTarget()}):`, error.message);
-      return next();
-    }
-    if (allowedEmails.length === 0) return next();
-
-    const sessionEmail = req.session?.user?.email ? String(req.session.user.email).trim().toLowerCase() : null;
-    if (sessionEmail && allowedEmails.some((entry) => entry.email === sessionEmail)) return next();
-
-    const sendUnavailable = () => {
-      if (req.path.startsWith('/api/')) {
-        return res.status(503).json({ success: false, message: "This site isn't available right now." });
-      }
-      // Show the real public landing page rather than a generic placeholder, just
-      // gated behind a 503 so it's still clearly not the live app underneath.
-      res.status(503);
-      sendPage(res, path.join(__dirname, 'pages', 'home.html'));
-    };
-    if (req.session?.user) return req.session.regenerate(sendUnavailable);
-    sendUnavailable();
-  });
+  // The admin-managed allowlist only gates signing in or registering (enforced in
+  // authRoutes' own isEmailAllowed() checks, with a clearer message there); browsing
+  // the public site and its Items dashboard stays open to anonymous visitors.
 
   const databaseRequest = postgresStore.requestMiddleware();
   app.use('/api', (req, res, next) => {

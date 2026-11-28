@@ -73,18 +73,6 @@ async function withConnectRetry(fn, attempts = 3, baseDelayMs = 300) {
   }
 }
 
-// Reads the allowlist directly from the pool, independent of the per-request transaction
-// context above: middleware that runs on every request (not just /api/* ones) needs to
-// read it without a transaction ever being opened. Not configured (local/dev without a
-// database) means no restriction is in effect.
-async function getAllowedEmailsDirect() {
-  if (!isConfigured()) return [];
-  const result = await withConnectRetry(() =>
-    getPool().query(`SELECT payload FROM ${collections.allowedEmails.table}`)
-  );
-  return result.rows.map((row) => row.payload);
-}
-
 // The connected Facebook Page's token, read/written directly against the pool rather than
 // through the per-request transaction context: Messenger sends fire after a request's
 // response has already ended (its transaction long since committed), so by the time the
@@ -431,7 +419,6 @@ module.exports = {
   commitRequest,
   connectionTarget,
   deleteMessengerConfigDirect,
-  getAllowedEmailsDirect,
   getMessengerConfigDirect,
   getPool,
   importJsonFiles,
