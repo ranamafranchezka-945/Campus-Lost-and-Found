@@ -1156,10 +1156,11 @@ function printQrSticker() {
 }
 
 // ── QR Scanner ──────────────────────────────────────────────────────────
-// Desktop browsers share a screen/window/tab (getDisplayMedia); phones don't
-// implement that API at all, so there the camera (getUserMedia) is used
-// instead - a printed sticker isn't on the same screen, so nothing gets
-// covered there either way.
+// Desktop shares a screen/window/tab (getDisplayMedia); touch devices go
+// straight to the camera instead - not just because a printed sticker isn't
+// on the same screen, but because some mobile browsers expose
+// getDisplayMedia while the share picker itself doesn't actually work, which
+// otherwise fails every time with a confusing "screen share unavailable" error.
 let qrScannerStream = null;
 let qrScannerRafId = null;
 let qrScannerStopped = true;
@@ -1193,7 +1194,8 @@ async function openQrScanner() {
   setQrScannerConnecting(true);
   setQrScannerBusy(false);
 
-  const canShareScreen = typeof navigator.mediaDevices?.getDisplayMedia === 'function';
+  const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+  const canShareScreen = !isTouchDevice && typeof navigator.mediaDevices?.getDisplayMedia === 'function';
   const canUseCamera = typeof navigator.mediaDevices?.getUserMedia === 'function';
 
   if (typeof jsQR !== 'function' || (!canShareScreen && !canUseCamera)) {
