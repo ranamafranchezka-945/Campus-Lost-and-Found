@@ -1,11 +1,7 @@
 // togglePasswordVisibility() moved to js/main.js, which this page also loads, so it can
 // be shared with the change-password modal on index.html.
 
-// Theme toggle
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  switchTheme(current === 'light' ? 'dark' : 'light'); // js/main.js: smooth cross-fade
-}
+// Theme toggle: toggleTheme() lives in js/main.js (circular reveal, rapid-click safe).
 
 function updateThemeIcon() {
   const theme = document.documentElement.getAttribute('data-theme') || 'dark';

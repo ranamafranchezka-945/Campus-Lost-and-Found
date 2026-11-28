@@ -198,12 +198,25 @@
   flex-direction: column;
   max-height: 85vh;
 }
-/* Single-scroll layout. The card is a fixed-height flex column that never
-   scrolls itself; every section is a fixed-size (flex: none) band except the
-   message list, which takes the leftover height (flex: 1 1 auto; min-height: 0)
-   and is the one scroll area. The header stays on top, and the meetup info,
-   composer and confirm button stay pinned at the bottom however long the
-   conversation gets. */
+/* Layout. The card is a fixed-height flex column that never scrolls itself:
+   header on top (flex: none), then .thread-layout fills the rest
+   (flex: 1; min-height: 0). Inside it, one CSS grid places the same four
+   regions in two arrangements:
+
+   narrow (default)             wide (>= 860px)
+   ┌───────────────────┐        ┌──────────┬──────────────────┐
+   │ handover bar  ▾   │ auto   │ handover │ messages (1fr,   │
+   ├───────────────────┤        │ panel    │ scrolls)         │
+   │ messages (1fr,    │ 1fr    │          │                  │
+   │ scrolls)          │        ├──────────┼──────────────────┤
+   ├───────────────────┤        │ confirm  │ composer         │
+   │ composer          │ auto   └──────────┴──────────────────┘
+   │ confirm           │ auto
+   └───────────────────┘
+
+   The message row is minmax(0, 1fr), so a long thread scrolls inside
+   .thread-messages instead of growing the card. The composer and confirm
+   button sit in auto rows outside that scroller, so they are always visible. */
 #claimThreadModal .thread-card {
   height: min(85vh, 48rem);
   height: min(85dvh, 48rem);
@@ -216,32 +229,270 @@
   margin-bottom: 0;
   padding-bottom: 0.75rem;
 }
-#claimThreadModal .thread-messages {
+#claimThreadModal .thread-layout {
+  display: grid;
   flex: 1 1 auto;
-  min-height: 8rem;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'handover'
+    'messages'
+    'compose'
+    'confirm';
+  row-gap: 0.6rem;
+  padding-top: 0.75rem;
+}
+#claimThreadModal .thread-messages {
+  grid-area: messages;
+  min-height: 0;
   max-height: none;
-  margin: 0.75rem 0;
+  margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   scroll-padding-bottom: 0.75rem;
 }
-/* Location/handover info sits at its natural height. Only if it is taller
-   than the space left after keeping 8rem for messages (open map on a short
-   phone) does it shrink and scroll, and it does so as a sibling region,
-   never nested inside another scroller. */
-#claimThreadModal .thread-meetup {
-  flex: 0 1 auto;
-  min-height: 0;
-  max-height: 45%;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+#claimThreadModal .thread-compose {
+  grid-area: compose;
 }
-#claimThreadModal .thread-compose,
 #claimThreadModal .thread-confirm {
-  flex: none;
+  grid-area: confirm;
+  margin-top: 0;
+  padding-top: 0.6rem;
 }
 #claimThreadModal .thread-confirm:empty {
   display: none;
+}
+
+/* ── Handover region: a collapsible bar on narrow screens, a side panel on wide ── */
+.thread-handover {
+  grid-area: handover;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--blue-main) 5%, transparent);
+}
+.thread-handover-toggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.thread-handover-toggle:focus-visible {
+  outline: 2px solid var(--blue-main);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
+.thread-handover-toggle:disabled {
+  color: var(--text-main);
+  opacity: 1;
+  cursor: default;
+}
+.thread-handover-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.thread-handover-label {
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+.thread-handover-summary {
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.thread-handover-summary:empty {
+  display: none;
+}
+/* Status dot: grey = nothing pending, blue = waiting, green = live/complete,
+   amber = something needs your answer. */
+.thread-handover-dot {
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.6;
+}
+.thread-handover[data-tone='waiting'] .thread-handover-dot {
+  background: var(--blue-main);
+  opacity: 1;
+}
+.thread-handover[data-tone='live'] .thread-handover-dot,
+.thread-handover[data-tone='done'] .thread-handover-dot {
+  background: #22c55e;
+  opacity: 1;
+}
+.thread-handover[data-tone='live'] .thread-handover-dot {
+  color: rgba(34, 197, 94, 0.5);
+  animation: meetup-pulse 1.6s ease-out infinite;
+}
+.thread-handover[data-tone='attention'] .thread-handover-dot {
+  background: #f59e0b;
+  color: rgba(245, 158, 11, 0.55);
+  opacity: 1;
+  animation: meetup-pulse 1.6s ease-out infinite;
+}
+.thread-handover[data-tone='attention'] {
+  border-color: rgba(245, 158, 11, 0.5);
+}
+.thread-handover-chevron {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  margin: 0 0.2rem 0.2rem 0;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.thread-handover:not(.is-collapsed) .thread-handover-chevron {
+  margin: 0.2rem 0.2rem 0 0;
+  transform: rotate(-135deg);
+}
+.thread-handover-body {
+  min-height: 0;
+  max-height: 45vh;
+  max-height: 45dvh;
+  padding: 0.65rem 0.75rem 0.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid var(--border);
+}
+.thread-handover.is-collapsed .thread-handover-body {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .thread-handover-dot {
+    animation: none !important;
+  }
+  .thread-handover-chevron {
+    transition: none;
+  }
+}
+
+/* Item + two-sided confirmation progress at the top of the handover region. */
+.thread-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin: 0;
+}
+.thread-summary-kicker {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.thread-summary-item strong {
+  overflow-wrap: anywhere;
+  color: var(--text-main);
+  font-size: 0.9375rem;
+}
+.thread-steps {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+.thread-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--text-muted);
+}
+.thread-steps li::before {
+  flex: none;
+  box-sizing: border-box;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  content: '';
+}
+.thread-steps li.is-done {
+  color: var(--text-main);
+}
+.thread-steps li.is-done::before {
+  border-color: #22c55e;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6.2 5 8.5l4.5-5' fill='none' stroke='%23fff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 0.65rem no-repeat,
+    #22c55e;
+}
+#claimThreadModal .thread-handover .thread-meetup:not(:empty) {
+  margin: 0.75rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Wide screens: handover panel beside the chat ── */
+@media (min-width: 860px) {
+  #claimThreadModal .thread-card {
+    width: 94%;
+    max-width: 920px;
+    height: min(85vh, 44rem);
+    height: min(85dvh, 44rem);
+  }
+  #claimThreadModal .thread-layout {
+    grid-template-columns: minmax(15rem, 18rem) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'handover messages'
+      'confirm  compose';
+    column-gap: 1rem;
+  }
+  /* Always open: the panel is the context column, not a disclosure. */
+  .thread-handover.is-collapsed .thread-handover-body {
+    display: block;
+  }
+  .thread-handover-chevron {
+    display: none;
+  }
+  .thread-handover-body {
+    flex: 1 1 auto;
+    max-height: none;
+  }
+  /* Confirm sits under the panel, level with the composer. */
+  #claimThreadModal .thread-confirm {
+    align-self: end;
+    padding-top: 0;
+    border-top: none;
+  }
+  #claimThreadModal .thread-confirm .btn {
+    width: 100%;
+  }
+  #claimThreadModal .thread-confirm .thread-waiting,
+  #claimThreadModal .thread-confirm .thread-readonly {
+    margin-top: 0.35rem;
+  }
+  #claimThreadModal .meetup-map {
+    height: 180px;
+  }
+  #claimThreadModal .meetup-actions .meetup-btn {
+    flex: 1 1 100%;
+  }
 }
 /* Background page stays still while the conversation is open. */
 html:has(#claimThreadModal.open) {
@@ -410,18 +661,9 @@ html:has(#claimThreadModal.open) {
   font-size: 0.875rem;
 }
 
-#claimThreadModal .thread-meetup:not(:empty) {
-  margin-bottom: 0.6rem;
-  padding-top: 0.6rem;
-}
-#claimThreadModal .thread-confirm {
-  margin-top: 0.6rem;
-  padding-top: 0.6rem;
-}
-
 /* Phones: the conversation becomes a full-screen sheet (dynamic viewport
    height, so the composer is not hidden behind the mobile browser's toolbar
-   or the on-screen keyboard), and the same flex column applies. */
+   or the on-screen keyboard), with the narrow grid above. */
 @media (max-width: 600px) {
   #claimThreadModal.slip-overlay {
     align-items: stretch;
@@ -437,13 +679,18 @@ html:has(#claimThreadModal.open) {
     border: none;
     border-radius: 0;
   }
+  #claimThreadModal .thread-layout {
+    row-gap: 0.5rem;
+    padding-top: 0.6rem;
+  }
   #claimThreadModal .thread-messages {
-    min-height: 6rem;
-    margin: 0.6rem 0;
     padding: 0.6rem;
   }
-  #claimThreadModal .thread-meetup {
-    max-height: 40%;
+  /* Expanded handover never takes more than ~40% of the sheet, so the chat
+     keeps the majority of the screen. */
+  .thread-handover-body {
+    max-height: 40vh;
+    max-height: 40dvh;
   }
   #claimThreadModal .thread-msg {
     max-width: 86%;

@@ -1,0 +1,323 @@
+/* ══════════════════════════════════════════════════════════════════════════════
+   Motion layer: small, fast micro-interactions for the home page.
+   Loaded last on index.html so it sits on top of glass/polish/theme.
+
+   Rules of thumb used throughout:
+   - 150–220ms, ease-out on the way in, slightly faster on the way out.
+   - Only transform and opacity animate (compositor-only, no layout or paint).
+     Colour/border changes keep their own short transitions.
+   - Hover lifts only on devices that really hover, so touch screens never get
+     a "stuck" raised card after a tap.
+   - prefers-reduced-motion: every movement is removed; only plain opacity
+     fades remain, because fading does not cause vestibular discomfort.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --motion-fast: 150ms;
+  --motion-base: 200ms;
+  --motion-slow: 240ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --press-scale: 0.97;
+}
+
+/* ── 1. Buttons: hover and press feedback ───────────────────────────────── */
+
+/* Replaces `transition: all`, which also animated padding/size during
+   re-layout. Listing the properties keeps the work on the GPU. */
+.btn,
+.chip,
+.pagination-btn,
+.assistant-send,
+.assistant-mic,
+.assistant-example,
+.notif-bell-btn,
+.btn-match-qr.potential-match-badge {
+  transition:
+    transform var(--motion-fast) var(--ease-out),
+    opacity var(--motion-fast) var(--ease-out),
+    background-color var(--motion-base) ease,
+    border-color var(--motion-base) ease,
+    color var(--motion-base) ease,
+    box-shadow var(--motion-base) ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Press: a quick shrink confirms the tap landed, on touch and mouse alike. */
+.btn:active:not(:disabled),
+.chip:active,
+.pagination-btn:active:not(:disabled),
+.assistant-send:active:not(:disabled),
+.assistant-mic:active,
+.assistant-example:active,
+.btn-match-qr.potential-match-badge:active {
+  transform: scale(var(--press-scale));
+  transition-duration: 80ms;
+}
+.notif-bell-btn:active {
+  transform: scale(0.92);
+  transition-duration: 80ms;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .assistant-send:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px -8px rgba(37, 99, 235, 0.55);
+  }
+  .assistant-example:hover {
+    transform: translateY(-1px);
+  }
+  .pagination-btn:hover:not(:disabled):not(.active) {
+    transform: translateY(-1px);
+  }
+}
+
+/* ── 2. Item listing cards: hover lift ──────────────────────────────────── */
+
+:root #items .projects-grid > .project-card.listing-card,
+:root #items .projects-grid > .registered-belonging-card {
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    box-shadow var(--motion-base) ease,
+    border-color var(--motion-base) ease,
+    background-color var(--motion-base) ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* Same selector weight as polish.css, which had set transform: none. */
+  :root #items .projects-grid > .project-card.listing-card:hover,
+  :root #items .projects-grid > .registered-belonging-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 30px -18px rgba(29, 78, 216, 0.5);
+  }
+  /* The photo inside eases forward a touch; overflow on the card clips it. */
+  :root #items .listing-card .item-photo-frame img {
+    transition: transform var(--motion-slow) var(--ease-out);
+  }
+  :root #items .listing-card:hover .item-photo-frame img {
+    transform: scale(1.03);
+  }
+}
+
+/* ── 3. Feed updates: filters, pagination, search ───────────────────────── */
+
+/* Each re-render replaces #itemsGrid's children, and fresh elements start
+   their animation automatically, so no JS is needed. A tiny stagger over the
+   first six cards reads as "new results" without delaying the rest.
+   fill-mode: backwards (not both) so nothing is held afterwards, letting the
+   hover transform and the match highlight work normally. */
+#itemsGrid > :not(.skeleton-card):not(.item-card--highlight) {
+  animation: feed-in var(--motion-base) var(--ease-out) backwards;
+}
+#itemsGrid > :nth-child(2) {
+  animation-delay: 20ms;
+}
+#itemsGrid > :nth-child(3) {
+  animation-delay: 40ms;
+}
+#itemsGrid > :nth-child(4) {
+  animation-delay: 60ms;
+}
+#itemsGrid > :nth-child(5) {
+  animation-delay: 80ms;
+}
+#itemsGrid > :nth-child(n + 6) {
+  animation-delay: 100ms;
+}
+@keyframes feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* While a request is in flight the old cards dim (home.css). Making it a
+   fade with a short delay means fast responses never flicker at all. */
+.items-grid {
+  transition: opacity var(--motion-fast) ease 80ms;
+}
+.items-grid:not(.is-loading) {
+  transition-delay: 0ms;
+}
+
+/* Active filter chip and page number: colour slides in instead of snapping. */
+.filter-chips .chip.active,
+.pagination-btn.active {
+  animation: pill-select var(--motion-fast) var(--ease-out);
+}
+@keyframes pill-select {
+  from {
+    transform: scale(0.94);
+  }
+}
+
+/* Search box: focus ring grows in with the border colour. */
+.search-box input {
+  transition:
+    border-color var(--motion-base) ease,
+    box-shadow var(--motion-base) ease,
+    background-color var(--motion-base) ease;
+}
+
+/* ── 4. Modals: entrance and exit ───────────────────────────────────────── */
+
+/* The overlays switch between display: none and flex via the .open class.
+   `transition-behavior: allow-discrete` plus @starting-style lets CSS fade
+   both ways across that switch, with no change to the many open/close
+   functions. Older browsers simply skip the fade and open instantly. */
+.slip-overlay {
+  opacity: 0;
+  transition:
+    opacity var(--motion-fast) var(--ease-in),
+    display var(--motion-fast) allow-discrete,
+    overlay var(--motion-fast) allow-discrete;
+}
+.slip-overlay.open {
+  opacity: 1;
+  transition-duration: var(--motion-base);
+  transition-timing-function: var(--ease-out);
+}
+/* A closing overlay must not swallow clicks while it fades out. */
+.slip-overlay:not(.open) {
+  pointer-events: none;
+}
+
+.slip-overlay > :not(.lightbox) {
+  transition: transform var(--motion-fast) var(--ease-in);
+}
+.slip-overlay.open > :not(.lightbox) {
+  transition: transform var(--motion-slow) var(--ease-out);
+}
+.slip-overlay:not(.open) > :not(.lightbox) {
+  transform: translateY(6px) scale(0.98);
+}
+
+@starting-style {
+  .slip-overlay.open {
+    opacity: 0;
+  }
+  .slip-overlay.open > :not(.lightbox) {
+    transform: translateY(10px) scale(0.97);
+  }
+}
+
+/* Full-screen phone sheet (claim conversation): rise from below instead. */
+@media (max-width: 600px) {
+  #claimThreadModal:not(.open) > .thread-card {
+    transform: translateY(24px);
+  }
+  @starting-style {
+    #claimThreadModal.open > .thread-card {
+      transform: translateY(24px);
+    }
+  }
+}
+
+/* ── 5. Quick Report Assistant ──────────────────────────────────────────── */
+
+/* New messages slide up a few pixels, so the eye follows the reply. */
+.assistant-msg {
+  animation: assistant-msg-in var(--motion-base) var(--ease-out) backwards;
+}
+.assistant-msg--user {
+  transform-origin: right bottom;
+}
+.assistant-msg--bot {
+  transform-origin: left bottom;
+}
+@keyframes assistant-msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+.assistant-input {
+  transition:
+    border-color var(--motion-base) ease,
+    box-shadow var(--motion-base) ease;
+}
+
+/* ── 6. Notification bell ───────────────────────────────────────────────── */
+
+/* The count badge pops once when the number goes up (js: is-bumped). */
+.notif-badge.is-bumped {
+  animation: badge-bump var(--motion-slow) var(--ease-out);
+}
+@keyframes badge-bump {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .notif-bell-btn svg {
+    transition: transform var(--motion-base) var(--ease-out);
+    transform-origin: 50% 12%;
+  }
+  .notif-bell-btn:hover svg:not(.is-swaying) {
+    transform: rotate(-8deg);
+  }
+}
+
+/* ── Reduced motion ─────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .chip,
+  .pagination-btn,
+  .assistant-send,
+  .assistant-mic,
+  .assistant-example,
+  .notif-bell-btn,
+  .btn-match-qr.potential-match-badge,
+  .btn:hover,
+  .btn:active,
+  .chip:active,
+  .pagination-btn:hover,
+  .pagination-btn:active,
+  .assistant-send:hover,
+  .assistant-send:active,
+  .assistant-example:hover,
+  .assistant-example:active,
+  .assistant-mic:active,
+  .notif-bell-btn:hover,
+  .notif-bell-btn:active,
+  .notif-bell-btn svg,
+  .btn-match-qr.potential-match-badge:hover,
+  .btn-match-qr.potential-match-badge:active,
+  :root #items .projects-grid > .project-card.listing-card:hover,
+  :root #items .projects-grid > .registered-belonging-card:hover,
+  :root #items .listing-card:hover .item-photo-frame img {
+    transform: none !important;
+  }
+
+  #itemsGrid > *,
+  .filter-chips .chip.active,
+  .pagination-btn.active,
+  .assistant-msg,
+  .notif-badge.is-bumped,
+  .notif-bell-btn svg.is-swaying {
+    animation: none !important;
+  }
+
+  /* Modals keep a plain fade, but the card no longer moves. */
+  .slip-overlay > *,
+  .slip-overlay:not(.open) > *,
+  #claimThreadModal:not(.open) > .thread-card {
+    transform: none !important;
+    transition: none !important;
+  }
+  @starting-style {
+    .slip-overlay.open > *,
+    #claimThreadModal.open > .thread-card {
+      transform: none !important;
+    }
+  }
+}

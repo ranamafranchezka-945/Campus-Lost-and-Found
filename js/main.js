@@ -189,15 +189,74 @@ deviceDarkQuery.addEventListener('change', () => {
   applyTheme(deviceTheme());
 });
 
-function toggleTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-  switchTheme(currentTheme === 'light' ? 'dark' : 'light');
+// The theme the page is heading to. A view transition applies the DOM change a
+// frame or two after it starts, so during that gap data-theme still shows the
+// old value - a fast second click must toggle from where we're going, not
+// from where we were, or two clicks would land on the same theme.
+let themeIntent = null;
+let themeTransition = null;
+
+function currentThemeIntent() {
+  return themeIntent || document.documentElement.getAttribute('data-theme') || 'dark';
 }
 
-// Changes the theme with a smooth cross-fade of the whole page (css/styles.css sets
-// the timing). Browsers without view transitions fade the colours with CSS instead;
-// with "reduce motion" on, the theme simply switches.
-function switchTheme(nextTheme) {
+function toggleTheme() {
+  switchTheme(currentThemeIntent() === 'light' ? 'dark' : 'light', takeThemeRevealOrigin());
+}
+
+// ── Circular reveal origin ──
+// Recorded in the capture phase, before any toggle's own click handler runs,
+// so every toggle (navbar button, admin pill, ...) gets the reveal without
+// having to pass the event through toggleTheme().
+const THEME_TOGGLE_SELECTOR = '.theme-toggle, #themePill, [data-theme-toggle]';
+let themeRevealOrigin = null;
+
+document.addEventListener(
+  'click',
+  (event) => {
+    const toggle = event.target.closest?.(THEME_TOGGLE_SELECTOR);
+    if (!toggle) return;
+    // A pointer click starts from the pointer itself. Keyboard activation
+    // (Enter/Space) reports detail 0 and no useful coordinates, so it starts
+    // from the centre of the toggle instead.
+    if (event.detail > 0 && (event.clientX || event.clientY)) {
+      themeRevealOrigin = { x: event.clientX, y: event.clientY, at: performance.now() };
+    } else {
+      const rect = toggle.getBoundingClientRect();
+      themeRevealOrigin = {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+        at: performance.now(),
+      };
+    }
+  },
+  true
+);
+
+// Only an origin from this very click counts; a stale one (e.g. a theme
+// change triggered later by the device) falls back to the plain cross-fade.
+function takeThemeRevealOrigin() {
+  const origin = themeRevealOrigin;
+  themeRevealOrigin = null;
+  return origin && performance.now() - origin.at < 1000 ? origin : null;
+}
+
+// Radius that reaches the viewport corner farthest from the origin: the
+// distance to it is the hypotenuse of the larger horizontal and larger
+// vertical gap, so a circle of that radius covers every corner.
+function themeRevealRadius(x, y) {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  return Math.hypot(Math.max(x, width - x), Math.max(y, height - y));
+}
+
+const THEME_REVEAL_DURATION_MS = 550;
+
+// Changes the theme. From a toggle click: a circular reveal of the new theme
+// expanding from the click point. Otherwise (device change): a cross-fade
+// (css/styles.css sets its timing). Browsers without view transitions fade the
+// colours with CSS instead; with "reduce motion" on, the theme simply switches.
+function switchTheme(nextTheme, origin = null) {
   try {
     if (nextTheme === deviceTheme()) {
       clearThemeOverride(); // same as the device: back to automatic
@@ -208,27 +267,72 @@ function switchTheme(nextTheme) {
   } catch {
     /* storage blocked: the choice lasts for this page only */
   }
-  applyTheme(nextTheme);
+  applyTheme(nextTheme, origin);
 }
 
-function applyTheme(nextTheme) {
+function applyTheme(nextTheme, origin = null) {
   const root = document.documentElement;
-  if (root.getAttribute('data-theme') === nextTheme) return;
+  if (currentThemeIntent() === nextTheme && root.getAttribute('data-theme') === nextTheme) return;
   const apply = () => {
     root.setAttribute('data-theme', nextTheme);
     updateThemeIcon();
   };
 
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // Instant: drop any running transition so nothing animates afterwards.
+    themeTransition?.skipTransition();
+    themeIntent = null;
     apply();
-  } else if (typeof document.startViewTransition === 'function') {
-    document.startViewTransition(apply);
-  } else {
+    return;
+  }
+
+  if (typeof document.startViewTransition !== 'function') {
     root.classList.add('theme-switching');
     apply();
     clearTimeout(switchTheme.timer);
     switchTheme.timer = setTimeout(() => root.classList.remove('theme-switching'), 450);
+    return;
   }
+
+  // Rapid re-click: finish the running transition at once (its DOM update still
+  // runs, in order), then start the next one from that settled state. The
+  // newest click always wins and the snapshots never mix two themes.
+  themeTransition?.skipTransition();
+  themeIntent = nextTheme;
+  root.classList.toggle('theme-reveal', Boolean(origin));
+
+  const transition = document.startViewTransition(apply);
+  themeTransition = transition;
+
+  if (origin) {
+    transition.ready
+      .then(() => {
+        const radius = themeRevealRadius(origin.x, origin.y);
+        root.animate(
+          {
+            clipPath: [
+              `circle(0px at ${origin.x}px ${origin.y}px)`,
+              `circle(${radius}px at ${origin.x}px ${origin.y}px)`,
+            ],
+          },
+          {
+            duration: THEME_REVEAL_DURATION_MS,
+            easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+            pseudoElement: '::view-transition-new(root)',
+          }
+        );
+      })
+      .catch(() => {
+        /* skipped by a newer click before it started: nothing to animate */
+      });
+  }
+
+  transition.finished.finally(() => {
+    if (themeTransition !== transition) return; // a newer click took over
+    themeTransition = null;
+    themeIntent = null;
+    root.classList.remove('theme-reveal');
+  });
 }
 
 // Sun is shown in light mode, moon in dark mode. Same markup and styling as the other .ui-icon SVGs.
