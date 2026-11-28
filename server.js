@@ -17,92 +17,6 @@ const itemRoutes = require('./routes/itemRoutes');
 const messengerRoutes = require('./routes/messengerRoutes');
 const postgresStore = require('./services/postgresStore');
 
-// Served to anyone not on the allowlist while it is active. Fully self-contained (no
-// external CSS/JS, no /cspc-logo.png) so it never depends on anything that might itself
-// be gated, but it mirrors public/home.html's nav + hero so visitors see the real brand
-// instead of a generic placeholder.
-const siteUnavailableHtml = `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Not Available - Back2You</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-<style>
-  :root { --blue-main:#1d4ed8; --blue-dark:#1e3a8a; --text-main:#0f172a; --text-muted:#475569; --border:#e2e8f0; }
-  * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; display:flex; flex-direction:column; background:#f8fafc; color:var(--text-main); font-family:'DM Sans',system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
-  a { text-decoration:none; }
-  .navbar { border-bottom:1px solid var(--border); background:#ffffff; }
-  .navbar-container { max-width:1140px; margin:0 auto; padding:1rem 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-  .nav-logo { display:flex; align-items:center; gap:.6rem; font-weight:700; font-size:1.15rem; color:var(--blue-main); }
-  .nav-logo-badge { width:34px; height:34px; border-radius:50%; flex-shrink:0; background:linear-gradient(160deg,#5b82f0,#1d4ed8); display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -6px rgba(29,78,216,.6); }
-  .nav-logo-badge svg { width:18px; height:18px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-  .btn { display:inline-flex; align-items:center; justify-content:center; padding:.65rem 1.3rem; border-radius:.6rem; font-weight:600; font-size:.92rem; }
-  .btn-primary { color:#fff; background:linear-gradient(180deg,#5b82f0 0%,#3556cc 100%); box-shadow:0 10px 24px -10px rgba(65,105,225,.7); }
-  .btn-primary:hover { background:linear-gradient(180deg,#7394f3 0%,#2d48b0 100%); }
-  .hero-section { flex:1 0 auto; max-width:1140px; width:100%; margin:0 auto; padding:clamp(3rem,8vh,5rem) 1.5rem; display:flex; align-items:center; justify-content:space-between; gap:3rem; flex-wrap:wrap; }
-  .hero-text { max-width:620px; }
-  .hero-greeting { display:inline-flex; align-items:center; gap:.55rem; color:var(--text-muted); font-size:.9rem; }
-  .hero-greeting::before { content:''; width:.48rem; height:.48rem; border-radius:50%; background:#38b982; box-shadow:0 0 0 4px rgba(56,185,130,.15); }
-  .landing-headline { font-size:clamp(2.1rem,4.5vw,3.1rem); font-weight:900; letter-spacing:-0.03em; line-height:1.08; margin:.6rem 0 1rem; }
-  .landing-headline span { color:var(--blue-main); }
-  .hero-tagline { max-width:520px; color:var(--text-muted); line-height:1.7; font-size:1.02rem; margin:0 0 1.75rem; }
-  .hero-notice { display:inline-flex; align-items:center; gap:.5rem; padding:.5rem .9rem; margin-bottom:1.25rem; border-radius:.6rem; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; font-size:.85rem; font-weight:600; }
-  .hero-avatar { flex-shrink:0; width:min(280px,36vw); height:min(280px,36vw); border-radius:50%; background:radial-gradient(circle at 35% 30%, rgba(91,130,240,.22), rgba(91,130,240,.04) 70%); display:flex; align-items:center; justify-content:center; }
-  .hero-avatar-badge { width:62%; height:62%; border-radius:50%; background:linear-gradient(160deg,#5b82f0,#1d4ed8); box-shadow:0 20px 50px -18px rgba(29,78,216,.55); display:flex; align-items:center; justify-content:center; }
-  .hero-avatar-badge svg { width:46%; height:46%; stroke:#fff; fill:none; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round; }
-  .site-footer { border-top:1px solid var(--border); }
-  .footer-container { max-width:1140px; margin:0 auto; padding:1.5rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
-  .footer-brand { display:flex; align-items:center; gap:.65rem; }
-  .footer-name { margin:0; font-weight:700; }
-  .footer-tagline, .footer-location { margin:0; color:var(--text-muted); font-size:.85rem; }
-  @media (max-width:760px) { .hero-section { justify-content:center; text-align:center; } .hero-avatar { order:-1; } }
-</style>
-</head>
-<body>
-  <nav class="navbar" aria-label="Main navigation">
-    <div class="navbar-container">
-      <span class="nav-logo">
-        <span class="nav-logo-badge" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9s1.3-6.5 3.8-9Z"/></svg></span>
-        Back2You
-      </span>
-      <a href="/login" class="btn btn-primary">Sign In</a>
-    </div>
-  </nav>
-
-  <header class="hero-section">
-    <div class="hero-text">
-      <p class="hero-greeting">Camarines Sur Polytechnic Colleges</p>
-      <h1 class="landing-headline">Modernizing the Campus <span>Lost &amp; Found</span></h1>
-      <div class="hero-notice">This site isn&rsquo;t available right now. Please check back later.</div>
-      <p class="hero-tagline">
-        Back2You is CSPC&rsquo;s campus lost-and-found platform. Report lost items, post found ones, and let smart
-        matching, QR stickers and verified handovers bring belongings back to their owners.
-      </p>
-      <a class="btn btn-primary" href="/login">Sign In</a>
-    </div>
-    <div class="hero-avatar" aria-hidden="true">
-      <span class="hero-avatar-badge"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9s1.3-6.5 3.8-9Z"/></svg></span>
-    </div>
-  </header>
-
-  <footer class="site-footer">
-    <div class="footer-container">
-      <div class="footer-brand">
-        <span class="nav-logo-badge" aria-hidden="true" style="width:36px;height:36px;"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9s1.3-6.5 3.8-9Z"/></svg></span>
-        <div>
-          <p class="footer-name">Back2You</p>
-          <p class="footer-tagline">Lost &amp; found for the CSPC community</p>
-        </div>
-      </div>
-      <p class="footer-location">Camarines Sur Polytechnic Colleges · Nabua, Camarines Sur</p>
-    </div>
-  </footer>
-</body>
-</html>`;
-
 // Browser assets referenced by the HTML pages, mapped to their files on disk.
 function assetFile(urlPath) {
   if (urlPath === '/icons.js') return path.join(__dirname, 'icons.js');
@@ -258,7 +172,13 @@ function createApp() {
   // check with a clearer message) stay reachable. getAllowedEmailsDirect() queries the
   // database directly, not through the per-request transaction context set up below,
   // since this must run on every request, not just /api/* ones.
-  const allowlistExemptPaths = new Set(['/login', '/login.html', '/icons.js', '/api/messenger/webhook']);
+  const allowlistExemptPaths = new Set([
+    '/login',
+    '/login.html',
+    '/icons.js',
+    '/cspc-logo.png',
+    '/api/messenger/webhook',
+  ]);
   const allowlistExemptPrefixes = ['/css/', '/js/', '/vendor/', '/api/auth/'];
   app.use(async (req, res, next) => {
     if (req.session?.user?.role === 'admin') return next();
@@ -281,7 +201,10 @@ function createApp() {
       if (req.path.startsWith('/api/')) {
         return res.status(503).json({ success: false, message: "This site isn't available right now." });
       }
-      res.status(503).type('html').send(siteUnavailableHtml);
+      // Show the real public landing page rather than a generic placeholder, just
+      // gated behind a 503 so it's still clearly not the live app underneath.
+      res.status(503);
+      sendPage(res, path.join(__dirname, 'public', 'home.html'));
     };
     if (req.session?.user) return req.session.regenerate(sendUnavailable);
     sendUnavailable();
