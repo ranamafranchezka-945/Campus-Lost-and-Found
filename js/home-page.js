@@ -1298,6 +1298,45 @@ function handleScannedQrText(text) {
   openAnonymousFinderModal(refCode);
 }
 
+function triggerQrImageUpload() {
+  document.getElementById('qrScannerFileInput')?.click();
+}
+
+// Mobile's camera-only equivalent of desktop's screen-share mode: phones have
+// no Screen Capture API a web page can use (see openQrScanner above), so a QR
+// code shown elsewhere on the same phone has to be scanned from a saved
+// screenshot/photo instead.
+function handleQrImageSelect(event) {
+  const input = event.target;
+  const file = input.files?.[0];
+  input.value = ''; // let the same file be picked again later
+  if (!file) return;
+
+  setQrScannerStatus('Reading image…');
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    URL.revokeObjectURL(objectUrl);
+    const canvas = document.getElementById('qrScannerCanvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(image, 0, 0);
+    const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'attemptBoth' });
+    if (code?.data) {
+      handleScannedQrText(code.data);
+      return;
+    }
+    setQrScannerStatus("Couldn't find a QR code in that photo. Try another one.");
+  };
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    setQrScannerStatus("Couldn't read that image. Try another one.");
+  };
+  image.src = objectUrl;
+}
+
 function closeQrScanner() {
   qrScannerStopped = true;
   qrScannerMode = null;

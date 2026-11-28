@@ -1129,6 +1129,13 @@
 .qr-scanner-status-spinner[hidden] {
   display: none;
 }
+/* Desktop already has screen-share for a QR shown elsewhere on the same
+   machine; mobile has no equivalent (see js/home-page.js), so this picks a
+   saved screenshot/photo instead. Shown only on mobile widths - see
+   css/responsive.css. */
+.qr-scanner-upload-btn {
+  display: none;
+}
 @keyframes qr-scanner-spin {
   to {
     transform: rotate(360deg);

@@ -2039,6 +2039,10 @@ button {
     max-width: 100%;
     overflow: visible;
   }
+
+  .qr-scanner-upload-btn {
+    display: inline-flex;
+  }
 }
 
 @media (max-width: 767px) {

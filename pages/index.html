@@ -794,6 +794,21 @@
 
         <div class="modal-actions modal-actions--center">
           <button type="button" class="btn btn-outline btn-compact" data-action="closeQrScanner">Cancel</button>
+          <button
+            type="button"
+            class="btn btn-outline btn-compact qr-scanner-upload-btn"
+            data-action="triggerQrImageUpload"
+          >
+            🖼️ Scan From Photo
+          </button>
+          <input
+            type="file"
+            id="qrScannerFileInput"
+            accept="image/*"
+            data-change="handleQrImageSelect"
+            data-args='["$event"]'
+            style="display: none"
+          />
         </div>
       </div>
     </div>
